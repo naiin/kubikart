@@ -1,0 +1,16 @@
+{
+  "name": "kubikart/backend-tests",
+  "description": "PHPUnit tests for Kubikart WordPress plugins",
+  "require-dev": {
+    "phpunit/phpunit": "^10.5"
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Kubikart\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "phpunit",
+    "test-coverage": "phpunit --coverage-text"
+  }
+}

@@ -1,0 +1,77 @@
+# ============================================================
+# Root — build artifacts
+# ============================================================
+*.log
+.DS_Store
+Thumbs.db
+
+# ============================================================
+# Frontend (Next.js)
+# ============================================================
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/node_modules/
+frontend/.pnpm-store/
+frontend/coverage/
+frontend/*.tsbuildinfo
+frontend/next-env.d.ts
+
+# Root-level pnpm workspace node_modules
+node_modules/
+.pnpm-store/
+
+# Env files — NEVER commit secrets
+frontend/.env
+frontend/.env.local
+frontend/.env.production
+frontend/.env.staging
+
+# ============================================================
+# Backend — WordPress CORE (do NOT commit WP core)
+# We only track our custom plugins and mu-plugins.
+# Download WP core separately: wp core download
+# ============================================================
+
+# Exclude everything inside wordpress/ ...
+backend/wordpress/*
+
+# ... but keep our custom content directories
+!backend/wordpress/wp-content
+
+backend/wordpress/wp-content/*
+!backend/wordpress/wp-content/plugins
+!backend/wordpress/wp-content/mu-plugins
+
+backend/wordpress/wp-content/plugins/*
+# Our custom plugins only:
+!backend/wordpress/wp-content/plugins/kubikart-security
+!backend/wordpress/wp-content/plugins/kubikart-newsletter
+
+# wp-content/mu-plugins: keep everything (all are ours)
+# (nothing to exclude)
+
+# Third-party WP content we don't own
+backend/wordpress/wp-content/uploads/
+backend/wordpress/wp-content/upgrade/
+backend/wordpress/wp-content/upgrade-temp-backup/
+backend/wordpress/wp-content/cache/
+backend/wordpress/wp-content/languages/
+
+# WordPress config with secrets
+backend/wordpress/wp-config.php
+
+# ============================================================
+# Backend — PHP dependencies
+# ============================================================
+backend/vendor/
+
+# Generated media / backups — not for VCS
+backend/generated-media/
+backend/recovery/
+
+# ============================================================
+# Lando / Docker local dev
+# ============================================================
+.lando/
+backend/.lando.yml.local

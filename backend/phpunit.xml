@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+         failOnWarning="true"
+         stopOnError="false"
+         stopOnFailure="false">
+    <testsuites>
+        <testsuite name="Kubikart Plugins">
+            <directory>tests/plugins</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>wordpress/wp-content/plugins/kubikart-security</directory>
+            <directory>wordpress/wp-content/plugins/kubikart-newsletter</directory>
+            <directory>wordpress/wp-content/mu-plugins</directory>
+        </include>
+    </source>
+</phpunit>
