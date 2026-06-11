@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { ProductJsonLd } from "@/components/product/ProductJsonLd";
 import { ProductPageClient } from "@/components/product/ProductPageClient";
 import { getProductAbsoluteUrl, getProductImageAbsoluteUrl, getProductPageProduct, getRelatedProducts } from "@/lib/product-page";
-import { getProductReviews, type WCReview } from "@/lib/woocommerce";
+import { getProduct, getProductReviews, type WCReview } from "@/lib/woocommerce";
 
 type ProductPageProps = {
   params: Promise<{
@@ -24,12 +24,38 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 
   const canonical = getProductAbsoluteUrl(locale, product.slug);
   const primaryImage = product.images[0];
+  const languages: Record<string, string> = {
+    [locale]: canonical,
+  };
+
+  if (product.translations?.de && locale !== "de") {
+    try {
+      const germanProduct = await getProduct(product.translations.de, "de");
+      languages.de = getProductAbsoluteUrl("de", germanProduct.slug);
+    } catch {
+      // Keep the available product URL only when the alternate lookup fails.
+    }
+  }
+
+  if (product.translations?.en && locale !== "en") {
+    try {
+      const englishProduct = await getProduct(product.translations.en, "en");
+      languages.en = getProductAbsoluteUrl("en", englishProduct.slug);
+    } catch {
+      // Keep the available product URL only when the alternate lookup fails.
+    }
+  }
+
+  if (languages.de) {
+    languages["x-default"] = languages.de;
+  }
 
   return {
     title: product.seoTitle,
     description: product.seoDescription,
     alternates: {
       canonical,
+      languages,
     },
     openGraph: {
       title: product.seoTitle,

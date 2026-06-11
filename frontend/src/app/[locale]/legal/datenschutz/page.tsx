@@ -1,3 +1,19 @@
+import type { Metadata } from "next";
+import { buildPageMetadata, normalizeLocale, SEO_ROUTE_SEGMENTS } from "@/lib/seo";
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale: rawLocale } = await params;
+  const locale = normalizeLocale(rawLocale);
+
+  return buildPageMetadata({
+    locale,
+    routeSegments: SEO_ROUTE_SEGMENTS.privacy,
+    title: "Datenschutz | Kubikart",
+    description: "Datenschutzerklärung von Kubikart mit Informationen zur Verarbeitung personenbezogener Daten auf dieser Website.",
+    index: locale === "de",
+  });
+}
+
 export default function DatenschutzPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-12">

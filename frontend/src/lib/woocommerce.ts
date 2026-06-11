@@ -67,6 +67,8 @@ export interface WCProduct {
   permalink: string;
   type: string;
   status: string;
+  date_modified?: string;
+  date_modified_gmt?: string;
   description: string;
   short_description: string;
   price: string;

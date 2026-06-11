@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { ContactForm } from "@/components/ContactForm";
+import { buildPageMetadata, normalizeLocale, SEO_ROUTE_SEGMENTS } from "@/lib/seo";
 
 const copy = {
   de: {
@@ -51,7 +52,7 @@ const copy = {
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale: rawLocale } = await params;
-  const locale = rawLocale === "en" ? "en" : "de";
+  const locale = normalizeLocale(rawLocale);
 
   const metadata = {
     de: {
@@ -66,15 +67,12 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
   const content = metadata[locale];
 
-  return {
+  return buildPageMetadata({
+    locale,
+    routeSegments: SEO_ROUTE_SEGMENTS.contact,
     title: content.title,
     description: content.description,
-    openGraph: {
-      title: content.title,
-      description: content.description,
-      type: "website",
-    },
-  };
+  });
 }
 
 export default async function ContactPage({ params }: { params: Promise<{ locale: "de" | "en" }> }) {

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import ShopPage from "../shop/page";
 import { buildPageMetadata, normalizeLocale, SEO_ROUTE_SEGMENTS } from "@/lib/seo";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -8,14 +7,14 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
   return buildPageMetadata({
     locale,
-    routeSegments: SEO_ROUTE_SEGMENTS.shop,
-    title: locale === "en" ? "Search results | Kubikart" : "Suchergebnisse | Kubikart",
+    routeSegments: SEO_ROUTE_SEGMENTS.cart,
+    title: locale === "en" ? "Cart | Kubikart" : "Warenkorb | Kubikart",
     description:
-      locale === "en"
-        ? "Internal search results for Kubikart products and services."
-        : "Interne Suchergebnisse für Produkte und Dienstleistungen von Kubikart.",
+      locale === "en" ? "Current cart contents for a Kubikart order." : "Aktueller Warenkorb für eine Bestellung bei Kubikart.",
     index: false,
   });
 }
 
-export default ShopPage;
+export default function CartLayout({ children }: { children: React.ReactNode }) {
+  return children;
+}

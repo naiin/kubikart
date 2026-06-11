@@ -1,4 +1,31 @@
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { buildPageMetadata, normalizeLocale, SEO_ROUTE_SEGMENTS } from "@/lib/seo";
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale: rawLocale } = await params;
+  const locale = normalizeLocale(rawLocale);
+
+  const content =
+    locale === "en"
+      ? {
+          title: "Printed menus and hospitality print solutions | Kubikart",
+          description:
+            "Kubikart produces printed menus and presentation materials for cafes, restaurants and hospitality concepts with a clear premium look.",
+        }
+      : {
+          title: "Druckmenüs und Printlösungen für Gastronomie | Kubikart",
+          description:
+            "Kubikart erstellt Druckmenüs und Präsentationslösungen für Cafés, Restaurants und Hospitality Konzepte mit hochwertiger, klarer Gestaltung.",
+        };
+
+  return buildPageMetadata({
+    locale,
+    routeSegments: SEO_ROUTE_SEGMENTS.printingMenus,
+    title: content.title,
+    description: content.description,
+  });
+}
 
 export default async function PrintingMenusPage() {
   const t = await getTranslations("services.printingMenus");

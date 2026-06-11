@@ -7,6 +7,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { CookieBanner } from "@/components/CookieBanner";
 import { AuthProvider } from "@/lib/auth";
+import { getSiteUrl } from "@/lib/seo";
 import "../globals.css";
 
 const manrope = Manrope({
@@ -15,6 +16,7 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getSiteUrl()),
   title: "KubikArt – 3D-Druck, Lasergravur & Kreative Lösungen",
   description: "KubikArt bietet professionellen 3D-Druck, Lasergravur, Brand Kits und mehr. Ihr Partner für kreative Lösungen in Blaustein.",
   icons: {
@@ -22,6 +24,10 @@ export const metadata: Metadata = {
     apple: [{ url: "/web-app-manifest-192x192.png", sizes: "192x192", type: "image/png" }],
   },
   manifest: "/site.webmanifest",
+  openGraph: {
+    siteName: "Kubikart",
+    type: "website",
+  },
 };
 
 export default async function LocaleLayout({ children, params }: { children: React.ReactNode; params: Promise<{ locale: string }> }) {

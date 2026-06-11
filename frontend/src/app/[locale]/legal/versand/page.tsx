@@ -1,4 +1,29 @@
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { buildPageMetadata, normalizeLocale, SEO_ROUTE_SEGMENTS } from "@/lib/seo";
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale: rawLocale } = await params;
+  const locale = normalizeLocale(rawLocale);
+
+  const content =
+    locale === "en"
+      ? {
+          title: "Shipping information | Kubikart",
+          description: "Shipping times, delivery zones and shipping notes for orders placed with Kubikart.",
+        }
+      : {
+          title: "Versandinformationen | Kubikart",
+          description: "Versandzeiten, Liefergebiete und Hinweise zum Versand für Bestellungen bei Kubikart.",
+        };
+
+  return buildPageMetadata({
+    locale,
+    routeSegments: SEO_ROUTE_SEGMENTS.shipping,
+    title: content.title,
+    description: content.description,
+  });
+}
 
 export default async function VersandPage() {
   const t = await getTranslations("shipping");

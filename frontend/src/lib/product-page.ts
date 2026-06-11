@@ -66,6 +66,7 @@ export interface ProductSeoContent {
 export interface ProductPageProduct {
   id: number;
   slug: string;
+  translations?: Record<string, number>;
   name: string;
   subtitle: string;
   shortDescription: string;
@@ -1182,6 +1183,7 @@ function mapWooProductToProductPageProduct(
     ...fallbackProduct,
     id: product.id,
     slug: product.slug,
+    translations: product.translations,
     name: product.name,
     subtitle: preset?.subtitle || labels.genericSubtitle(product.name, primaryCategory.name),
     shortDescription: plainShortDescription || preset?.shortDescription || fallbackProduct.shortDescription,

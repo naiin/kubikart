@@ -11,16 +11,40 @@ import { ShopTrustSection } from "@/components/shop/ShopTrustSection";
 import { ShopFAQ } from "@/components/shop/ShopFAQ";
 import { ShopSeoContent } from "@/components/shop/ShopSeoContent";
 import { ShopJsonLd } from "@/components/shop/ShopJsonLd";
+import { buildPageMetadata, normalizeLocale, SEO_ROUTE_SEGMENTS } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Shop für personalisierte Geschenke, Lasergravur & 3D-Druck | Kubikart",
-  description:
-    "Entdecke personalisierte Produkte, Lasergravuren, Holz- und Acrylgeschenke, 3D-Druck und Sonderanfertigungen von Kubikart. Jetzt online stöbern.",
-  openGraph: {
-    title: "Kubikart Shop – Personalisierte Produkte & Sonderanfertigungen",
-    description: "Personalisierte Geschenke, Schlüsselanhänger, Holzprodukte, Acrylstände und 3D-Druck Produkte – individuell gefertigt in Deutschland.",
-  },
-};
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ category?: string; sort?: string; q?: string }>;
+}): Promise<Metadata> {
+  const [{ locale: rawLocale }, sp] = await Promise.all([params, searchParams]);
+  const locale = normalizeLocale(rawLocale);
+  const hasQueryState = Boolean(sp.category || sp.sort || sp.q);
+
+  const content =
+    locale === "en"
+      ? {
+          title: "Shop for personalized gifts, laser engraving and 3D printing | Kubikart",
+          description:
+            "Discover personalized products, laser engraving, acrylic and wooden gifts, 3D printing, and custom-made pieces from Kubikart.",
+        }
+      : {
+          title: "Shop für personalisierte Geschenke, Lasergravur & 3D-Druck | Kubikart",
+          description:
+            "Entdecke personalisierte Produkte, Lasergravuren, Holz- und Acrylgeschenke, 3D-Druck und Sonderanfertigungen von Kubikart. Jetzt online stöbern.",
+        };
+
+  return buildPageMetadata({
+    locale,
+    routeSegments: SEO_ROUTE_SEGMENTS.shop,
+    title: content.title,
+    description: content.description,
+    index: !hasQueryState,
+  });
+}
 
 export default async function ShopPage({
   params,

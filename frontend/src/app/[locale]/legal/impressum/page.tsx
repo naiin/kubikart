@@ -1,3 +1,19 @@
+import type { Metadata } from "next";
+import { buildPageMetadata, normalizeLocale, SEO_ROUTE_SEGMENTS } from "@/lib/seo";
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale: rawLocale } = await params;
+  const locale = normalizeLocale(rawLocale);
+
+  return buildPageMetadata({
+    locale,
+    routeSegments: SEO_ROUTE_SEGMENTS.impressum,
+    title: "Impressum | Kubikart",
+    description: "Rechtliche Anbieterkennzeichnung und Kontaktdaten von Kubikart gemäß § 5 TMG.",
+    index: locale === "de",
+  });
+}
+
 export default function ImpressumPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-12">

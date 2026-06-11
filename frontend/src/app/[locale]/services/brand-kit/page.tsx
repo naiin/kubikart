@@ -1,4 +1,31 @@
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { buildPageMetadata, normalizeLocale, SEO_ROUTE_SEGMENTS } from "@/lib/seo";
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale: rawLocale } = await params;
+  const locale = normalizeLocale(rawLocale);
+
+  const content =
+    locale === "en"
+      ? {
+          title: "Brand kits, signage and business presentation assets | Kubikart",
+          description:
+            "Kubikart creates brand kits, acrylic displays and business presentation pieces with a clean premium finish for events, shops and offices.",
+        }
+      : {
+          title: "Brand Kits, Schilder und Business Präsentation | Kubikart",
+          description:
+            "Kubikart gestaltet Brand Kits, Acrylaufsteller und Business Präsentationslösungen mit hochwertiger Optik für Messen, Läden und Unternehmen.",
+        };
+
+  return buildPageMetadata({
+    locale,
+    routeSegments: SEO_ROUTE_SEGMENTS.brandKit,
+    title: content.title,
+    description: content.description,
+  });
+}
 
 export default async function BrandKitPage() {
   const t = await getTranslations("services.brandKit");
