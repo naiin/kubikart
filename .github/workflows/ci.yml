@@ -2,22 +2,45 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
   pull_request:
-    branches: [main]
+  workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-# ─────────────────────────────────────────────────────────────
-# FRONTEND JOBS
-# ─────────────────────────────────────────────────────────────
+permissions:
+  contents: read
+
+env:
+  CI: true
+  NEXT_TELEMETRY_DISABLED: 1
+  NEXT_PUBLIC_SITE_URL: http://localhost:3000
+  NEXT_PUBLIC_WORDPRESS_URL: https://ci-placeholder.invalid
+  WORDPRESS_API_URL: https://ci-placeholder.invalid/wp-json/wp/v2
+  WC_API_URL: https://ci-placeholder.invalid/wp-json/wc/v3
+  WC_CONSUMER_KEY: ck_ci_placeholder
+  WC_CONSUMER_SECRET: cs_ci_placeholder
+  WP_APP_USER: ci
+  WP_APP_PASSWORD: ci
+  REVALIDATE_SECRET: ci-secret
+  STRIPE_SECRET_KEY: sk_test_ci_placeholder
+  STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_ci_placeholder
+  NEXT_PUBLIC_PAYPAL_CLIENT_ID: paypal-client-id
+  PAYPAL_SECRET: paypal-secret
+  PAYPAL_MODE: sandbox
+  PAYPAL_WEBHOOK_ID: paypal-webhook-id
+  FREE_SHIPPING_THRESHOLD: "50"
+  DHL_PRICE_KLEINPAKET: "3.99"
+  DHL_PRICE_PAKET: "5.49"
+  DHL_PRICE_INTERNATIONAL: "8.99"
+
 jobs:
-
-  frontend-typecheck:
-    name: "Frontend — TypeScript"
+  frontend:
+    name: Frontend - Verify
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: frontend
@@ -31,34 +54,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: TypeScript check
-        run: pnpm tsc --noEmit
-
-  # ──────────────────────────────────────────────────────────
-  frontend-lint:
-    name: "Frontend — Lint"
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
 
@@ -66,93 +62,29 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: pnpm lint
-        # Pre-existing lint issues in components are warnings — not blocking
-        continue-on-error: true
+        run: pnpm lint:ci
 
-  # ──────────────────────────────────────────────────────────
-  frontend-test:
-    name: "Frontend — Unit Tests (Vitest)"
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
+      - name: Typecheck
+        run: pnpm typecheck
 
-    steps:
-      - uses: actions/checkout@v4
+      - name: Run frontend unit and API tests
+        run: pnpm test:coverage
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Run tests
-        run: pnpm test
-
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+      - name: Upload frontend coverage
         if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: frontend-coverage
           path: frontend/coverage/
           retention-days: 7
 
-  # ──────────────────────────────────────────────────────────
-  frontend-build:
-    name: "Frontend — Build Check"
-    runs-on: ubuntu-latest
-    needs: [frontend-typecheck, frontend-test]
-    defaults:
-      run:
-        working-directory: frontend
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build
-        # WP backend is not running in CI. Pages with WC data fetches
-        # will fallback gracefully via try/catch in wcApi().
+      - name: Production build
         run: pnpm build
-        env:
-          NEXT_PUBLIC_WORDPRESS_URL: https://ci-placeholder.invalid
-          WORDPRESS_API_URL: https://ci-placeholder.invalid/wp-json/wp/v2
-          WC_API_URL: https://ci-placeholder.invalid/wp-json/wc/v3
-          WC_CONSUMER_KEY: ck_ci_placeholder
-          WC_CONSUMER_SECRET: cs_ci_placeholder
-          WP_APP_USER: ci
-          WP_APP_PASSWORD: ci
-          REVALIDATE_SECRET: ci-secret
-          NEXT_PUBLIC_SITE_URL: http://localhost:3000
-        continue-on-error: true
 
-  # ─────────────────────────────────────────────────────────────
-  # BACKEND JOBS
-  # ─────────────────────────────────────────────────────────────
-
-  backend-php-test:
-    name: "Backend — PHP Unit Tests (PHPUnit)"
+  backend-phpunit:
+    name: Backend - PHPUnit
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: backend
@@ -171,24 +103,26 @@ jobs:
         uses: actions/cache@v4
         with:
           path: backend/vendor
-          key: php-composer-${{ hashFiles('backend/composer.json') }}
-          restore-keys: php-composer-
+          key: composer-${{ runner.os }}-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
 
       - name: Install PHP dependencies
-        run: composer install --no-progress --prefer-dist
+        run: composer install --no-interaction --no-progress --prefer-dist
 
-      - name: Run PHPUnit
+      - name: Run plugin PHPUnit suite
         run: php vendor/bin/phpunit --colors=always
 
-  # ──────────────────────────────────────────────────────────
-  # DATABASE HEALTH CHECK
-  # Spins up a real MySQL 8 instance, installs WordPress with
-  # WP-CLI, activates our custom plugins, and verifies that
-  # the DB is healthy and URL migration works correctly.
-  # ──────────────────────────────────────────────────────────
-  backend-db-check:
-    name: "Backend — MySQL + WP-CLI Integration"
+  backend-wordpress:
+    name: Backend - WordPress integration
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_NAME: kubikart_test
+      DB_USER: kubikart
+      DB_PASSWORD: kubikart_pass
+      WP_PATH: /tmp/wp-test
 
     services:
       mysql:
@@ -204,122 +138,130 @@ jobs:
           --health-cmd="mysqladmin ping -h localhost -uroot -proot"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=5
+          --health-retries=10
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup PHP 8.3 + WP-CLI
+      - name: Setup PHP 8.3 and WP-CLI
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.3"
           extensions: mbstring, json, xml, dom, mysqli, pdo_mysql
           tools: wp-cli
 
-      - name: Wait for MySQL to be ready
+      - name: Wait for MySQL
         run: |
-          until mysqladmin ping -h 127.0.0.1 -uroot -proot --silent 2>/dev/null; do
+          for attempt in {1..30}; do
+            if php -r '$db = @new mysqli(getenv("DB_HOST"), getenv("DB_USER"), getenv("DB_PASSWORD"), getenv("DB_NAME"), (int) getenv("DB_PORT")); exit($db->connect_errno ? 1 : 0);'; then
+              exit 0
+            fi
             echo "Waiting for MySQL..."
             sleep 2
           done
-          echo "✅ MySQL is up"
 
-      - name: Download WordPress core
+          echo "MySQL did not become ready in time" >&2
+          exit 1
+
+      - name: Prepare WordPress test install
         run: |
-          mkdir -p /tmp/wp-test
-          cd /tmp/wp-test
-          wp core download --version=latest --allow-root
+          rm -rf "${WP_PATH}"
+          mkdir -p "${WP_PATH}"
+          cp -a backend/wordpress/. "${WP_PATH}/"
+          rm -f "${WP_PATH}/wp-config.php"
 
       - name: Configure WordPress
         run: |
-          cd /tmp/wp-test
           wp config create \
-            --dbname=kubikart_test \
-            --dbuser=kubikart \
-            --dbpass=kubikart_pass \
-            --dbhost=127.0.0.1:3306 \
+            --path="${WP_PATH}" \
+            --dbname="${DB_NAME}" \
+            --dbuser="${DB_USER}" \
+            --dbpass="${DB_PASSWORD}" \
+            --dbhost="${DB_HOST}:${DB_PORT}" \
+            --skip-check \
             --allow-root
 
       - name: Install WordPress
         run: |
-          cd /tmp/wp-test
           wp core install \
-            --url=http://localhost:8080 \
-            --title="Kubikart CI Test" \
-            --admin_user=admin \
-            --admin_password=admin_pass_ci \
-            --admin_email=ci@kubikart.de \
+            --path="${WP_PATH}" \
+            --url="http://localhost" \
+            --title="Kubikart CI" \
+            --admin_user="admin" \
+            --admin_password="admin_pass_ci" \
+            --admin_email="ci@kubikart.de" \
+            --skip-email \
             --allow-root
 
-      - name: Verify DB health
+      - name: Activate Kubikart plugins
         run: |
-          cd /tmp/wp-test
-          wp db check --allow-root
-          echo "✅ WordPress DB is healthy"
+          wp plugin activate woocommerce kubikart-security kubikart-newsletter \
+            --path="${WP_PATH}" \
+            --allow-root
 
-      - name: Test URL migration (search-replace dry run)
+      - name: Verify WordPress, WooCommerce hooks, and custom plugins
         run: |
-          cd /tmp/wp-test
-          # This is what you run when moving from dev → production
-          REPLACED=$(wp search-replace \
-            'http://localhost:8080' \
-            'https://kubikart.de' \
-            --all-tables \
-            --dry-run \
-            --allow-root 2>&1)
-          echo "$REPLACED"
-          echo "✅ URL migration dry-run passed"
+          wp db check --path="${WP_PATH}" --allow-root
+          wp plugin is-active woocommerce --path="${WP_PATH}" --allow-root
+          wp plugin is-active kubikart-security --path="${WP_PATH}" --allow-root
+          wp plugin is-active kubikart-newsletter --path="${WP_PATH}" --allow-root
 
-      - name: Copy and activate Kubikart plugins
-        run: |
-          cp -r $GITHUB_WORKSPACE/backend/wordpress/wp-content/plugins/kubikart-security \
-            /tmp/wp-test/wp-content/plugins/
-          cp -r $GITHUB_WORKSPACE/backend/wordpress/wp-content/plugins/kubikart-newsletter \
-            /tmp/wp-test/wp-content/plugins/
-          mkdir -p /tmp/wp-test/wp-content/mu-plugins
-          cp $GITHUB_WORKSPACE/backend/wordpress/wp-content/mu-plugins/*.php \
-            /tmp/wp-test/wp-content/mu-plugins/ 2>/dev/null || true
-
-          cd /tmp/wp-test
-          wp plugin activate kubikart-security --allow-root
-          wp plugin activate kubikart-newsletter --allow-root
-          wp plugin list --allow-root
-          echo "✅ Kubikart plugins activated"
-
-      - name: Verify plugin hooks are registered
-        run: |
-          cd /tmp/wp-test
-          # Verify kubikart-security registered REST routes
-          ROUTES=$(wp eval '
+          wp eval '
             do_action("rest_api_init");
-            $server = rest_get_server();
-            $routes = array_keys($server->get_routes());
-            $kubikart = array_filter($routes, fn($r) => str_contains($r, "kubikart"));
-            foreach ($kubikart as $r) echo $r . "\n";
-          ' --allow-root)
-          echo "Registered Kubikart REST routes:"
-          echo "$ROUTES"
-          echo "$ROUTES" | grep -q "forgot-password" && echo "✅ forgot-password route found" || echo "⚠️ forgot-password route missing"
-          echo "$ROUTES" | grep -q "reset-password" && echo "✅ reset-password route found" || echo "⚠️ reset-password route missing"
+            $routes = array_keys(rest_get_server()->get_routes());
+            foreach (["/kubikart/v1/forgot-password", "/kubikart/v1/reset-password"] as $route) {
+              if (!in_array($route, $routes, true)) {
+                fwrite(STDERR, "Missing REST route: {$route}\n");
+                exit(1);
+              }
+            }
 
-  # ─────────────────────────────────────────────────────────────
-  # FINAL GATE — all blocking jobs must pass
-  # ─────────────────────────────────────────────────────────────
-  ci-success:
-    name: "✅ CI Gate"
+            if (!post_type_exists("newsletter_sub")) {
+              fwrite(STDERR, "Newsletter post type was not registered\n");
+              exit(1);
+            }
+
+            if (!function_exists("kubikart_dhl_meta_box_content")) {
+              fwrite(STDERR, "DHL shipping mu-plugin did not load\n");
+              exit(1);
+            }
+
+            if (!function_exists("kubikart_recalculate_product_rating")) {
+              fwrite(STDERR, "Rating sync mu-plugin did not load\n");
+              exit(1);
+            }
+
+            if (!function_exists("kubikart_render_custom_fields_metabox")) {
+              fwrite(STDERR, "Custom product fields mu-plugin did not load\n");
+              exit(1);
+            }
+
+            foreach (["WC_Gateway_Kubikart_Stripe", "WC_Gateway_Kubikart_PayPal"] as $gateway) {
+              if (!class_exists($gateway)) {
+                fwrite(STDERR, "Missing payment gateway class: {$gateway}\n");
+                exit(1);
+              }
+            }
+
+            echo "WordPress integration checks passed.\n";
+          ' --path="${WP_PATH}" --allow-root
+
+  ci-gate:
+    name: CI Gate
     runs-on: ubuntu-latest
-    needs:
-      - frontend-typecheck
-      - frontend-test
-      - backend-php-test
-      - backend-db-check
     if: always()
+    needs:
+      - frontend
+      - backend-phpunit
+      - backend-wordpress
+
     steps:
-      - name: Evaluate all required jobs
+      - name: Ensure all required jobs passed
         run: |
-          FAILED=0
-          [[ "${{ needs.frontend-typecheck.result }}" != "success" ]] && echo "❌ TypeScript check failed" && FAILED=1
-          [[ "${{ needs.frontend-test.result }}"      != "success" ]] && echo "❌ Frontend unit tests failed" && FAILED=1
-          [[ "${{ needs.backend-php-test.result }}"   != "success" ]] && echo "❌ PHP unit tests failed" && FAILED=1
-          [[ "${{ needs.backend-db-check.result }}"   != "success" ]] && echo "❌ Database health check failed" && FAILED=1
-          [[ $FAILED -eq 0 ]] && echo "✅ All CI checks passed!" || exit 1
+          failed=0
+
+          [[ "${{ needs.frontend.result }}" == "success" ]] || { echo "Frontend job failed"; failed=1; }
+          [[ "${{ needs.backend-phpunit.result }}" == "success" ]] || { echo "Backend PHPUnit job failed"; failed=1; }
+          [[ "${{ needs.backend-wordpress.result }}" == "success" ]] || { echo "Backend WordPress integration job failed"; failed=1; }
+
+          exit "${failed}"

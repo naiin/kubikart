@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useEffectEvent } from "react";
 import { useTranslations } from "next-intl";
 import { getCartLineId, readCart, useCart, useHasMounted, writeCart } from "@/lib/cart";
 import { useAuth } from "@/lib/auth";
@@ -40,8 +40,13 @@ export default function CheckoutPage() {
   const [shippingLoading, setShippingLoading] = useState(true);
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(90);
 
-  const fetchShippingRates = useCallback(async () => {
-    if (cart.length === 0) return;
+  const fetchShippingRates = useEffectEvent(async () => {
+    if (cart.length === 0) {
+      setShippingRates([]);
+      setShippingLoading(false);
+      return;
+    }
+
     setShippingLoading(true);
     try {
       const res = await fetch("/api/shipping/calculate", {
@@ -67,11 +72,13 @@ export default function CheckoutPage() {
     } finally {
       setShippingLoading(false);
     }
-  }, [cart, form.country, subtotal]);
+  });
 
   useEffect(() => {
-    fetchShippingRates();
-  }, [fetchShippingRates]);
+    // Shipping rates depend on client-only cart data and must be fetched after render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchShippingRates();
+  }, [cart, form.country, subtotal]);
 
   const selectedRate = shippingRates.find((r) => r.id === form.shippingMethod) || shippingRates[0];
   const shippingCost = selectedRate?.price ?? 5.49;

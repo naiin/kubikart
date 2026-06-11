@@ -1,20 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { useHasMounted } from "@/lib/cart";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { mobileNavigation } from "@/lib/header-navigation";
 
 export function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
   const t = useTranslations("header");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useHasMounted();
 
   useEffect(() => {
     if (!open) {

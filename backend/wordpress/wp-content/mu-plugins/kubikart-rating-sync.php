@@ -53,6 +53,11 @@ add_action('edit_comment', 'kubikart_on_review_change');
 add_action('delete_comment', 'kubikart_on_review_change');
 add_action('trash_comment', 'kubikart_on_review_change');
 add_action('untrash_comment', 'kubikart_on_review_change');
+add_action('transition_comment_status', function ($new_status, $old_status, $comment) {
+    if (is_object($comment) && isset($comment->comment_ID)) {
+        kubikart_on_review_change((int) $comment->comment_ID);
+    }
+}, 10, 3);
 
 add_action('updated_comment_meta', function ($meta_id, $comment_id, $meta_key) {
     if ($meta_key === 'rating') {

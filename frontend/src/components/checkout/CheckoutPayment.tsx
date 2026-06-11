@@ -113,12 +113,12 @@ export default function CheckoutPayment({ total, onSuccess, onError, disabled }:
 
   // Auto-initialize Stripe on mount for express checkout (Apple Pay/Google Pay)
   useEffect(() => {
-    initStripe("card");
+    void initStripe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Create Stripe PaymentIntent when card/klarna is selected
-  async function initStripe(selectedMethod: "card" | "klarna") {
+  async function initStripe() {
     setLoadingIntent(true);
     try {
       const res = await fetch("/api/stripe/create-payment-intent", {
@@ -144,7 +144,7 @@ export default function CheckoutPayment({ total, onSuccess, onError, disabled }:
   function selectMethod(m: PaymentMethod) {
     setMethod(m);
     if ((m === "card" || m === "klarna") && !clientSecret) {
-      initStripe(m);
+      void initStripe();
     }
   }
 
@@ -171,7 +171,7 @@ export default function CheckoutPayment({ total, onSuccess, onError, disabled }:
       {!clientSecret && !loadingIntent && (
         <button
           type="button"
-          onClick={() => initStripe("card")}
+          onClick={() => void initStripe()}
           className="w-full rounded-lg border border-gray-200 py-3 text-sm text-gray-500 hover:border-gray-300 transition-colors"
         >
           Apple Pay / Google Pay laden…

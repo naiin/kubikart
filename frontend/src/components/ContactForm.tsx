@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 type FormStatus = "idle" | "submitting" | "success" | "error";
@@ -8,7 +8,11 @@ type FormStatus = "idle" | "submitting" | "success" | "error";
 export function ContactForm() {
   const t = useTranslations("contact");
   const [status, setStatus] = useState<FormStatus>("idle");
-  const loadedAt = useRef(Date.now());
+  const loadedAt = useRef(0);
+
+  useEffect(() => {
+    loadedAt.current = Date.now();
+  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

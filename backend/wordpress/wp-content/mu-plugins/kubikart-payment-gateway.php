@@ -24,7 +24,8 @@ add_action('plugins_loaded', function () {
     if (!class_exists('WC_Payment_Gateway')) return;
 
     // ─── Stripe Gateway ─────────────────────────────────────────────────────────
-    class WC_Gateway_Kubikart_Stripe extends WC_Payment_Gateway {
+    if (!class_exists('WC_Gateway_Kubikart_Stripe')) {
+        class WC_Gateway_Kubikart_Stripe extends WC_Payment_Gateway {
         public function __construct() {
             $this->id = 'stripe';
             $this->method_title = 'Stripe (Headless)';
@@ -39,7 +40,7 @@ add_action('plugins_loaded', function () {
             $this->enabled = 'yes';
         }
 
-        public function init_form_fields() {
+        public function init_form_fields(): void {
             $this->form_fields = [
                 'secret_key' => [
                     'title' => 'Stripe Secret Key',
@@ -119,10 +120,12 @@ add_action('plugins_loaded', function () {
 
             return true;
         }
+        }
     }
 
     // ─── PayPal Gateway ─────────────────────────────────────────────────────────
-    class WC_Gateway_Kubikart_PayPal extends WC_Payment_Gateway {
+    if (!class_exists('WC_Gateway_Kubikart_PayPal')) {
+        class WC_Gateway_Kubikart_PayPal extends WC_Payment_Gateway {
         public function __construct() {
             $this->id = 'ppcp-gateway';
             $this->method_title = 'PayPal (Headless)';
@@ -137,7 +140,7 @@ add_action('plugins_loaded', function () {
             $this->enabled = 'yes';
         }
 
-        public function init_form_fields() {
+        public function init_form_fields(): void {
             $this->form_fields = [
                 'client_id' => [
                     'title' => 'PayPal Client ID',
@@ -276,6 +279,7 @@ add_action('plugins_loaded', function () {
             ));
 
             return true;
+        }
         }
     }
 });

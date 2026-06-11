@@ -16,7 +16,7 @@ function groupCategories(categories: WCCategory[]) {
   const businessChildIds = businessParent ? categories.filter((c) => c.parent === businessParent.id).map((c) => c.id) : [];
   const businessCats = businessParent ? [businessParent, ...categories.filter((c) => c.parent === businessParent.id)] : [];
   const personalCats = parentCategories.filter((c) => c.id !== businessParent?.id && !businessChildIds.includes(c.id));
-  return { personalCats, businessCats, businessParent };
+  return { personalCats, businessCats };
 }
 
 export function ShopFilterSidebar({ categories }: ShopFiltersProps) {
@@ -44,7 +44,7 @@ export function ShopFilterSidebar({ categories }: ShopFiltersProps) {
   };
 
   const hasFilters = searchParams.toString().length > 0;
-  const { personalCats, businessCats, businessParent } = groupCategories(categories);
+  const { personalCats, businessCats } = groupCategories(categories);
 
   return (
     <aside className="hidden lg:block w-70 shrink-0">

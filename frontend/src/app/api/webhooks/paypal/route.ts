@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { wcApi } from "@/lib/woocommerce";
 
-const PAYPAL_WEBHOOK_ID = process.env.PAYPAL_WEBHOOK_ID || "";
-
 export async function POST(request: NextRequest) {
   const body = await request.text();
   const event = JSON.parse(body);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
@@ -67,8 +67,12 @@ function NewsletterForm() {
   const t = useTranslations("footer");
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
-  const loadedAt = useRef(Date.now());
+  const loadedAt = useRef(0);
   const [hp, setHp] = useState("");
+
+  useEffect(() => {
+    loadedAt.current = Date.now();
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

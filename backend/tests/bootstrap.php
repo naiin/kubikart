@@ -19,18 +19,18 @@ $_wp_hooks    = [];
 $_wp_filters  = [];
 $_wp_mocks    = [];  // for mockable WP functions
 
-function add_action(string $tag, callable $fn, int $priority = 10, int $accepted_args = 1): void {
+function add_action(string $tag, mixed $fn, int $priority = 10, int $accepted_args = 1): void {
     global $_wp_hooks;
     $_wp_hooks[$tag][$priority][] = ['fn' => $fn, 'args' => $accepted_args];
 }
 
-function add_filter(string $tag, callable $fn, int $priority = 10, int $accepted_args = 1): void {
+function add_filter(string $tag, mixed $fn, int $priority = 10, int $accepted_args = 1): void {
     global $_wp_filters;
     $_wp_filters[$tag][$priority][] = ['fn' => $fn, 'args' => $accepted_args];
 }
 
-function remove_action(string $tag, callable $fn): void {}
-function remove_filter(string $tag, callable $fn): void {}
+function remove_action(string $tag, mixed $fn): void {}
+function remove_filter(string $tag, mixed $fn): void {}
 
 function do_action(string $tag, ...$args): void {
     global $_wp_hooks;
@@ -147,7 +147,7 @@ function get_password_reset_key(object $user): string|WP_Error {
     return wp_mock_fn('get_password_reset_key', [$user]) ?? 'mock-reset-key';
 }
 
-function check_password_reset_key(string $key, string $login): object|WP_Error {
+function check_password_reset_key(string $key, string $login): stdClass|WP_Error {
     return wp_mock_fn('check_password_reset_key', [$key, $login]) ?? new stdClass();
 }
 
@@ -199,11 +199,15 @@ function register_post_type(string $slug, array $args): void {}
 function register_rest_route(string $namespace, string $route, array $args): void {
     $GLOBALS['_wp_rest_routes'][$namespace . $route] = $args;
 }
-function error_log(string $msg): void {}
 function wp_redirect(string $url, int $status = 302): void {}
 function __return_false(): bool { return false; }
 function __return_true(): bool  { return true; }
-function mb_strlen(string $s, ?string $enc = null): int { return strlen($s); }
+function __return_empty_string(): string { return ''; }
+function __(string $text, ?string $domain = null): string { return $text; }
+
+if (!function_exists('mb_strlen')) {
+    function mb_strlen(string $s, ?string $enc = null): int { return strlen($s); }
+}
 
 // ---------------------------------------------------------------------------
 // Autoload vendor (PHPUnit)
@@ -214,7 +218,10 @@ require_once __DIR__ . '/../vendor/autoload.php';
 // Helper: reset all WP mocks between tests
 // ---------------------------------------------------------------------------
 function wp_reset_mocks(): void {
-    $keys = array_filter(array_keys($GLOBALS), fn($k) => str_starts_with($k, '_wp_'));
+    $keys = array_filter(
+        array_keys($GLOBALS),
+        fn($k) => str_starts_with($k, '_wp_') && !in_array($k, ['_wp_hooks', '_wp_filters'], true)
+    );
     foreach ($keys as $key) {
         unset($GLOBALS[$key]);
     }
