@@ -69,6 +69,15 @@ backend/vendor/
 # Generated media / backups — not for VCS
 backend/generated-media/
 backend/recovery/
+backend/backups/
+backups/
+
+# Large binary archives — never commit
+*.tar.gz
+*.tar.bz2
+*.zip
+*.sql
+*.sql.gz
 
 # ============================================================
 # Lando / Docker local dev
