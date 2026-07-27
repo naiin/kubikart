@@ -8,25 +8,26 @@
 
 ## 📊 Project Completeness Summary
 
-| Category | Progress | Status | Notes |
-|----------|----------|--------|-------|
-| **Core E-Commerce** | 90% | ✅ | Shop, cart, checkout, payments working |
-| **Payments** | 100% | ✅ | Stripe + PayPal fully integrated |
-| **Shipping** | 100% | ✅ | DHL integration complete |
-| **Multi-Language** | 100% | ✅ | DE (primary) + EN via next-intl v4 |
-| **Authentication** | 100% | ✅ | Register, login, password reset |
-| **Legal Pages** | 95% | ✅ | Impressum, Datenschutz, AGB, Versand, Widerruf |
-| **GDPR Compliance** | 85% | ⚠️ | Cookie banner, DSGVO newsletter, needs email service |
-| **Email Integration** | 40% | ⚠️ | Basic (WordPress), missing transactional emails |
-| **SEO & Technical** | 60% | ⚠️ | Metadata & JSON-LD done, missing sitemap/robots.txt |
-| **Analytics** | 0% | ❌ | No tracking implemented |
-| **Production Deploy** | 0% | ❌ | Local only, needs Vercel + WordPress hosting |
+| Category              | Progress | Status | Notes                                                |
+| --------------------- | -------- | ------ | ---------------------------------------------------- |
+| **Core E-Commerce**   | 90%      | ✅     | Shop, cart, checkout, payments working               |
+| **Payments**          | 100%     | ✅     | Stripe + PayPal fully integrated                     |
+| **Shipping**          | 100%     | ✅     | DHL integration complete                             |
+| **Multi-Language**    | 100%     | ✅     | DE (primary) + EN via next-intl v4                   |
+| **Authentication**    | 100%     | ✅     | Register, login, password reset                      |
+| **Legal Pages**       | 95%      | ✅     | Impressum, Datenschutz, AGB, Versand, Widerruf       |
+| **GDPR Compliance**   | 85%      | ⚠️     | Cookie banner, DSGVO newsletter, needs email service |
+| **Email Integration** | 40%      | ⚠️     | Basic (WordPress), missing transactional emails      |
+| **SEO & Technical**   | 60%      | ⚠️     | Metadata & JSON-LD done, missing sitemap/robots.txt  |
+| **Analytics**         | 0%       | ❌     | No tracking implemented                              |
+| **Production Deploy** | 0%       | ❌     | Local only, needs Vercel + WordPress hosting         |
 
 ---
 
 # ✅ ALREADY BUILT & WORKING
 
 ## E-Commerce Functionality
+
 - ✅ Product catalog (WooCommerce integration)
 - ✅ Product detail pages with gallery, reviews, FAQ
 - ✅ Shop page with filters, sorting, search
@@ -37,12 +38,14 @@
 - ✅ Product recommendations
 
 ## Payments
+
 - ✅ Stripe integration (Card, Klarna, Giropay, iDEAL, Sofort)
 - ✅ PayPal integration (Express Checkout)
 - ✅ Webhook handlers for both providers
 - ✅ Payment status tracking
 
 ## Shipping
+
 - ✅ DHL integration (Paket & Kleinpaket)
 - ✅ Dynamic shipping rate calculation
 - ✅ Free shipping threshold (€50)
@@ -50,6 +53,7 @@
 - ✅ Tracking information in orders
 
 ## Authentication & Security
+
 - ✅ User registration with email verification
 - ✅ Login with localStorage tokens
 - ✅ Password reset via email link
@@ -60,6 +64,7 @@
 - ✅ Input validation & sanitization
 
 ## Localization (Multilingual)
+
 - ✅ German (de) as default language
 - ✅ English (en) as secondary language
 - ✅ next-intl v4 for routing and translations
@@ -68,6 +73,7 @@
 - ✅ Dynamic language switching
 
 ## Legal & Compliance Pages
+
 - ✅ **Impressum** (business/imprint information)
 - ✅ **Datenschutz** (Privacy Policy - GDPR)
 - ✅ **AGB** (Terms & Conditions)
@@ -77,6 +83,7 @@
 - ✅ Double opt-in newsletter (DSGVO-compliant)
 
 ## Marketing Pages
+
 - ✅ Homepage (Hero, Services, Products, Reviews, CTA)
 - ✅ Service landing pages (Lasergravur, Laserschnitt, 3D-Druck)
 - ✅ Personalized gifts landing
@@ -86,6 +93,7 @@
 - ✅ Contact form with bot protection
 
 ## Technical Implementation
+
 - ✅ Next.js 16 (App Router)
 - ✅ React 19 with TypeScript
 - ✅ Tailwind CSS v4
@@ -100,16 +108,19 @@
 # ⚠️ NEEDS ATTENTION (PARTIALLY IMPLEMENTED)
 
 ## Email Integration
+
 **Current State**: Basic WordPress email system
 **Missing**: Dedicated email service provider
 
 ### What's Working:
+
 - Newsletter signup with double opt-in
 - Confirmation email link sent (via WordPress)
 - Order confirmation emails (WooCommerce native)
 - Password reset emails (WooCommerce user emails)
 
 ### What's Missing:
+
 - [ ] **No SMTP integration** (Resend, Mailgun, Postmark)
 - [ ] No transactional email templates in frontend
 - [ ] No email preview/testing system
@@ -117,6 +128,7 @@
 - [ ] No bounce handling
 
 **Required Actions**:
+
 1. Choose email provider (Resend recommended for Next.js):
    ```bash
    pnpm add resend
@@ -132,10 +144,12 @@
 ---
 
 ## SEO & Technical
+
 **Current State**: 70% complete
 **Missing**: Sitemap & robots.txt
 
 ### What's Working:
+
 - ✅ Page metadata (title, description, OG tags)
 - ✅ JSON-LD structured data (products, shop, breadcrumbs)
 - ✅ Mobile-friendly design
@@ -144,6 +158,7 @@
 - ✅ Internal linking strategy
 
 ### What's Missing:
+
 - [ ] **`sitemap.xml`** (static or dynamic)
 - [ ] **`robots.txt`**
 - [ ] Canonical tags
@@ -152,7 +167,9 @@
 - [ ] Core Web Vitals monitoring
 
 **Required Actions**:
+
 1. Create `public/robots.txt`:
+
    ```
    User-agent: *
    Allow: /
@@ -165,21 +182,23 @@
    ```typescript
    export default async function sitemap() {
      return [
-       { url: 'https://kubikart.de', changeFrequency: 'weekly', priority: 1 },
-       { url: 'https://kubikart.de/de', changeFrequency: 'weekly', priority: 1 },
-       { url: 'https://kubikart.de/en', changeFrequency: 'weekly', priority: 0.8 },
+       { url: "https://kubikart.de", changeFrequency: "weekly", priority: 1 },
+       { url: "https://kubikart.de/de", changeFrequency: "weekly", priority: 1 },
+       { url: "https://kubikart.de/en", changeFrequency: "weekly", priority: 0.8 },
        // ... fetch products from WooCommerce dynamically
-     ]
+     ];
    }
    ```
 
 ---
 
 ## GDPR & Legal Compliance
+
 **Current State**: 80% complete
 **Missing**: Email service and consent management refinement
 
 ### What's Working:
+
 - ✅ Privacy policy (Datenschutz page)
 - ✅ Cookie consent banner
 - ✅ Newsletter double opt-in (DSGVO)
@@ -191,6 +210,7 @@
 - ✅ No third-party trackers (yet)
 
 ### What's Missing:
+
 - [ ] Consent banner should block analytics (when implemented)
 - [ ] No data deletion request endpoint
 - [ ] No GDPR-compliant email service configured
@@ -198,6 +218,7 @@
 - [ ] Minimal cookie policy detail
 
 **Required Actions**:
+
 1. Update privacy policy with specific email service provider details
 2. Create API endpoint for data deletion requests: `/api/gdpr/delete-account`
 3. Add DPA (Data Processing Agreement) with chosen email provider
@@ -207,10 +228,12 @@
 ---
 
 ## Analytics & Conversion Tracking
+
 **Current State**: 0% implemented
 **Missing**: All tracking
 
 ### What's Missing:
+
 - [ ] Google Analytics 4 (GA4)
 - [ ] Conversion tracking (purchases, newsletter signups, contact forms)
 - [ ] Funnel analysis (product view → add to cart → purchase)
@@ -219,6 +242,7 @@
 - [ ] A/B testing framework
 
 **Required Actions**:
+
 1. Set up Google Analytics 4:
    ```bash
    pnpm add @react-google-analytics/core
@@ -239,9 +263,11 @@
 # ❌ NOT IMPLEMENTED (NEEDED FOR PRODUCTION)
 
 ## Deployment & Hosting
+
 **Status**: 0% — needs setup
 
 ### Missing:
+
 - [ ] **Vercel deployment** (frontend)
 - [ ] **WordPress hosting** (managed or VPS backend)
 - [ ] **Database backups**
@@ -256,6 +282,7 @@
 - [ ] **Performance monitoring** (Core Web Vitals, Lighthouse CI)
 
 **Recommended Setup**:
+
 ```
 Frontend:  Vercel (auto-deploy from main branch)
 Backend:   WordPress on managed hosting (Kinsta, WP Engine, or VPS)
@@ -268,9 +295,11 @@ Monitoring: Sentry (errors), Vercel Analytics (Core Web Vitals)
 ---
 
 ## Advanced E-Commerce Features
+
 **Status**: Not needed initially, but roadmap items
 
 ### Nice-to-Have (Not Required):
+
 - [ ] Wishlist / saved items
 - [ ] Product reviews with photos
 - [ ] Related products & cross-selling
@@ -288,22 +317,24 @@ Monitoring: Sentry (errors), Vercel Analytics (Core Web Vitals)
 # 🎯 GERMAN E-COMMERCE LAW COMPLIANCE
 
 ## Legal Requirements ✅ COVERED
-| Requirement | Status | Implementation |
-|-------------|--------|-----------------|
-| **Impressum** (Business info) | ✅ | Legal page with complete business data |
-| **Datenschutz** (Privacy policy) | ✅ | GDPR-compliant privacy policy |
-| **AGB** (Terms & conditions) | ✅ | Complete T&Cs page |
-| **Widerruf** (Right of withdrawal) | ✅ | 14-day cancellation policy page |
-| **Versand** (Shipping info) | ✅ | Shipping costs & methods displayed |
-| **Price transparency** | ✅ | Final price shown in checkout |
-| **GDPR consent** | ✅ | Cookie banner + newsletter opt-in |
-| **Order confirmation** | ✅ | Sent via WooCommerce |
-| **Invoice generation** | ✅ | WooCommerce generates PDFs |
-| **Data retention** | ⚠️ | Not explicitly enforced in code |
-| **Payment security** | ✅ | PCI compliance via Stripe/PayPal |
-| **Consumer rights** | ✅ | Clearly stated in AGB/Widerruf |
+
+| Requirement                        | Status | Implementation                         |
+| ---------------------------------- | ------ | -------------------------------------- |
+| **Impressum** (Business info)      | ✅     | Legal page with complete business data |
+| **Datenschutz** (Privacy policy)   | ✅     | GDPR-compliant privacy policy          |
+| **AGB** (Terms & conditions)       | ✅     | Complete T&Cs page                     |
+| **Widerruf** (Right of withdrawal) | ✅     | 14-day cancellation policy page        |
+| **Versand** (Shipping info)        | ✅     | Shipping costs & methods displayed     |
+| **Price transparency**             | ✅     | Final price shown in checkout          |
+| **GDPR consent**                   | ✅     | Cookie banner + newsletter opt-in      |
+| **Order confirmation**             | ✅     | Sent via WooCommerce                   |
+| **Invoice generation**             | ✅     | WooCommerce generates PDFs             |
+| **Data retention**                 | ⚠️     | Not explicitly enforced in code        |
+| **Payment security**               | ✅     | PCI compliance via Stripe/PayPal       |
+| **Consumer rights**                | ✅     | Clearly stated in AGB/Widerruf         |
 
 ## Tax Compliance ✅ COVERED
+
 - **VAT Status**: Kleine Unternehmerregelung (Small business exemption)
 - **Implementation**: No tax calculated (exempt under €22,500 annual revenue)
 - **Display**: "Gem. § 19 UStG wird keine Umsatzsteuer berechnet"
@@ -311,6 +342,7 @@ Monitoring: Sentry (errors), Vercel Analytics (Core Web Vitals)
 - **Invoices**: WooCommerce handles automatically
 
 ## E-Sign Law ✅ COVERED
+
 - Electronic signatures on order (Terms accepted in checkout)
 - No handwritten signature required
 
@@ -319,6 +351,7 @@ Monitoring: Sentry (errors), Vercel Analytics (Core Web Vitals)
 # 📋 STEP-BY-STEP COMPLETION ROADMAP
 
 ## Phase 1: Email Service (1-2 weeks)
+
 **Priority**: HIGH — blocks order notifications
 
 1. Set up Resend account (free tier: 100 emails/day)
@@ -337,6 +370,7 @@ Monitoring: Sentry (errors), Vercel Analytics (Core Web Vitals)
 ---
 
 ## Phase 2: SEO & Technical (1 week)
+
 **Priority**: HIGH — needed for search visibility
 
 1. Create `public/robots.txt`
@@ -352,6 +386,7 @@ Monitoring: Sentry (errors), Vercel Analytics (Core Web Vitals)
 ---
 
 ## Phase 3: Analytics (1 week)
+
 **Priority**: MEDIUM — needed for decision-making
 
 1. Create Google Analytics 4 property
@@ -366,9 +401,11 @@ Monitoring: Sentry (errors), Vercel Analytics (Core Web Vitals)
 ---
 
 ## Phase 4: Deployment & Hosting (1-2 weeks)
+
 **Priority**: CRITICAL — required for production launch
 
 ### Frontend (Vercel)
+
 1. Push repo to GitHub (already done)
 2. Connect Vercel to GitHub repo
 3. Set environment variables in Vercel dashboard
@@ -377,6 +414,7 @@ Monitoring: Sentry (errors), Vercel Analytics (Core Web Vitals)
 6. Enable preview deployments for PRs
 
 ### Backend (WordPress Hosting)
+
 1. Choose hosting provider (Kinsta, WP Engine, or DigitalOcean VPS)
 2. Install WordPress & WooCommerce
 3. Install custom plugins (kubikart-newsletter, kubikart-security)
@@ -386,6 +424,7 @@ Monitoring: Sentry (errors), Vercel Analytics (Core Web Vitals)
 7. Optimize database & caching (WP Super Cache)
 
 ### Configuration
+
 1. Connect frontend API calls to production WordPress URL
 2. Configure Stripe/PayPal keys (production)
 3. Configure DHL credentials (production)
@@ -398,6 +437,7 @@ Monitoring: Sentry (errors), Vercel Analytics (Core Web Vitals)
 ---
 
 ## Phase 5: Optional Enhancements (Post-Launch)
+
 **Priority**: LOW — nice-to-have
 
 - [ ] Heatmap tracking (Hotjar)
@@ -415,30 +455,35 @@ Monitoring: Sentry (errors), Vercel Analytics (Core Web Vitals)
 # 🚨 CRITICAL BLOCKERS FOR PRODUCTION
 
 ## 1. Email Service Provider (Required)
+
 - **Issue**: WordPress email system not reliable for production
 - **Solution**: Integrate Resend, Mailgun, or similar
 - **Timeline**: 1 week
 - **Cost**: €10–50/month
 
 ## 2. Database Backups (Required)
+
 - **Issue**: No backup strategy documented
 - **Solution**: Automated daily backups to S3/B2
 - **Timeline**: 1 day
 - **Cost**: €5–20/month
 
 ## 3. Monitoring & Error Tracking (Required)
+
 - **Issue**: No way to know if site is down or has errors
 - **Solution**: Sentry + Vercel Analytics + uptime monitoring
 - **Timeline**: 2 days
 - **Cost**: €0–50/month (Sentry has free tier)
 
 ## 4. WordPress Hosting (Required)
+
 - **Issue**: Currently running on Lando (local dev only)
 - **Solution**: Move to managed WordPress hosting (Kinsta, WP Engine) or VPS
 - **Timeline**: 3–5 days
 - **Cost**: €300–1000/year
 
 ## 5. Domain & DNS (Required)
+
 - **Issue**: No production domain configured
 - **Solution**: Register kubikart.de, configure DNS, SSL
 - **Timeline**: 1 day
@@ -448,42 +493,46 @@ Monitoring: Sentry (errors), Vercel Analytics (Core Web Vitals)
 
 # 💰 ESTIMATED COSTS (First Year)
 
-| Item | Cost | Notes |
-|------|------|-------|
-| **Domain** | €12–20 | kubikart.de registration |
-| **Frontend Hosting (Vercel)** | €0–240 | Free tier + optional pro ($20/mo) |
-| **Backend Hosting** | €300–800 | Managed WP or VPS |
-| **Email Service** | €10–50 | Resend/Mailgun |
-| **CDN (Optional)** | €0–50 | Cloudflare free or paid |
-| **SSL Certificate** | €0 | Auto-included with hosting |
-| **Database Backups** | €5–20 | S3/B2 storage |
-| **Monitoring** | €0–50 | Sentry free + Vercel included |
-| **Google Workspace** | €60 | Email for team (optional) |
-| **Total (Year 1)** | **€397–1,230** | **Minimum: €400** |
+| Item                          | Cost           | Notes                             |
+| ----------------------------- | -------------- | --------------------------------- |
+| **Domain**                    | €12–20         | kubikart.de registration          |
+| **Frontend Hosting (Vercel)** | €0–240         | Free tier + optional pro ($20/mo) |
+| **Backend Hosting**           | €300–800       | Managed WP or VPS                 |
+| **Email Service**             | €10–50         | Resend/Mailgun                    |
+| **CDN (Optional)**            | €0–50          | Cloudflare free or paid           |
+| **SSL Certificate**           | €0             | Auto-included with hosting        |
+| **Database Backups**          | €5–20          | S3/B2 storage                     |
+| **Monitoring**                | €0–50          | Sentry free + Vercel included     |
+| **Google Workspace**          | €60            | Email for team (optional)         |
+| **Total (Year 1)**            | **€397–1,230** | **Minimum: €400**                 |
 
 ---
 
 # 📞 QUICK START: NEXT STEPS
 
 ## This Week
+
 - [ ] Choose email provider (recommend: Resend)
 - [ ] Create Resend account & get API key
 - [ ] Update order confirmation API route to send emails
 - [ ] Test in development
 
 ## Next Week
+
 - [ ] Set up Vercel account & deploy frontend
 - [ ] Create `sitemap.ts` and `robots.txt`
 - [ ] Set up Google Search Console & Bing Webmaster
 - [ ] Submit sitemap to search engines
 
 ## Following Week
+
 - [ ] Choose WordPress hosting provider
 - [ ] Migrate WordPress from Lando to production
 - [ ] Configure SSL, domain, email
 - [ ] Set up daily backups
 
 ## Before Launch
+
 - [ ] Update production API URLs in env vars
 - [ ] Configure Stripe/PayPal production keys
 - [ ] Test complete checkout flow
@@ -497,6 +546,7 @@ Monitoring: Sentry (errors), Vercel Analytics (Core Web Vitals)
 # ✅ COMPLETION CHECKLIST (MARK OFF AS YOU GO)
 
 ### Essential (MVP)
+
 - [ ] Email service integrated (Resend or Mailgun)
 - [ ] Sitemap.xml generated & submitted
 - [ ] Robots.txt created
@@ -509,6 +559,7 @@ Monitoring: Sentry (errors), Vercel Analytics (Core Web Vitals)
 - [ ] GDPR compliance audit complete
 
 ### Important (Should Have)
+
 - [ ] Google Analytics 4 tracking
 - [ ] Error monitoring (Sentry)
 - [ ] Uptime monitoring
@@ -519,6 +570,7 @@ Monitoring: Sentry (errors), Vercel Analytics (Core Web Vitals)
 - [ ] Shipping notification emails working
 
 ### Nice-to-Have (Could Have)
+
 - [ ] Heatmap tracking
 - [ ] Customer reviews with photos
 - [ ] Email marketing sequences

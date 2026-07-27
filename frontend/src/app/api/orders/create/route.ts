@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { wcApi } from "@/lib/woocommerce";
+import { sendOrderConfirmation } from "@/lib/email";
 
 interface OrderItem {
   name: string;
@@ -41,8 +42,32 @@ interface CreateOrderBody {
 }
 
 export async function POST(request: NextRequest) {
+  // Require either a valid auth token (logged-in user) or a billing email (guest checkout).
+  // If a token is present, verify it encodes the claimed customer id.
+  const authToken = request.headers.get("x-auth-token") ?? "";
+  const customerId = request.headers.get("x-customer-id") ?? "";
+
+  if (authToken && customerId) {
+    try {
+      const decoded = Buffer.from(authToken, "base64").toString("utf8");
+      const [tokenCustomerId] = decoded.split(":");
+      if (tokenCustomerId !== customerId) {
+        return NextResponse.json({ error: "Invalid auth token" }, { status: 401 });
+      }
+    } catch {
+      return NextResponse.json({ error: "Invalid auth token" }, { status: 401 });
+    }
+  }
+
   try {
     const body: CreateOrderBody = await request.json();
+    const acceptLang = request.headers.get("accept-language") ?? "";
+    const locale = acceptLang.startsWith("en") ? "en" : "de";
+
+    // Require a billing email so every order is traceable
+    if (!body.billing?.email) {
+      return NextResponse.json({ error: "Billing email is required" }, { status: 400 });
+    }
 
     if (!body.items || body.items.length === 0) {
       return NextResponse.json({ error: "No items provided" }, { status: 400 });
@@ -75,6 +100,7 @@ export async function POST(request: NextRequest) {
       payment_method_title: body.payment_method_title,
       set_paid: body.set_paid ?? false,
       line_items: lineItems,
+      meta_data: [{ key: "locale", value: locale }],
     };
 
     if (body.transaction_id) {
@@ -97,6 +123,39 @@ export async function POST(request: NextRequest) {
       method: "POST",
       body: orderData,
     });
+
+    // Send order confirmation email
+    if (body.billing?.email) {
+      try {
+        await sendOrderConfirmation(
+          body.billing.email,
+          {
+            orderId: order.id,
+            orderNumber: `#${order.id}`,
+            total: order.total,
+            items: body.items.map((item) => ({
+              name: item.name,
+              quantity: item.quantity,
+              price: item.price,
+            })),
+            customer: {
+              name: `${body.billing.first_name || ""} ${body.billing.last_name || ""}`.trim(),
+            },
+            shipping: {
+              address: body.shipping?.address_1 || "",
+              city: body.shipping?.city || "",
+              postalCode: body.shipping?.postcode || "",
+            },
+          },
+          locale,
+        );
+
+        console.log(`[Order] Confirmation email sent to ${body.billing.email}`);
+      } catch (err) {
+        console.error("Failed to send order confirmation email:", err);
+        // Don't fail the order creation if email fails
+      }
+    }
 
     return NextResponse.json({ id: order.id, status: order.status, total: order.total });
   } catch (error) {

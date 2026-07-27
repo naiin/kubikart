@@ -21,9 +21,9 @@ export default function CheckoutSuccessPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Zahlung erfolgreich!</h1>
-        <p className="text-gray-600 mb-6">Vielen Dank für Ihre Bestellung. Sie erhalten in Kürze eine Bestätigungsmail.</p>
-        <Link href="/shop" className="inline-flex items-center rounded-lg bg-[royalblue] px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("paymentSuccessTitle")}</h1>
+        <p className="text-gray-600 mb-6">{t("paymentSuccessDesc")}</p>
+        <Link href="/shop" className="inline-flex items-center rounded-lg bg-accent-600 px-6 py-3 text-sm font-semibold text-white hover:bg-accent-500">
           {t("continueShopping")}
         </Link>
       </div>

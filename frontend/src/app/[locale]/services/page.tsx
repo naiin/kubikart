@@ -65,12 +65,12 @@ export default async function ServicesPage() {
           <Link
             key={service.key}
             href={service.href}
-            className="group flex flex-col rounded-2xl border border-gray-200 p-8 hover:border-[royalblue] hover:shadow-xl transition-all"
+            className="group flex flex-col rounded-2xl border border-gray-200 p-8 hover:border-navy-900 hover:shadow-xl transition-all"
           >
             <span className="text-4xl mb-4">{service.icon}</span>
-            <h2 className="text-2xl font-bold text-gray-900 group-hover:text-[royalblue] transition-colors">{t(`services.${service.key}.title`)}</h2>
+            <h2 className="text-2xl font-bold text-gray-900 group-hover:text-navy-900 transition-colors">{t(`services.${service.key}.title`)}</h2>
             <p className="mt-3 text-gray-600 flex-1">{t(`services.${service.key}.description`)}</p>
-            <span className="mt-6 inline-flex items-center text-sm font-semibold text-[royalblue]">{t(`services.${service.key}.cta`)} →</span>
+            <span className="mt-6 inline-flex items-center text-sm font-semibold text-navy-900">{t(`services.${service.key}.cta`)} →</span>
           </Link>
         ))}
       </div>

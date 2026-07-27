@@ -95,9 +95,9 @@ export default function CheckoutPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Bestellung aufgegeben!</h1>
-          <p className="text-gray-600 mb-6">Vielen Dank für Ihre Bestellung. Sie erhalten eine Bestätigungsmail.</p>
-          <Link href="/shop" className="inline-flex items-center rounded-lg bg-[royalblue] px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("orderPlacedTitle")}</h1>
+          <p className="text-gray-600 mb-6">{t("orderPlacedDesc")}</p>
+          <Link href="/shop" className="inline-flex items-center rounded-lg bg-accent-600 px-6 py-3 text-sm font-semibold text-white hover:bg-accent-500">
             {t("continueShopping")}
           </Link>
         </div>
@@ -110,7 +110,7 @@ export default function CheckoutPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-500 text-lg mb-4">{t("emptyCart")}</p>
-          <Link href="/shop" className="text-sm font-semibold text-[royalblue] hover:underline">
+          <Link href="/shop" className="text-sm font-semibold text-navy-900 hover:underline">
             ← {t("continueShopping")}
           </Link>
         </div>
@@ -125,9 +125,17 @@ export default function CheckoutPage() {
   async function handlePaymentSuccess(details: { method: string; id: string }) {
     // Create WooCommerce order
     try {
+      const orderHeaders: Record<string, string> = { "Content-Type": "application/json" };
+      if (user) {
+        const storedToken = localStorage.getItem("kubikart-token");
+        if (storedToken) {
+          orderHeaders["x-auth-token"] = storedToken;
+          orderHeaders["x-customer-id"] = String(user.id);
+        }
+      }
       await fetch("/api/orders/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: orderHeaders,
         body: JSON.stringify({
           items: cart.map((item) => ({
             name: item.name,
@@ -172,15 +180,14 @@ export default function CheckoutPage() {
     }
 
     // Clear cart and show success
-    localStorage.removeItem("kubikart-cart");
-    window.dispatchEvent(new Event("cart-updated"));
+    writeCart([]);
     setOrderPlaced(true);
   }
 
   const steps: { key: Step; label: string }[] = [
-    { key: "information", label: "Information" },
-    { key: "shipping", label: "Versand" },
-    { key: "payment", label: "Zahlung" },
+    { key: "information", label: t("stepInformation") },
+    { key: "shipping", label: t("stepShipping") },
+    { key: "payment", label: t("stepPayment") },
   ];
 
   return (
@@ -190,7 +197,7 @@ export default function CheckoutPage() {
           {/* Left: Form */}
           <div className="lg:col-span-7 px-4 sm:px-8 lg:px-12 py-8 lg:py-12">
             {/* Logo */}
-            <Link href="/" className="text-2xl font-bold text-[royalblue]">
+            <Link href="/" className="text-2xl font-bold text-navy-900">
               KubikArt
             </Link>
 
@@ -211,7 +218,7 @@ export default function CheckoutPage() {
                           return;
                         setStep(s.key);
                       }}
-                      className={`font-medium transition-colors ${step === s.key ? "text-[royalblue]" : "text-gray-500 hover:text-gray-700"}`}
+                      className={`font-medium transition-colors ${step === s.key ? "text-navy-900" : "text-gray-500 hover:text-gray-700"}`}
                     >
                       {s.label}
                     </button>
@@ -227,9 +234,9 @@ export default function CheckoutPage() {
                   {/* Contact */}
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <h2 className="text-lg font-semibold text-gray-900">Kontaktinformationen</h2>
+                      <h2 className="text-lg font-semibold text-gray-900">{t("checkoutContact")}</h2>
                       {!user && (
-                        <Link href="/account" className="text-sm text-[royalblue] hover:underline">
+                        <Link href="/account" className="text-sm text-navy-900 hover:underline">
                           {t("login")}
                         </Link>
                       )}
@@ -241,19 +248,19 @@ export default function CheckoutPage() {
                       onChange={handleChange}
                       placeholder="E-Mail-Adresse"
                       required
-                      className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-[royalblue] focus:ring-1 focus:ring-[royalblue] outline-none"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none"
                     />
                   </div>
 
                   {/* Shipping Address */}
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900 mb-3">Lieferadresse</h2>
+                    <h2 className="text-lg font-semibold text-gray-900 mb-3">{t("checkoutAddress")}</h2>
                     <div className="space-y-3">
                       <select
                         name="country"
                         value={form.country}
                         onChange={handleChange}
-                        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-[royalblue] focus:ring-1 focus:ring-[royalblue] outline-none bg-white"
+                        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none bg-white"
                       >
                         <option value="DE">Deutschland</option>
                         <option value="AT">Österreich</option>
@@ -271,7 +278,7 @@ export default function CheckoutPage() {
                           onChange={handleChange}
                           placeholder={t("firstName")}
                           required
-                          className="rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-[royalblue] focus:ring-1 focus:ring-[royalblue] outline-none"
+                          className="rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none"
                         />
                         <input
                           type="text"
@@ -280,7 +287,7 @@ export default function CheckoutPage() {
                           onChange={handleChange}
                           placeholder={t("lastName")}
                           required
-                          className="rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-[royalblue] focus:ring-1 focus:ring-[royalblue] outline-none"
+                          className="rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none"
                         />
                       </div>
 
@@ -291,7 +298,7 @@ export default function CheckoutPage() {
                         onChange={handleChange}
                         placeholder="Straße und Hausnummer"
                         required
-                        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-[royalblue] focus:ring-1 focus:ring-[royalblue] outline-none"
+                        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none"
                       />
 
                       <input
@@ -300,7 +307,7 @@ export default function CheckoutPage() {
                         value={form.apartment}
                         onChange={handleChange}
                         placeholder="Wohnung, Suite, etc. (optional)"
-                        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-[royalblue] focus:ring-1 focus:ring-[royalblue] outline-none"
+                        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none"
                       />
 
                       <div className="grid grid-cols-2 gap-3">
@@ -311,7 +318,7 @@ export default function CheckoutPage() {
                           onChange={handleChange}
                           placeholder={t("postalCode")}
                           required
-                          className="rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-[royalblue] focus:ring-1 focus:ring-[royalblue] outline-none"
+                          className="rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none"
                         />
                         <input
                           type="text"
@@ -320,7 +327,7 @@ export default function CheckoutPage() {
                           onChange={handleChange}
                           placeholder={t("city")}
                           required
-                          className="rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-[royalblue] focus:ring-1 focus:ring-[royalblue] outline-none"
+                          className="rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none"
                         />
                       </div>
 
@@ -330,7 +337,7 @@ export default function CheckoutPage() {
                         value={form.phone}
                         onChange={handleChange}
                         placeholder={`${t("phone")} (optional)`}
-                        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-[royalblue] focus:ring-1 focus:ring-[royalblue] outline-none"
+                        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none"
                       />
                     </div>
                   </div>
@@ -342,7 +349,7 @@ export default function CheckoutPage() {
                       setStep("shipping");
                     }}
                     disabled={!form.email || !form.firstName || !form.lastName || !form.address || !form.postalCode || !form.city}
-                    className="w-full rounded-lg bg-[royalblue] py-3.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full rounded-lg bg-accent-600 py-3.5 text-sm font-semibold text-white hover:bg-accent-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Weiter zum Versand →
                   </button>
@@ -358,7 +365,7 @@ export default function CheckoutPage() {
                       <div>
                         <span className="text-gray-500">Kontakt:</span> <span className="text-gray-900">{form.email}</span>
                       </div>
-                      <button type="button" onClick={() => setStep("information")} className="text-[royalblue] text-xs hover:underline">
+                      <button type="button" onClick={() => setStep("information")} className="text-navy-900 text-xs hover:underline">
                         Ändern
                       </button>
                     </div>
@@ -369,7 +376,7 @@ export default function CheckoutPage() {
                           {form.address}, {form.postalCode} {form.city}
                         </span>
                       </div>
-                      <button type="button" onClick={() => setStep("information")} className="text-[royalblue] text-xs hover:underline">
+                      <button type="button" onClick={() => setStep("information")} className="text-navy-900 text-xs hover:underline">
                         Ändern
                       </button>
                     </div>
@@ -377,7 +384,7 @@ export default function CheckoutPage() {
 
                   {/* Shipping methods */}
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900 mb-3">Versandart</h2>
+                    <h2 className="text-lg font-semibold text-gray-900 mb-3">{t("checkoutShippingMethod")}</h2>
                     <div className="space-y-2">
                       {shippingLoading ? (
                         <div className="rounded-lg border border-gray-200 p-4 text-sm text-gray-500 text-center">Versandkosten werden berechnet…</div>
@@ -385,7 +392,7 @@ export default function CheckoutPage() {
                         shippingRates.map((rate) => (
                           <label
                             key={rate.id}
-                            className={`flex items-center justify-between rounded-lg border p-4 cursor-pointer transition-colors ${form.shippingMethod === rate.id ? "border-[royalblue] bg-blue-50" : "border-gray-200 hover:border-gray-300"}`}
+                            className={`flex items-center justify-between rounded-lg border p-4 cursor-pointer transition-colors ${form.shippingMethod === rate.id ? "border-accent-600 bg-accent-100" : "border-gray-200 hover:border-gray-300"}`}
                           >
                             <div className="flex items-center gap-3">
                               <input
@@ -394,7 +401,7 @@ export default function CheckoutPage() {
                                 value={rate.id}
                                 checked={form.shippingMethod === rate.id}
                                 onChange={handleChange}
-                                className="text-[royalblue]"
+                                className="text-navy-900"
                               />
                               <div>
                                 <p className="text-sm font-medium text-gray-900">{rate.name}</p>
@@ -419,7 +426,7 @@ export default function CheckoutPage() {
                     <button
                       type="button"
                       onClick={() => setStep("payment")}
-                      className="flex-1 rounded-lg bg-[royalblue] py-3.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+                      className="flex-1 rounded-lg bg-accent-600 py-3.5 text-sm font-semibold text-white hover:bg-accent-500 transition-colors"
                     >
                       Weiter zur Zahlung →
                     </button>
@@ -436,7 +443,7 @@ export default function CheckoutPage() {
                       <div>
                         <span className="text-gray-500">Kontakt:</span> <span className="text-gray-900">{form.email}</span>
                       </div>
-                      <button type="button" onClick={() => setStep("information")} className="text-[royalblue] text-xs hover:underline">
+                      <button type="button" onClick={() => setStep("information")} className="text-navy-900 text-xs hover:underline">
                         Ändern
                       </button>
                     </div>
@@ -447,7 +454,7 @@ export default function CheckoutPage() {
                           {form.address}, {form.postalCode} {form.city}
                         </span>
                       </div>
-                      <button type="button" onClick={() => setStep("information")} className="text-[royalblue] text-xs hover:underline">
+                      <button type="button" onClick={() => setStep("information")} className="text-navy-900 text-xs hover:underline">
                         Ändern
                       </button>
                     </div>
@@ -458,7 +465,7 @@ export default function CheckoutPage() {
                           {selectedRate ? `${selectedRate.name} (${selectedRate.estimatedDays} Werktage)` : "Standard (3–5 Werktage)"}
                         </span>
                       </div>
-                      <button type="button" onClick={() => setStep("shipping")} className="text-[royalblue] text-xs hover:underline">
+                      <button type="button" onClick={() => setStep("shipping")} className="text-navy-900 text-xs hover:underline">
                         Ändern
                       </button>
                     </div>
@@ -466,7 +473,7 @@ export default function CheckoutPage() {
 
                   {/* Payment methods */}
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900 mb-3">Zahlungsart</h2>
+                    <h2 className="text-lg font-semibold text-gray-900 mb-3">{t("checkoutPaymentMethod")}</h2>
                     {paymentError && <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">{paymentError}</div>}
                     <CheckoutPayment total={total} onSuccess={handlePaymentSuccess} onError={(msg) => setPaymentError(msg)} />
                   </div>

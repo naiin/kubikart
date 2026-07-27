@@ -36,7 +36,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="mx-auto max-w-md px-4 sm:px-6 py-12">
       <div className="text-center mb-8">
-        <Link href="/" className="text-3xl font-bold text-[royalblue]">
+        <Link href="/" className="text-3xl font-bold text-navy-900">
           KubikArt
         </Link>
         <h1 className="mt-4 text-xl font-semibold text-gray-900">{t("forgotPasswordTitle")}</h1>
@@ -61,7 +61,7 @@ export default function ForgotPasswordPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[royalblue] focus:ring-1 focus:ring-[royalblue] outline-none"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none"
               placeholder="you@example.com"
             />
           </div>
@@ -69,7 +69,7 @@ export default function ForgotPasswordPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-lg bg-[royalblue] py-3 text-sm font-semibold text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-lg bg-accent-600 py-3 text-sm font-semibold text-white hover:bg-accent-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? t("forgotPasswordSending") : t("forgotPasswordSubmit")}
           </button>
@@ -77,7 +77,7 @@ export default function ForgotPasswordPage() {
       )}
 
       <p className="mt-6 text-center text-sm text-gray-600">
-        <Link href="/account" className="font-semibold text-[royalblue] hover:underline">
+        <Link href="/account" className="font-semibold text-navy-900 hover:underline">
           {t("backToLogin")}
         </Link>
       </p>

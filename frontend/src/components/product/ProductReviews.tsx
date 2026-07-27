@@ -1,6 +1,5 @@
 "use client";
 
-import { Star } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 interface Review {
@@ -10,6 +9,14 @@ interface Review {
   review: string;
   date_created: string;
   verified: boolean;
+}
+
+function StarIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+    </svg>
+  );
 }
 
 export function ProductReviews({ reviews }: { reviews: Review[] }) {
@@ -32,7 +39,7 @@ export function ProductReviews({ reviews }: { reviews: Review[] }) {
       <div className="mb-8 flex items-center gap-3 rounded-2xl border border-gray-200 bg-cream-50 p-4">
         <div className="flex gap-0.5">
           {Array.from({ length: 5 }).map((_, i) => (
-            <Star key={i} className={`h-5 w-5 ${i < Math.round(avgRating) ? "fill-accent-600 text-accent-600" : "fill-gray-200 text-gray-200"}`} />
+            <StarIcon key={i} className={`h-5 w-5 ${i < Math.round(avgRating) ? "fill-accent-600 text-accent-600" : "fill-gray-200 text-gray-200"}`} />
           ))}
         </div>
         <span className="text-sm font-semibold text-navy-900">{avgRating.toFixed(1)} / 5</span>
@@ -49,7 +56,7 @@ export function ProductReviews({ reviews }: { reviews: Review[] }) {
               <div className="flex items-center gap-2">
                 <div className="flex gap-0.5">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className={`h-3.5 w-3.5 ${i < review.rating ? "fill-accent-600 text-accent-600" : "fill-gray-200 text-gray-200"}`} />
+                    <StarIcon key={i} className={`h-3.5 w-3.5 ${i < review.rating ? "fill-accent-600 text-accent-600" : "fill-gray-200 text-gray-200"}`} />
                   ))}
                 </div>
                 <span className="text-sm font-semibold text-navy-900">{review.reviewer}</span>

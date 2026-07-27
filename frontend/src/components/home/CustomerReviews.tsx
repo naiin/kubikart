@@ -1,6 +1,13 @@
 import { getAllReviews } from "@/lib/woocommerce";
 import { getTranslations } from "next-intl/server";
-import { Star } from "lucide-react";
+
+function StarIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+    </svg>
+  );
+}
 
 export async function CustomerReviews() {
   const t = await getTranslations("homepage");
@@ -27,7 +34,7 @@ export async function CustomerReviews() {
             <article key={review.id} className="flex flex-col rounded-2xl border border-gray-200 bg-cream-50 p-6">
               <div className="flex gap-0.5 mb-3">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className={`h-4 w-4 ${i < review.rating ? "fill-accent-600 text-accent-600" : "fill-gray-200 text-gray-200"}`} />
+                  <StarIcon key={i} className={`h-4 w-4 ${i < review.rating ? "fill-accent-600 text-accent-600" : "fill-gray-200 text-gray-200"}`} />
                 ))}
               </div>
               <p className="flex-1 text-sm leading-relaxed text-gray-700" dangerouslySetInnerHTML={{ __html: review.review }} />

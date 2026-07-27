@@ -67,8 +67,8 @@ export default function OrdersPage() {
   if (!user) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-16 text-center">
-        <p className="text-gray-500 mb-4">Bitte melden Sie sich an.</p>
-        <Link href="/account" className="text-sm font-semibold text-[royalblue] hover:underline">
+        <p className="text-gray-500 mb-4">{t("pleaseLogin")}</p>
+        <Link href="/account" className="text-sm font-semibold text-navy-900 hover:underline">
           {tc("login")} →
         </Link>
       </div>
@@ -89,7 +89,7 @@ export default function OrdersPage() {
     <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-gray-900">{t("orderHistory")}</h1>
-        <Link href="/account" className="text-sm text-[royalblue] hover:underline">
+        <Link href="/account" className="text-sm text-navy-900 hover:underline">
           ← {t("dashboard")}
         </Link>
       </div>
@@ -98,7 +98,7 @@ export default function OrdersPage() {
         <div className="rounded-xl border border-gray-200 p-12 text-center">
           <span className="text-4xl">📦</span>
           <p className="mt-4 text-gray-500">{t("noOrders")}</p>
-          <Link href="/shop" className="mt-4 inline-flex items-center text-sm font-semibold text-[royalblue] hover:underline">
+          <Link href="/shop" className="mt-4 inline-flex items-center text-sm font-semibold text-navy-900 hover:underline">
             {tc("continueShopping")} →
           </Link>
         </div>

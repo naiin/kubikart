@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { checkForSpam } from "@/lib/security";
+import { sendNewsletterConfirmation } from "@/lib/email";
 
 const WP_URL = process.env.NEXT_PUBLIC_WORDPRESS_URL!;
 const WP_AUTH = "Basic " + Buffer.from(`${process.env.WP_APP_USER}:${process.env.WP_APP_PASSWORD}`).toString("base64");
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://kubikart-frontend.vercel.app";
 
 // Rate limiting
 const submissions = new Map<string, number[]>();
@@ -13,8 +15,9 @@ const RATE_WINDOW = 600_000; // 10 min
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
   const timestamps = submissions.get(ip)?.filter((t) => now - t < RATE_WINDOW) || [];
+  timestamps.push(now);
   submissions.set(ip, timestamps);
-  return timestamps.length >= RATE_LIMIT;
+  return timestamps.length > RATE_LIMIT;
 }
 
 export async function POST(request: Request) {
@@ -45,6 +48,8 @@ export async function POST(request: Request) {
   }
 
   const sanitizedEmail = email.trim().toLowerCase().slice(0, 254);
+  const acceptLang = request.headers.get("accept-language") ?? "";
+  const locale = acceptLang.startsWith("en") ? "en" : "de";
 
   // Generate a confirmation token for double opt-in
   const token = crypto.randomBytes(32).toString("hex");
@@ -82,29 +87,18 @@ export async function POST(request: Request) {
     const post = await wpRes.json();
 
     // Build confirmation URL
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://kubikart.de";
-    const confirmUrl = `${siteUrl}/api/newsletter/confirm?token=${token}&id=${post.id}`;
+    const confirmUrl = `${SITE_URL}/${locale}/api/newsletter/confirm?token=${token}&id=${post.id}`;
 
     // In development, always log the confirmation link
     console.log(`[Newsletter] Confirmation link for ${sanitizedEmail}:\n  ${confirmUrl}`);
 
-    // Send confirmation email via WordPress wp_mail (using a custom REST endpoint)
-    // In production, integrate with an SMTP service or WP mail plugin
-    const mailRes = await fetch(`${WP_URL}/wp-json/wp/v2/kubikart-mail`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: WP_AUTH,
-      },
-      body: JSON.stringify({
-        to: sanitizedEmail,
-        subject: "Kubikart Newsletter – Bitte bestätige deine Anmeldung",
-        body: `Hallo!\n\nDanke für dein Interesse am Kubikart Newsletter.\n\nBitte bestätige deine Anmeldung mit diesem Link:\n${confirmUrl}\n\nWenn du dich nicht angemeldet hast, kannst du diese E-Mail ignorieren.\n\nViele Grüße,\nDein Kubikart Team`,
-      }),
-    }).catch(() => null);
-
-    if (!mailRes || !mailRes.ok) {
-      console.log(`[Newsletter] Mail endpoint not available — use the link above to confirm manually.`);
+    // Send confirmation email via Mailtrap
+    try {
+      await sendNewsletterConfirmation(sanitizedEmail, confirmUrl, locale);
+      console.log(`[Newsletter] Confirmation email sent to ${sanitizedEmail}`);
+    } catch (err) {
+      console.error(`[Newsletter] Failed to send confirmation email:`, err);
+      // Fall through — don't fail the signup if email fails
     }
   } catch (err) {
     console.error("Newsletter subscription error:", err);

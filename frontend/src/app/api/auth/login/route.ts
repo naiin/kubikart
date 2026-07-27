@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { wcApi } from "@/lib/woocommerce";
+import { sendLoginAlert } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,6 +33,26 @@ export async function POST(request: NextRequest) {
 
     const customer = customers[0];
     const token = Buffer.from(`${customer.id}:${customer.email}:${Date.now()}`).toString("base64");
+
+    try {
+      const acceptLang = request.headers.get("accept-language") ?? "";
+      const locale = acceptLang.startsWith("en") ? "en" : "de";
+      const ipAddress = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+      const userAgent = request.headers.get("user-agent") || "unknown";
+
+      await sendLoginAlert(
+        customer.email,
+        {
+          customerName: `${customer.first_name || ""} ${customer.last_name || ""}`.trim(),
+          ipAddress,
+          userAgent,
+          loginTimeIso: new Date().toISOString(),
+        },
+        locale,
+      );
+    } catch (err) {
+      console.error("Failed to send login alert email:", err);
+    }
 
     return NextResponse.json({
       user: {

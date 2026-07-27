@@ -1,9 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { wcApi } from "@/lib/woocommerce";
+import { sendOrderStatusUpdate } from "@/lib/email";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
+
+function extractTrackingUrl(metaData?: Array<{ key: string; value: unknown }>): string | undefined {
+  if (!metaData || metaData.length === 0) {
+    return undefined;
+  }
+
+  for (const item of metaData) {
+    const key = item.key.toLowerCase();
+    const value = item.value;
+
+    if (typeof value === "string") {
+      if (value.startsWith("http") && key.includes("tracking")) {
+        return value;
+      }
+
+      if (key.includes("tracking_url") && value.startsWith("http")) {
+        return value;
+      }
+    }
+
+    if (Array.isArray(value)) {
+      for (const entry of value) {
+        if (entry && typeof entry === "object") {
+          const trackingLink = (entry as Record<string, unknown>).tracking_link;
+          if (typeof trackingLink === "string" && trackingLink.startsWith("http")) {
+            return trackingLink;
+          }
+        }
+      }
+    }
+  }
+
+  return undefined;
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -69,6 +104,7 @@ async function updateOrderStatus(transactionId: string, status: string, note?: s
   }
 
   const order = orders[0];
+  const previousStatus = order.status;
   const updateData: Record<string, unknown> = { status };
 
   await wcApi(`orders/${order.id}`, {
@@ -81,5 +117,42 @@ async function updateOrderStatus(transactionId: string, status: string, note?: s
       method: "POST",
       body: { note, customer_note: false },
     });
+  }
+
+  if (previousStatus === status) {
+    return;
+  }
+
+  try {
+    const fullOrder = await wcApi<{
+      id: number;
+      status: string;
+      billing?: { email?: string; first_name?: string; last_name?: string };
+      meta_data?: Array<{ key: string; value: unknown }>;
+    }>(`orders/${order.id}`);
+
+    const email = fullOrder.billing?.email;
+    if (!email) {
+      return;
+    }
+
+    const localeMeta = fullOrder.meta_data?.find((m) => m.key === "locale")?.value;
+    const locale = String(localeMeta || "de").startsWith("en") ? "en" : "de";
+    const customerName = `${fullOrder.billing?.first_name || ""} ${fullOrder.billing?.last_name || ""}`.trim() || "Kunde";
+    const trackingUrl = extractTrackingUrl(fullOrder.meta_data);
+
+    await sendOrderStatusUpdate(
+      email,
+      {
+        orderId: fullOrder.id,
+        orderNumber: `#${fullOrder.id}`,
+        status: fullOrder.status,
+        customerName,
+        trackingUrl,
+      },
+      locale,
+    );
+  } catch (err) {
+    console.error("Failed to send Stripe status update email:", err);
   }
 }

@@ -38,7 +38,7 @@ export default function ImpressumPage() {
         <p>
           Umsatzsteuer-Identifikationsnummer gemäß § 27a Umsatzsteuergesetz:
           <br />
-          DEXXXXXX (wird nachgereicht)
+          DE454943872
         </p>
 
         <h2>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV</h2>

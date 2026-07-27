@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+import { sendNewsletterWelcome } from "@/lib/email";
 
 const WP_URL = process.env.NEXT_PUBLIC_WORDPRESS_URL!;
 const WC_API_URL = process.env.WC_API_URL!;
@@ -116,6 +117,18 @@ export async function GET(request: NextRequest) {
         content: JSON.stringify(data),
       }),
     });
+
+    // Send welcome email with coupon via Mailtrap
+    try {
+      const acceptLang = request.headers.get("accept-language") ?? "";
+      const locale = acceptLang.startsWith("en") ? "en" : "de";
+
+      await sendNewsletterWelcome(data.email, locale);
+      console.log(`[Newsletter] Welcome email sent to ${data.email}`);
+    } catch (err) {
+      console.error(`[Newsletter] Failed to send welcome email:`, err);
+      // Don't fail the confirmation if email fails
+    }
 
     const couponMessage = couponCreated
       ? `<br><br>🎉 Dein persönlicher <strong>10% Willkommensgutschein</strong>:<br><span style="display:inline-block;margin-top:8px;padding:10px 20px;background:#0a1d37;color:#fff;border-radius:8px;font-size:18px;font-weight:700;letter-spacing:1px;">${couponCode}</span><br><span style="font-size:13px;color:#667085;">Gültig für 90 Tage · Einmalig einlösbar</span>`

@@ -112,7 +112,7 @@ export function CartDrawer() {
                       />
                     </svg>
                     <p className="mt-4 text-gray-500">{t("emptyCart")}</p>
-                    <button onClick={() => setOpen(false)} className="mt-4 text-sm font-medium text-[royalblue] hover:underline">
+                    <button onClick={() => setOpen(false)} className="mt-4 text-sm font-medium text-navy-900 hover:underline">
                       {t("continueShopping")}
                     </button>
                   </div>
@@ -188,7 +188,7 @@ export function CartDrawer() {
                   <Link
                     href="/checkout"
                     onClick={() => setOpen(false)}
-                    className="block w-full rounded-lg bg-[royalblue] py-3 text-center text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+                    className="block w-full rounded-lg bg-accent-600 py-3 text-center text-sm font-semibold text-white hover:bg-accent-500 transition-colors"
                   >
                     {t("proceedToCheckout")}
                   </Link>

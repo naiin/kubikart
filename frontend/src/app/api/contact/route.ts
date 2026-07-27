@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { checkForSpam } from "@/lib/security";
+import { sendContactConfirmation } from "@/lib/email";
 
 const WP_URL = process.env.NEXT_PUBLIC_WORDPRESS_URL!;
 const WP_AUTH = "Basic " + Buffer.from(`${process.env.WP_APP_USER}:${process.env.WP_APP_PASSWORD}`).toString("base64");
@@ -12,8 +13,9 @@ const RATE_WINDOW = 600_000; // per 10 minutes
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
   const timestamps = submissions.get(ip)?.filter((t) => now - t < RATE_WINDOW) || [];
+  timestamps.push(now);
   submissions.set(ip, timestamps);
-  return timestamps.length >= RATE_LIMIT;
+  return timestamps.length > RATE_LIMIT;
 }
 
 export async function POST(request: Request) {
@@ -81,6 +83,15 @@ export async function POST(request: Request) {
       if (cf7Res.ok) {
         const result = await cf7Res.json();
         if (result.status === "mail_sent") {
+          // Send confirmation email to customer
+          try {
+            const acceptLang = request.headers.get("accept-language") ?? "";
+            const locale = acceptLang.startsWith("en") ? "en" : "de";
+            await sendContactConfirmation(sanitizedData.email, sanitizedData, locale);
+          } catch (err) {
+            console.error("Failed to send contact confirmation email:", err);
+          }
+
           // Track successful submission for rate limiting
           const timestamps = submissions.get(ip) || [];
           timestamps.push(Date.now());
@@ -122,6 +133,16 @@ export async function POST(request: Request) {
     }
   } catch (err) {
     console.error("Contact form WP submission error:", err);
+  }
+
+  // Send confirmation email to customer
+  try {
+    const acceptLang = request.headers.get("accept-language") ?? "";
+    const locale = acceptLang.startsWith("en") ? "en" : "de";
+    await sendContactConfirmation(sanitizedData.email, sanitizedData, locale);
+  } catch (err) {
+    console.error("Failed to send contact confirmation email:", err);
+    // Don't fail the request if email fails
   }
 
   // Track for rate limiting

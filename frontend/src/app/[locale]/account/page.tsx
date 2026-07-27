@@ -44,7 +44,7 @@ export default function AccountPage() {
           {/* Sidebar */}
           <aside className="md:col-span-1">
             <nav className="space-y-1">
-              <Link href="/account" className="block px-4 py-2.5 text-sm font-medium rounded-lg bg-[royalblue] text-white">
+              <Link href="/account" className="block px-4 py-2.5 text-sm font-medium rounded-lg bg-navy-900 text-white">
                 {ta("dashboard")}
               </Link>
               <Link href="/account/orders" className="block px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
@@ -62,7 +62,7 @@ export default function AccountPage() {
               <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Link
                   href="/account/orders"
-                  className="flex items-center gap-3 rounded-lg border border-gray-200 p-4 hover:border-[royalblue] transition-colors"
+                  className="flex items-center gap-3 rounded-lg border border-gray-200 p-4 hover:border-navy-900 transition-colors"
                 >
                   <span className="text-2xl">📦</span>
                   <div>
@@ -70,7 +70,7 @@ export default function AccountPage() {
                     <p className="text-xs text-gray-500">Bestellungen ansehen</p>
                   </div>
                 </Link>
-                <Link href="/shop" className="flex items-center gap-3 rounded-lg border border-gray-200 p-4 hover:border-[royalblue] transition-colors">
+                <Link href="/shop" className="flex items-center gap-3 rounded-lg border border-gray-200 p-4 hover:border-navy-900 transition-colors">
                   <span className="text-2xl">🛍️</span>
                   <div>
                     <p className="text-sm font-medium text-gray-900">{t("shop")}</p>
@@ -110,7 +110,7 @@ export default function AccountPage() {
     <div className="mx-auto max-w-md px-4 sm:px-6 py-12">
       {/* Logo */}
       <div className="text-center mb-8">
-        <Link href="/" className="text-3xl font-bold text-[royalblue]">
+        <Link href="/" className="text-3xl font-bold text-navy-900">
           KubikArt
         </Link>
         <h1 className="mt-4 text-xl font-semibold text-gray-900">{mode === "login" ? t("login") : t("register")}</h1>
@@ -129,7 +129,7 @@ export default function AccountPage() {
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 required
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[royalblue] focus:ring-1 focus:ring-[royalblue] outline-none"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none"
               />
             </div>
             <div>
@@ -139,7 +139,7 @@ export default function AccountPage() {
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 required
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[royalblue] focus:ring-1 focus:ring-[royalblue] outline-none"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none"
               />
             </div>
           </div>
@@ -152,7 +152,7 @@ export default function AccountPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[royalblue] focus:ring-1 focus:ring-[royalblue] outline-none"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none"
             placeholder="you@example.com"
           />
         </div>
@@ -161,7 +161,7 @@ export default function AccountPage() {
           <div className="flex items-center justify-between mb-1">
             <label className="block text-sm font-medium text-gray-700">{t("password")}</label>
             {mode === "login" && (
-              <Link href="/account/forgot-password" className="text-xs font-medium text-[royalblue] hover:underline">
+              <Link href="/account/forgot-password" className="text-xs font-medium text-navy-900 hover:underline">
                 {ta("forgotPassword")}
               </Link>
             )}
@@ -172,7 +172,7 @@ export default function AccountPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[royalblue] focus:ring-1 focus:ring-[royalblue] outline-none"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none"
             placeholder="••••••••"
           />
         </div>
@@ -180,7 +180,7 @@ export default function AccountPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-lg bg-[royalblue] py-3 text-sm font-semibold text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full rounded-lg bg-accent-600 py-3 text-sm font-semibold text-white hover:bg-accent-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting ? t("loading") : mode === "login" ? t("login") : t("register")}
         </button>
@@ -190,26 +190,26 @@ export default function AccountPage() {
       <p className="mt-6 text-center text-sm text-gray-600">
         {mode === "login" ? (
           <>
-            Noch kein Konto?{" "}
+            {ta("noAccount")}{" "}
             <button
               onClick={() => {
                 setMode("register");
                 setError("");
               }}
-              className="font-semibold text-[royalblue] hover:underline"
+              className="font-semibold text-navy-900 hover:underline"
             >
               {t("register")}
             </button>
           </>
         ) : (
           <>
-            Bereits ein Konto?{" "}
+            {ta("alreadyHaveAccount")}{" "}
             <button
               onClick={() => {
                 setMode("login");
                 setError("");
               }}
-              className="font-semibold text-[royalblue] hover:underline"
+              className="font-semibold text-navy-900 hover:underline"
             >
               {t("login")}
             </button>

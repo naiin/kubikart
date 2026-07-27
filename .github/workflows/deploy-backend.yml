@@ -1,0 +1,52 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - backend/wordpress/**
+      - backend/scripts/**
+      - backend/db/migrations/**
+      - .github/workflows/deploy-backend.yml
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.STRATO_SSH_PRIVATE_KEY }}
+        run: |
+          if [ -z "$SSH_PRIVATE_KEY" ]; then
+            echo "Missing secret STRATO_SSH_PRIVATE_KEY" >&2
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.STRATO_SSH_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Deploy backend files
+        env:
+          DEPLOY_SSH_HOST: ${{ secrets.STRATO_SSH_HOST }}
+          DEPLOY_SSH_USER: ${{ secrets.STRATO_SSH_USER }}
+          DEPLOY_REMOTE_APP_DIR: ${{ secrets.STRATO_REMOTE_APP_DIR }}
+        run: |
+          chmod +x backend/scripts/deploy-files.sh
+          backend/scripts/deploy-files.sh
+
+      - name: Apply DB migrations
+        if: hashFiles('backend/db/migrations/*.sql') != ''
+        env:
+          DB_HOST: ${{ secrets.STRATO_DB_HOST }}
+          DB_NAME: ${{ secrets.STRATO_DB_NAME }}
+          DB_USER: ${{ secrets.STRATO_DB_USER }}
+          DB_PASS: ${{ secrets.STRATO_DB_PASS }}
+        run: |
+          chmod +x backend/scripts/deploy-db-migrations.sh
+          backend/scripts/deploy-db-migrations.sh

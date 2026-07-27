@@ -1,13 +1,67 @@
 "use client";
 
 import Image from "next/image";
-import { MessageCircleQuestion, PackageCheck, Search, ShieldCheck, Star, Truck } from "lucide-react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { formatProductPrice, type ProductPageProduct } from "@/lib/product-page";
 import type { WCReview } from "@/lib/woocommerce";
 import { ProductPurchaseForm } from "./ProductPurchaseForm";
 import { StickyMobileCTA } from "./StickyMobileCTA";
+
+function StarIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+    </svg>
+  );
+}
+
+function SearchIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+    </svg>
+  );
+}
+
+function ShieldCheckIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
+  );
+}
+
+function TruckIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3" />
+      <rect x="9" y="11" width="14" height="10" rx="2" />
+      <circle cx="12" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
+    </svg>
+  );
+}
+
+function PackageCheckIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M16.5 9.4l-9-5.19" />
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+      <path d="M3.27 6.96L12 12.01l8.73-5.05" /><path d="M12 22.08V12" />
+      <path d="m9.5 14.5 1.5 1.5 3-3" />
+    </svg>
+  );
+}
+
+function MessageQuestionIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z" />
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" />
+    </svg>
+  );
+}
 
 type ProductShowcaseLayoutProps = {
   product: ProductPageProduct;
@@ -35,7 +89,7 @@ function ProductRatingSummary({
     <div className={`flex items-center gap-2 ${compact ? "" : "flex-wrap"}`}>
       <div className="flex gap-0.5" aria-hidden="true">
         {Array.from({ length: 5 }).map((_, index) => (
-          <Star
+          <StarIcon
             key={index}
             className={`h-4.5 w-4.5 ${index < Math.round(rating) ? "fill-accent-600 text-accent-600" : "fill-gray-200 text-gray-200"}`}
           />
@@ -99,7 +153,7 @@ function ProductMediaGallery({ product }: { product: ProductPageProduct }) {
             className="absolute right-4 bottom-4 flex h-11 w-11 items-center justify-center rounded-full bg-white text-navy-900 shadow-md transition-shadow hover:shadow-lg"
             aria-label={t("galleryViewImage", { index: activeIndex + 1 })}
           >
-            <Search className="h-5 w-5" />
+            <SearchIcon className="h-5 w-5" />
           </button>
         </div>
       </section>
@@ -127,22 +181,22 @@ function ProductTrustPanel({ product }: { product: ProductPageProduct }) {
   const t = useTranslations("productPage");
   const items = [
     {
-      icon: <ShieldCheck className="h-5 w-5" />,
+      icon: <ShieldCheckIcon className="h-5 w-5" />,
       title: product.trustItems[0] || t("trustSecurePayment"),
       text: product.paymentHints[0] || t("paymentHint1"),
     },
     {
-      icon: <Truck className="h-5 w-5" />,
+      icon: <TruckIcon className="h-5 w-5" />,
       title: product.trustItems[1] || t("trustFastProduction"),
       text: product.productionTime,
     },
     {
-      icon: <PackageCheck className="h-5 w-5" />,
+      icon: <PackageCheckIcon className="h-5 w-5" />,
       title: product.trustItems[3] || t("trustCarefullyPackaged"),
       text: product.shippingNote,
     },
     {
-      icon: <MessageCircleQuestion className="h-5 w-5" />,
+      icon: <MessageQuestionIcon className="h-5 w-5" />,
       title: product.trustItems[2] || t("trustPersonalSupport"),
       text: t("askQuestion"),
     },
@@ -269,7 +323,7 @@ function ProductDetailTabs({
                     <div className="flex flex-wrap items-center gap-2">
                       <div className="flex gap-0.5">
                         {Array.from({ length: 5 }).map((_, index) => (
-                          <Star
+                          <StarIcon
                             key={index}
                             className={`h-3.5 w-3.5 ${index < review.rating ? "fill-accent-600 text-accent-600" : "fill-gray-200 text-gray-200"}`}
                           />

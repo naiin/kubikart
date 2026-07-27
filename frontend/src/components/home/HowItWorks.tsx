@@ -1,11 +1,10 @@
 import { useTranslations } from "next-intl";
-import { Search, SlidersHorizontal, Wand2, PackageCheck } from "lucide-react";
 
 const steps = [
-  { key: "step1", Icon: Search },
-  { key: "step2", Icon: SlidersHorizontal },
-  { key: "step3", Icon: Wand2 },
-  { key: "step4", Icon: PackageCheck },
+  { key: "step1", paths: ["M21 21l-4.35-4.35", "M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"] },
+  { key: "step2", paths: ["M21 4H14", "M10 4H3", "M21 12H12", "M8 12H3", "M21 20H16", "M12 20H3", "M14 2v4", "M8 10v4", "M16 18v4"] },
+  { key: "step3", paths: ["m15 5 4 4", "M13 7 8.7 2.7a2.41 2.41 0 0 0-3.41 0L2.7 5.3a2.41 2.41 0 0 0 0 3.41L11 17", "m15 5-3 3-4-4 3-3", "M9.4 17.6 3 21l3.4-6.4", "M18 12a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4"] },
+  { key: "step4", paths: ["M16.5 9.4l-9-5.19", "M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z", "M3.27 6.96L12 12.01l8.73-5.05", "M12 22.08V12", "m9.5 14.5 1.5 1.5 3-3"] },
 ];
 
 export function HowItWorks() {
@@ -33,7 +32,7 @@ export function HowItWorks() {
               {/* Icon circle - overlapping top of card */}
               <div className="absolute -top-9 left-1/2 -translate-x-1/2">
                 <div className="relative flex h-18 w-18 items-center justify-center rounded-full bg-accent-100 border-4 border-white shadow-sm">
-                  <step.Icon className="h-8 w-8 text-accent-600" strokeWidth={1.6} />
+                  <svg className="h-8 w-8 text-accent-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{step.paths.map((d: string, i: number) => <path key={i} d={d} />)}</svg>
                   {/* Step number */}
                   <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-navy-900 text-[10px] font-bold text-white ring-2 ring-white">
                     {i + 1}

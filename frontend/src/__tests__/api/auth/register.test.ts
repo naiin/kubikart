@@ -17,7 +17,7 @@ describe("POST /api/auth/register", () => {
   it("returns 400 when required fields are missing", async () => {
     vi.stubGlobal("fetch", vi.fn());
     const { POST } = await import("@/app/api/auth/register/route");
-    const res = await POST(makeRequest({ email: "test@test.com", password: "pass123" }) as never);
+    const res = await POST(makeRequest({ email: "test@test.com", password: "pass12345" }) as never);
     expect(res.status).toBe(400);
   });
 
@@ -28,7 +28,7 @@ describe("POST /api/auth/register", () => {
     );
     const { POST } = await import("@/app/api/auth/register/route");
     const res = await POST(
-      makeRequest({ email: "existing@test.com", password: "pass123", firstName: "Max", lastName: "M" }) as never
+      makeRequest({ email: "existing@test.com", password: "pass12345", firstName: "Max", lastName: "M" }) as never
     );
     expect(res.status).toBe(409);
   });
@@ -66,7 +66,7 @@ describe("POST /api/auth/register", () => {
     );
     const { POST } = await import("@/app/api/auth/register/route");
     const res = await POST(
-      makeRequest({ email: "fail@test.com", password: "pass", firstName: "F", lastName: "L" }) as never
+      makeRequest({ email: "fail@test.com", password: "pass12345", firstName: "F", lastName: "L" }) as never
     );
     expect(res.status).toBe(500);
   });

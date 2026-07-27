@@ -79,6 +79,7 @@ describe("POST /api/orders/create", () => {
     const res = await POST(
       makeRequest({
         items: [{ name: "Acrylic Sign", quantity: 1, price: "12.00" }],
+        billing: { email: "test@example.com" },
         payment_method: "paypal",
         payment_method_title: "PayPal",
       }) as never,

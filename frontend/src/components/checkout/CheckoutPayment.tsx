@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Elements, PaymentElement, ExpressCheckoutElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { PayPalScriptProvider, PayPalButtons, FUNDING } from "@paypal/react-paypal-js";
@@ -21,6 +22,7 @@ function StripeForm({ onSuccess, onError, method }: { onSuccess: (id: string) =>
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
+  const t = useTranslations("common");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -58,7 +60,7 @@ function StripeForm({ onSuccess, onError, method }: { onSuccess: (id: string) =>
       <button
         type="submit"
         disabled={!stripe || loading}
-        className="w-full rounded-lg bg-[royalblue] py-3.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full rounded-lg bg-accent-600 py-3.5 text-sm font-semibold text-white hover:bg-accent-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? (
           <span className="flex items-center justify-center gap-2">
@@ -66,12 +68,12 @@ function StripeForm({ onSuccess, onError, method }: { onSuccess: (id: string) =>
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            Verarbeitung…
+            {t("processing")}
           </span>
         ) : method === "klarna" ? (
-          "Mit Klarna bezahlen"
+          t("payWithKlarna")
         ) : (
-          "Jetzt bezahlen"
+          t("payNow")
         )}
       </button>
     </form>
@@ -201,7 +203,7 @@ export default function CheckoutPayment({ total, onSuccess, onError, disabled }:
           <label
             key={opt.key}
             className={`flex items-center gap-3 rounded-lg border p-4 cursor-pointer transition-colors ${
-              method === opt.key ? "border-[royalblue] bg-blue-50" : "border-gray-200 hover:border-gray-300"
+              method === opt.key ? "border-accent-600 bg-accent-100" : "border-gray-200 hover:border-gray-300"
             }`}
           >
             <input
@@ -210,7 +212,7 @@ export default function CheckoutPayment({ total, onSuccess, onError, disabled }:
               value={opt.key}
               checked={method === opt.key}
               onChange={() => selectMethod(opt.key)}
-              className="text-[royalblue]"
+              className="text-navy-900"
               disabled={disabled}
             />
             <span className="text-lg">{opt.icon}</span>

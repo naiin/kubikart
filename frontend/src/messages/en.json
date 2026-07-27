@@ -53,7 +53,21 @@
     "ticker_handmade": "Handmade with Attention to Detail",
     "ticker_personalized": "Personalized Products",
     "ticker_support": "Personal Support",
-    "ticker_label": "Kubikart highlights"
+    "ticker_label": "Kubikart highlights",
+    "orderPlacedTitle": "Order placed!",
+    "orderPlacedDesc": "Thank you for your order. You will receive a confirmation email.",
+    "paymentSuccessTitle": "Payment successful!",
+    "paymentSuccessDesc": "Thank you for your order. You will receive a confirmation email shortly.",
+    "processing": "Processing…",
+    "payWithKlarna": "Pay with Klarna",
+    "payNow": "Pay now",
+    "stepInformation": "Information",
+    "stepShipping": "Shipping",
+    "stepPayment": "Payment",
+    "checkoutContact": "Contact information",
+    "checkoutAddress": "Delivery address",
+    "checkoutShippingMethod": "Shipping method",
+    "checkoutPaymentMethod": "Payment method"
   },
   "header": {
     "mobileSummary": "Made in Germany · Fast Shipping",
@@ -143,25 +157,49 @@
     "printing3d": {
       "title": "3D Printing Service",
       "description": "From idea to finished product – our 3D printing service offers the highest quality and fast delivery times.",
-      "features": ["FDM & Resin Printing", "Prototypes & Small Series", "Custom Modifications", "Various Materials", "Fast Delivery"],
+      "features": [
+        "FDM & Resin Printing",
+        "Prototypes & Small Series",
+        "Custom Modifications",
+        "Various Materials",
+        "Fast Delivery"
+      ],
       "cta": "Request a Quote"
     },
     "laser": {
       "title": "Laser Engraving & Cutting",
       "description": "Precise engravings and cuts on wood, acrylic, leather, metal, and more. Ideal for personalized gifts and industrial applications.",
-      "features": ["Wood, Acrylic, Leather, Metal", "Personalized Engravings", "Precise Laser Cutting", "Series Production Possible", "Custom Designs"],
+      "features": [
+        "Wood, Acrylic, Leather, Metal",
+        "Personalized Engravings",
+        "Precise Laser Cutting",
+        "Series Production Possible",
+        "Custom Designs"
+      ],
       "cta": "Request a Quote"
     },
     "brandKit": {
       "title": "Shop Brand Kit",
       "description": "We create your complete brand identity – from logo to business cards to packaging design.",
-      "features": ["Logo Design", "Business Cards", "Packaging Design", "Social Media Templates", "Style Guide"],
+      "features": [
+        "Logo Design",
+        "Business Cards",
+        "Packaging Design",
+        "Social Media Templates",
+        "Style Guide"
+      ],
       "cta": "Request a Quote"
     },
     "printingMenus": {
       "title": "Printing Menus & Menu Cards",
       "description": "Professionally designed and printed menu cards for restaurants, cafés, and bars.",
-      "features": ["Custom Design", "High-Quality Printing", "Various Formats", "Lamination Available", "Express Service"],
+      "features": [
+        "Custom Design",
+        "High-Quality Printing",
+        "Various Formats",
+        "Lamination Available",
+        "Express Service"
+      ],
       "cta": "Request a Quote"
     }
   },
@@ -208,7 +246,10 @@
     "resetPasswordError": "This link is invalid or has expired. Please request a new one.",
     "passwordTooShort": "Password must be at least 8 characters.",
     "passwordMismatch": "Passwords do not match.",
-    "invalidResetLink": "Invalid reset link. Please request a new one."
+    "invalidResetLink": "Invalid reset link. Please request a new one.",
+    "noAccount": "No account yet?",
+    "alreadyHaveAccount": "Already have an account?",
+    "pleaseLogin": "Please sign in."
   },
   "footer": {
     "rights": "All rights reserved.",
@@ -251,7 +292,7 @@
     "trustSustainable": "Sustainable Materials",
     "trustSecureShipping": "Secure Shipping",
     "trustSecurePayment": "Secure Payment",
-    "copyright": "\u00a9 2026 Kubikart. All rights reserved."
+    "copyright": "© 2026 Kubikart. All rights reserved."
   },
   "cookie": {
     "title": "🍪 Cookie Notice",

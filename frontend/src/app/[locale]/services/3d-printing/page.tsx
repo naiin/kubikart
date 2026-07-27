@@ -46,7 +46,7 @@ export default async function Printing3DPage() {
           {features.map((feature, i) => (
             <li key={i} className="flex items-center gap-3 text-gray-700">
               <span className="shrink-0 h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center">
-                <svg className="h-4 w-4 text-[royalblue]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-4 w-4 text-accent-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </span>
@@ -59,7 +59,7 @@ export default async function Printing3DPage() {
       <div className="mt-8 text-center">
         <a
           href="mailto:info@kubikart.de?subject=3D-Druck Anfrage"
-          className="inline-flex items-center rounded-lg bg-[royalblue] px-8 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors"
+          className="inline-flex items-center rounded-lg bg-accent-600 px-8 py-3 text-sm font-semibold text-white shadow-sm hover:bg-accent-500 transition-colors"
         >
           {t("cta")}
         </a>

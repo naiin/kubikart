@@ -33,7 +33,7 @@ export default function CartPage() {
       {cart.length === 0 ? (
         <div className="text-center py-16">
           <p className="text-gray-500 text-lg">{t("emptyCart")}</p>
-          <Link href="/shop" className="mt-4 inline-flex items-center text-sm font-semibold text-[royalblue] hover:underline">
+          <Link href="/shop" className="mt-4 inline-flex items-center text-sm font-semibold text-navy-900 hover:underline">
             ← {t("continueShopping")}
           </Link>
         </div>
@@ -54,7 +54,7 @@ export default function CartPage() {
 
                 {/* Details */}
                 <div className="flex-1 min-w-0">
-                  <Link href={item.slug ? `/shop/${item.slug}` : "/shop"} className="text-sm font-medium text-gray-900 hover:text-[royalblue]">
+                  <Link href={item.slug ? `/shop/${item.slug}` : "/shop"} className="text-sm font-medium text-gray-900 hover:text-navy-900">
                     {item.name}
                   </Link>
                   {item.customizationSummary?.length ? (
@@ -113,7 +113,7 @@ export default function CartPage() {
             <div className="mt-6 flex flex-col sm:flex-row gap-3">
               <Link
                 href="/checkout"
-                className="flex-1 inline-flex items-center justify-center rounded-lg bg-[royalblue] px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+                className="flex-1 inline-flex items-center justify-center rounded-lg bg-accent-600 px-6 py-3 text-sm font-semibold text-white hover:bg-accent-500 transition-colors"
               >
                 {t("proceedToCheckout")}
               </Link>

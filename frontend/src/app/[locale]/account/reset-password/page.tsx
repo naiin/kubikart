@@ -26,7 +26,7 @@ export default function ResetPasswordPage() {
         <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800">
           {t("invalidResetLink")}
         </div>
-        <Link href="/account/forgot-password" className="mt-6 inline-block text-sm font-semibold text-[royalblue] hover:underline">
+        <Link href="/account/forgot-password" className="mt-6 inline-block text-sm font-semibold text-navy-900 hover:underline">
           {t("forgotPasswordTitle")}
         </Link>
       </div>
@@ -72,7 +72,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="mx-auto max-w-md px-4 sm:px-6 py-12">
       <div className="text-center mb-8">
-        <Link href="/" className="text-3xl font-bold text-[royalblue]">
+        <Link href="/" className="text-3xl font-bold text-navy-900">
           KubikArt
         </Link>
         <h1 className="mt-4 text-xl font-semibold text-gray-900">{t("resetPasswordTitle")}</h1>
@@ -98,7 +98,7 @@ export default function ResetPasswordPage() {
               required
               minLength={8}
               autoComplete="new-password"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[royalblue] focus:ring-1 focus:ring-[royalblue] outline-none"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none"
               placeholder="••••••••"
             />
           </div>
@@ -112,7 +112,7 @@ export default function ResetPasswordPage() {
               required
               minLength={8}
               autoComplete="new-password"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[royalblue] focus:ring-1 focus:ring-[royalblue] outline-none"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none"
               placeholder="••••••••"
             />
           </div>
@@ -120,7 +120,7 @@ export default function ResetPasswordPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-lg bg-[royalblue] py-3 text-sm font-semibold text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-lg bg-accent-600 py-3 text-sm font-semibold text-white hover:bg-accent-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? t("resetPasswordSaving") : t("resetPasswordSubmit")}
           </button>
@@ -128,7 +128,7 @@ export default function ResetPasswordPage() {
       )}
 
       <p className="mt-6 text-center text-sm text-gray-600">
-        <Link href="/account" className="font-semibold text-[royalblue] hover:underline">
+        <Link href="/account" className="font-semibold text-navy-900 hover:underline">
           {t("backToLogin")}
         </Link>
       </p>
