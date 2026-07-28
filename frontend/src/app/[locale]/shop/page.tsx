@@ -1,47 +1,41 @@
 import type { Metadata } from "next";
-import { getProducts, getCategories, WCProduct, WCCategory } from "@/lib/woocommerce";
+import { getTranslations } from "next-intl/server";
 import { ProductCard } from "@/components/ProductCard";
-import { ShopHero } from "@/components/shop/ShopHero";
-import { ShopToolbar } from "@/components/shop/ShopToolbar";
-import { ShopFilterSidebar, MobileFilterDrawer } from "@/components/shop/ShopFilters";
 import { ActiveFilterChips } from "@/components/shop/ActiveFilterChips";
-import { ShopEmptyState } from "@/components/shop/ShopEmptyState";
+import { ShopBusinessKitsPromo } from "@/components/shop/ShopBusinessKitsPromo";
+import { ShopCustomerPaths } from "@/components/shop/ShopCustomerPaths";
 import { ShopCustomCTA } from "@/components/shop/ShopCustomCTA";
-import { ShopTrustSection } from "@/components/shop/ShopTrustSection";
-import { ShopFAQ } from "@/components/shop/ShopFAQ";
-import { ShopSeoContent } from "@/components/shop/ShopSeoContent";
+import { ShopEmptyState } from "@/components/shop/ShopEmptyState";
+import { ShopCategoryFilters } from "@/components/shop/ShopFilters";
+import { ShopHero } from "@/components/shop/ShopHero";
 import { ShopJsonLd } from "@/components/shop/ShopJsonLd";
+import { ShopToolbar } from "@/components/shop/ShopToolbar";
 import { buildPageMetadata, normalizeLocale, SEO_ROUTE_SEGMENTS } from "@/lib/seo";
+import { getCategories, getProducts, type WCCategory, type WCProduct } from "@/lib/woocommerce";
+
+type ShopSearchParams = {
+  category?: string;
+  sort?: string;
+  q?: string;
+};
 
 export async function generateMetadata({
   params,
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ category?: string; sort?: string; q?: string }>;
+  searchParams: Promise<ShopSearchParams>;
 }): Promise<Metadata> {
-  const [{ locale: rawLocale }, sp] = await Promise.all([params, searchParams]);
+  const [{ locale: rawLocale }, query] = await Promise.all([params, searchParams]);
   const locale = normalizeLocale(rawLocale);
-  const hasQueryState = Boolean(sp.category || sp.sort || sp.q);
-
-  const content =
-    locale === "en"
-      ? {
-          title: "Shop for personalized gifts, laser engraving and 3D printing | Kubikart",
-          description:
-            "Discover personalized products, laser engraving, acrylic and wooden gifts, 3D printing, and custom-made pieces from Kubikart.",
-        }
-      : {
-          title: "Shop für personalisierte Geschenke, Lasergravur & 3D-Druck | Kubikart",
-          description:
-            "Entdecke personalisierte Produkte, Lasergravuren, Holz- und Acrylgeschenke, 3D-Druck und Sonderanfertigungen von Kubikart. Jetzt online stöbern.",
-        };
+  const t = await getTranslations({ locale, namespace: "shopPage" });
+  const hasQueryState = Boolean(query.category || query.sort || query.q);
 
   return buildPageMetadata({
     locale,
     routeSegments: SEO_ROUTE_SEGMENTS.shop,
-    title: content.title,
-    description: content.description,
+    title: t("metadataTitle"),
+    description: t("metadataDescription"),
     index: !hasQueryState,
   });
 }
@@ -51,16 +45,19 @@ export default async function ShopPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ category?: string; sort?: string; q?: string }>;
+  searchParams: Promise<ShopSearchParams>;
 }) {
-  const { locale } = await params;
-  const sp = await searchParams;
-  const categoryId = sp.category;
-  const sort = sp.sort || "date";
-  const searchQuery = sp.q || "";
+  const [{ locale }, query] = await Promise.all([params, searchParams]);
+  const t = await getTranslations({ locale, namespace: "shopPage" });
+  const categoryId = query.category && /^\d+$/.test(query.category) ? query.category : "";
+  const searchQuery = query.q?.trim() || "";
+  const requestedSort = query.sort || "";
+  const sort = ["date", "popularity", "price-asc", "price-desc"].includes(requestedSort)
+    ? requestedSort
+    : "date";
 
-  let orderby: string = "date";
-  let order: string = "desc";
+  let orderby = "date";
+  let order = "desc";
 
   switch (sort) {
     case "price-asc":
@@ -73,11 +70,7 @@ export default async function ShopPage({
       break;
     case "popularity":
       orderby = "popularity";
-      order = "desc";
       break;
-    default:
-      orderby = "date";
-      order = "desc";
   }
 
   const productParams: Record<string, string | number | boolean> = {
@@ -94,62 +87,49 @@ export default async function ShopPage({
     productParams.search = searchQuery;
   }
 
-  let products: WCProduct[] = [];
-  let categories: WCCategory[] = [];
+  const [productsResult, categoriesResult] = await Promise.allSettled([
+    getProducts(productParams, locale),
+    getCategories(locale),
+  ]);
 
-  try {
-    products = await getProducts(productParams, locale);
-  } catch {
-    products = [];
-  }
-
-  try {
-    categories = await getCategories(locale);
-  } catch {
-    categories = [];
-  }
+  const products: WCProduct[] = productsResult.status === "fulfilled" ? productsResult.value : [];
+  const categories: WCCategory[] = categoriesResult.status === "fulfilled" ? categoriesResult.value : [];
+  const productsUnavailable = productsResult.status === "rejected";
 
   return (
-    <>
+    <div className="bg-page">
       <ShopJsonLd products={products} locale={locale} />
       <ShopHero />
-      {/* <ShopCategoryCards categories={categories} /> */}
+      <ShopCustomerPaths categories={categories} />
 
-      {/* Main shop area */}
-      <section id="products" className="py-10 bg-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex gap-8">
-            {/* Desktop sidebar */}
-            <ShopFilterSidebar categories={categories} />
+      <section id="products" className="kk-section-major bg-surface-white" aria-labelledby="shop-products-title">
+        <div className="kk-container-full">
+          <ShopCategoryFilters categories={categories} />
 
-            {/* Product area */}
-            <div className="flex-1 min-w-0">
-              {/* Mobile filter trigger + toolbar */}
-              <div className="flex items-center gap-3 mb-4 lg:hidden">
-                <MobileFilterDrawer categories={categories} />
+          <div className="mt-8">
+            <h2 id="shop-products-title" className="sr-only">
+              {t("productsHeading")}
+            </h2>
+            <ShopToolbar productCount={products.length} />
+            <ActiveFilterChips categories={categories} />
+          </div>
+
+          <div className="mt-8">
+            {productsUnavailable || products.length === 0 ? (
+              <ShopEmptyState unavailable={productsUnavailable} />
+            ) : (
+              <div className="grid grid-cols-1 gap-5 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {products.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
               </div>
-
-              <ShopToolbar productCount={products.length} />
-              <ActiveFilterChips categories={categories} />
-
-              {products.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {products.map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
-                </div>
-              ) : (
-                <ShopEmptyState />
-              )}
-            </div>
+            )}
           </div>
         </div>
       </section>
 
+      <ShopBusinessKitsPromo />
       <ShopCustomCTA />
-      <ShopTrustSection />
-      <ShopFAQ />
-      <ShopSeoContent />
-    </>
+    </div>
   );
 }

@@ -1,27 +1,23 @@
-import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 
 export function ShopCustomCTA() {
   const t = useTranslations("shopPage");
 
   return (
-    <section className="py-16">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="rounded-[28px] bg-navy-900 px-8 py-12 sm:px-14 sm:py-14 text-center">
-          <h2 className="text-[24px] sm:text-[32px] font-bold leading-tight tracking-[-0.02em] text-white">{t("ctaTitle")}</h2>
-          <p className="mt-3 text-base text-gray-300 max-w-xl mx-auto leading-relaxed">{t("ctaText")}</p>
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <Link
-              href="/services"
-              className="inline-flex items-center justify-center rounded-xl bg-accent-600 px-6 py-3 text-[15px] font-bold text-white hover:bg-accent-500 transition-colors"
-            >
+    <section className="kk-section bg-page">
+      <div className="kk-container-full">
+        <div className="grid gap-6 rounded-kubikart-xl border border-border bg-surface px-6 py-8 md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:px-10 md:py-10">
+          <div className="max-w-2xl">
+            <h2 className="kk-heading-3">{t("ctaTitle")}</h2>
+            <p className="kk-body mt-3 text-muted">{t("ctaText")}</p>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Link href="/sonderanfertigung" className="kk-button kk-button-primary">
               {t("ctaButton")}
             </Link>
-            <Link
-              href="/services"
-              className="inline-flex items-center justify-center rounded-xl border border-gray-700 bg-transparent px-6 py-3 text-[15px] font-bold text-white hover:bg-navy-800 transition-colors"
-            >
-              {t("ctaButtonServices")}
+            <Link href="/kontakt" className="kk-button kk-button-secondary">
+              {t("ctaContact")}
             </Link>
           </div>
         </div>

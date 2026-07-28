@@ -1,70 +1,86 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { usePathname } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
+import { useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "@/i18n/navigation";
 
 export function ShopToolbar({ productCount }: { productCount: number }) {
   const t = useTranslations("shopPage");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-
-  const currentSort = searchParams.get("sort") || "date";
+  const sortParam = searchParams.get("sort") || "";
+  const currentSort = ["date", "popularity", "price-asc", "price-desc"].includes(sortParam)
+    ? sortParam
+    : "date";
   const currentSearch = searchParams.get("q") || "";
   const [search, setSearch] = useState(currentSearch);
 
   const updateParam = useCallback(
     (key: string, value: string) => {
       const params = new URLSearchParams(searchParams.toString());
+
       if (value) {
         params.set(key, value);
       } else {
         params.delete(key);
       }
-      router.push(`${pathname}?${params.toString()}`);
+
+      const query = params.toString();
+      router.push(query ? `${pathname}?${query}` : pathname);
     },
-    [router, pathname, searchParams],
+    [pathname, router, searchParams],
   );
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  function handleSearch(event: React.FormEvent) {
+    event.preventDefault();
     updateParam("q", search.trim());
-  };
+  }
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6">
-      {/* Search */}
-      <form onSubmit={handleSearch} className="flex-1 relative">
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={t("searchPlaceholder")}
-          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 pl-10 text-sm text-gray-950 placeholder:text-gray-500 focus:outline-none focus:border-navy-900 focus:ring-1 focus:ring-navy-900 transition-colors"
-        />
-        <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
+    <div className="grid gap-4 border-y border-border py-5 lg:grid-cols-[minmax(16rem,1fr)_auto_auto] lg:items-end">
+      <form onSubmit={handleSearch}>
+        <label htmlFor="shop-product-search" className="mb-2 block text-sm font-semibold text-brand">
+          {t("searchLabel")}
+        </label>
+        <div className="relative">
+          <svg className="pointer-events-none absolute top-1/2 left-3.5 h-5 w-5 -translate-y-1/2 text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+            <circle cx="11" cy="11" r="6.5" />
+            <path strokeLinecap="round" d="m16 16 4 4" />
+          </svg>
+          <input
+            id="shop-product-search"
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={t("searchPlaceholder")}
+            className="kk-form-control min-h-11 w-full pl-11"
+          />
+        </div>
       </form>
 
-      {/* Product count */}
-      <p className="text-sm text-gray-500 whitespace-nowrap">
-        {productCount} {t("productCount")}
+      <p className="text-sm text-muted lg:pb-3" aria-live="polite">
+        <span className="font-semibold text-foreground">{productCount}</span>{" "}
+        {t(productCount === 1 ? "productSingular" : "productPlural")}
       </p>
 
-      {/* Sort */}
-      <select
-        value={currentSort}
-        onChange={(e) => updateParam("sort", e.target.value)}
-        className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-950 focus:outline-none focus:border-navy-900 focus:ring-1 focus:ring-navy-900 transition-colors"
-      >
-        <option value="date">{t("sortNewest")}</option>
-        <option value="popularity">{t("sortPopular")}</option>
-        <option value="price-asc">{t("sortPriceAsc")}</option>
-        <option value="price-desc">{t("sortPriceDesc")}</option>
-      </select>
+      <div>
+        <label htmlFor="shop-product-sort" className="mb-2 block text-sm font-semibold text-brand">
+          {t("sortLabel")}
+        </label>
+        <select
+          id="shop-product-sort"
+          value={currentSort}
+          onChange={(event) => updateParam("sort", event.target.value)}
+          className="kk-form-control min-h-11 w-full lg:w-auto"
+        >
+          <option value="date">{t("sortNewest")}</option>
+          <option value="popularity">{t("sortPopular")}</option>
+          <option value="price-asc">{t("sortPriceAsc")}</option>
+          <option value="price-desc">{t("sortPriceDesc")}</option>
+        </select>
+      </div>
     </div>
   );
 }

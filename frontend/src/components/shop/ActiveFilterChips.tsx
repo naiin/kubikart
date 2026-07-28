@@ -1,9 +1,9 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { usePathname } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
 import { useCallback } from "react";
+import { useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import type { WCCategory } from "@/lib/woocommerce";
 
 export function ActiveFilterChips({ categories }: { categories: WCCategory[] }) {
@@ -11,7 +11,6 @@ export function ActiveFilterChips({ categories }: { categories: WCCategory[] }) 
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-
   const activeCategory = searchParams.get("category");
   const activeSearch = searchParams.get("q");
 
@@ -19,39 +18,42 @@ export function ActiveFilterChips({ categories }: { categories: WCCategory[] }) 
     (key: string) => {
       const params = new URLSearchParams(searchParams.toString());
       params.delete(key);
-      router.push(`${pathname}?${params.toString()}`);
+      const query = params.toString();
+      router.push(query ? `${pathname}?${query}` : pathname);
     },
-    [router, pathname, searchParams],
+    [pathname, router, searchParams],
   );
 
   const chips: { label: string; key: string }[] = [];
 
   if (activeCategory) {
-    const cat = categories.find((c) => String(c.id) === activeCategory);
-    chips.push({ label: cat?.name || activeCategory, key: "category" });
+    const category = categories.find((candidate) => String(candidate.id) === activeCategory);
+    chips.push({ label: category?.name || activeCategory, key: "category" });
   }
 
   if (activeSearch) {
-    chips.push({ label: `"${activeSearch}"`, key: "q" });
+    chips.push({ label: `“${activeSearch}”`, key: "q" });
   }
 
-  if (chips.length === 0) return null;
+  if (chips.length === 0) {
+    return null;
+  }
 
   return (
-    <div className="flex flex-wrap gap-2 mb-4">
+    <div className="flex flex-wrap items-center gap-2 pt-4" aria-label={t("activeFiltersLabel")}>
       {chips.map((chip) => (
         <button
           key={chip.key}
+          type="button"
           onClick={() => removeParam(chip.key)}
-          className="inline-flex items-center gap-1.5 rounded-full bg-accent-100 px-3 py-1.5 text-xs font-semibold text-navy-900 hover:bg-accent-600 hover:text-white transition-colors"
+          className="inline-flex min-h-11 max-w-full items-center gap-2 rounded-full border border-border bg-surface-white px-3.5 py-2 text-sm font-semibold text-brand transition-colors hover:border-accent hover:text-accent"
+          aria-label={t("removeFilter", { filter: chip.label })}
         >
-          {chip.label}
-          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <span className="truncate">{chip.label}</span>
+          <span aria-hidden="true">×</span>
         </button>
       ))}
-      <button onClick={() => router.push(pathname)} className="text-xs font-semibold text-gray-500 hover:text-accent-600 transition-colors px-2 py-1.5">
+      <button type="button" onClick={() => router.push(pathname)} className="kk-link inline-flex min-h-11 items-center px-2 text-sm font-semibold">
         {t("filterReset")}
       </button>
     </div>

@@ -1,12 +1,9 @@
+import { useTranslations } from "next-intl";
 import type { WCProduct } from "@/lib/woocommerce";
 
-interface ShopJsonLdProps {
-  products: WCProduct[];
-  locale: string;
-}
-
-export function ShopJsonLd({ products, locale }: ShopJsonLdProps) {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://kubikart.de";
+export function ShopJsonLd({ products, locale }: { products: WCProduct[]; locale: string }) {
+  const t = useTranslations("shopPage");
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://kubikart.de").replace(/\/$/, "");
   const shopUrl = `${baseUrl}/${locale}/shop`;
 
   const breadcrumbList = {
@@ -16,13 +13,13 @@ export function ShopJsonLd({ products, locale }: ShopJsonLdProps) {
       {
         "@type": "ListItem",
         position: 1,
-        name: "Startseite",
+        name: t("jsonLdHome"),
         item: `${baseUrl}/${locale}`,
       },
       {
         "@type": "ListItem",
         position: 2,
-        name: "Shop",
+        name: t("jsonLdShop"),
         item: shopUrl,
       },
     ],
@@ -31,8 +28,8 @@ export function ShopJsonLd({ products, locale }: ShopJsonLdProps) {
   const collectionPage = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: "Shop für personalisierte Geschenke, Lasergravur & 3D-Druck | Kubikart",
-    description: "Entdecke personalisierte Produkte, Lasergravuren, Holz- und Acrylgeschenke, 3D-Druck und Sonderanfertigungen von Kubikart.",
+    name: t("metadataTitle"),
+    description: t("metadataDescription"),
     url: shopUrl,
   };
 
@@ -51,7 +48,7 @@ export function ShopJsonLd({ products, locale }: ShopJsonLdProps) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbList) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionPage) }} />
-      {products.length > 0 && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} />}
+      {products.length > 0 ? <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} /> : null}
     </>
   );
 }
