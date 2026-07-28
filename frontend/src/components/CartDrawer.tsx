@@ -56,11 +56,13 @@ export function CartDrawer() {
     <>
       {/* Cart Icon Button for Header */}
       <button
+        type="button"
         onClick={() => setOpen(true)}
-        className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-700 transition hover:bg-cream-50 hover:text-navy-900"
-        aria-label="Warenkorb öffnen"
+        className="relative inline-flex h-11 w-11 items-center justify-center rounded-kubikart-sm text-brand transition-colors hover:bg-page"
+        aria-label={`${t("cart")} (${itemCount})`}
+        aria-expanded={open}
       >
-        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -68,7 +70,7 @@ export function CartDrawer() {
           />
         </svg>
         {itemCount > 0 && (
-          <span className="absolute right-0 top-0 flex h-[18px] min-w-[18px] -translate-y-1/4 translate-x-1/4 items-center justify-center rounded-full bg-accent-600 px-1 text-[10px] font-bold leading-none text-white">
+          <span className="absolute right-0 top-0 flex h-[18px] min-w-[18px] -translate-y-1/4 translate-x-1/4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-white">
             {itemCount > 99 ? "99+" : itemCount}
           </span>
         )}

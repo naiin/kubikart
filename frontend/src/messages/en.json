@@ -71,9 +71,17 @@
   },
   "header": {
     "mobileSummary": "Made in Germany · Fast Shipping",
+    "announcement": {
+      "label": "Current Kubikart information",
+      "local": "For businesses in Ulm & Neu-Ulm",
+      "custom": "Custom design for local businesses",
+      "shop": "Online shop and custom enquiries"
+    },
     "languageLabel": "Language",
     "nav": {
       "shop": "Shop",
+      "businessKits": "Business Kits",
+      "services": "Solutions",
       "personalize": "Personalize",
       "laserService": "Laser Service",
       "printing3d": "3D Printing",
@@ -110,13 +118,20 @@
       }
     },
     "mobile": {
-      "personalizedGifts": "Personalized Gifts"
+      "personalizedGifts": "Personalized Gifts",
+      "customRequest": "Custom Order",
+      "search": "Search",
+      "account": "My Account",
+      "faq": "Frequently Asked Questions"
     },
     "cta": {
+      "freeMockup": "Get a Free Mockup",
       "projectRequest": "Request a Project",
       "shop": "Go to Shop"
     },
     "accessibility": {
+      "home": "Go to the Kubikart homepage",
+      "logoAlt": "Kubikart",
       "mainNavigation": "Main navigation",
       "mobileNavigation": "Mobile main navigation",
       "mobileDrawer": "Mobile menu",
@@ -257,7 +272,20 @@
     "tagline": "Your creative workshop for personalized laser engravings, 3D printing, and custom gifts. Handcrafted with attention to detail in Germany.",
     "address": "Franz-Lehar-Str. 08, 89134 Blaustein",
     "projectCta": "Request a Project",
+    "homeLabel": "Go to the Kubikart homepage",
+    "logoAlt": "Kubikart",
+    "socialLabel": "Kubikart on social media",
+    "shopAriaLabel": "Footer shop navigation",
+    "businessAriaLabel": "Footer business solutions",
+    "companyAriaLabel": "Footer company navigation",
+    "legalAriaLabel": "Footer legal navigation",
     "shopTitle": "Shop",
+    "cart": "Cart",
+    "account": "My Account",
+    "businessTitle": "For Businesses",
+    "businessKits": "Business Kits",
+    "companyTitle": "Company",
+    "legalTitle": "Legal",
     "shop_allProducts": "All Products",
     "shop_gifts": "Personalized Gifts",
     "shop_keychains": "Keychains",
@@ -539,5 +567,190 @@
     "faq4_answer": "Yes. Since each piece is individually crafted after ordering, every combination is a unique personal item.",
     "faq5_question": "Can I have the product sent as a gift?",
     "faq5_answer": "Yes. If you have a note about packaging or the occasion, you can add it in the special requests field."
+  },
+  "homeRedesign": {
+    "hero": {
+      "eyebrow": "Local visibility studio & personalized products",
+      "title": "Make your business easier to see, scan and trust.",
+      "body": "Kubikart creates QR and NFC stands, stickers, menus and Business Visibility Kits for local businesses—plus selected personalized products made to order.",
+      "primaryCta": "Explore Business Kits",
+      "secondaryCta": "Shop Products",
+      "supportingCta": "Get a Free Mockup",
+      "trust": {
+        "local": "Ulm & Neu-Ulm",
+        "custom": "Custom design",
+        "shop": "Online shop and local service"
+      },
+      "imageAlt": "Composition of Kubikart product prototypes and branded presentation elements",
+      "visualLabel": "Product prototypes",
+      "visualText": "Review stands, menu boards, signage and QR touchpoints"
+    },
+    "beforeAfter": {
+      "eyebrow": "Before and after",
+      "title": "Small details change how professional a business feels.",
+      "body": "Temporary notices and isolated QR codes become a coordinated solution for counters, windows and menu areas.",
+      "status": "Concept visualization",
+      "before": {
+        "label": "Before",
+        "title": "Temporary customer information",
+        "text": "Paper notices, a single printed QR code and inconsistent menu information make a professional impression harder.",
+        "imageAlt": "Prototype product selection during the planning phase"
+      },
+      "after": {
+        "label": "After",
+        "title": "Coordinated visibility",
+        "text": "Opening hours, a review stand and a menu display work together across the brand and customer journey.",
+        "imageAlt": "Prototype coordinated product selection prepared in packaging"
+      }
+    },
+    "kits": {
+      "eyebrow": "Business Visibility Kits",
+      "title": "Ready-made visibility kits for local businesses",
+      "body": "Start with a coordinated package instead of choosing every item separately. The shown prototypes are requested individually; no prices are assumed.",
+      "prototype": "Prototype",
+      "cardCta": "Request a Mockup",
+      "allLink": "View all Business Kits",
+      "starter": {
+        "title": "Starter Visibility Kit",
+        "audience": "For small local businesses",
+        "description": "A compact foundation for important digital and visible customer touchpoints.",
+        "item1": "QR or NFC stand",
+        "item2": "Opening-hours sticker",
+        "item3": "Social media QR",
+        "imageAlt": "Prototype NFC stand with personalized products"
+      },
+      "gastro": {
+        "title": "Gastro Visibility Kit",
+        "audience": "For restaurants, cafés and takeaways",
+        "description": "Coordinated elements for menus, counters, reviews and the on-site experience.",
+        "item1": "Menu or price display",
+        "item2": "Google Review stand",
+        "item3": "Window or door lettering",
+        "imageAlt": "Prototype composition of printed items, stand and packaging"
+      },
+      "salon": {
+        "title": "Barber & Salon Kit",
+        "audience": "For barbershops and salons",
+        "description": "A clear presentation for booking, review and social-media touchpoints.",
+        "item1": "Review or booking stand",
+        "item2": "Opening-hours lettering",
+        "item3": "Social media QR",
+        "imageAlt": "Prototype product composition with acrylic stand and personalized items"
+      }
+    },
+    "contents": {
+      "title": "What can be included in the kits",
+      "qr": "QR / NFC stands",
+      "hours": "Opening hours",
+      "reviews": "Review tools",
+      "boards": "Menu boards",
+      "menus": "Laminated menus",
+      "window": "Window stickers",
+      "glass": "Frosted glass elements",
+      "social": "Social media QR",
+      "payment": "Payment QR"
+    },
+    "visuals": {
+      "prototype": "Kubikart prototype",
+      "openingHours": "Opening hours",
+      "reviews": "Reviews",
+      "menu": "Menu",
+      "social": "Social QR",
+      "booking": "Booking & social",
+      "priceList": "Price list",
+      "before": "Before",
+      "after": "After"
+    },
+    "products": {
+      "eyebrow": "Buy directly online",
+      "title": "Popular products",
+      "allLink": "View all products",
+      "unavailable": "Product data is currently unavailable. The current catalog will appear in the shop when the connection has been restored."
+    },
+    "industries": {
+      "eyebrow": "For your business",
+      "title": "Built for local businesses",
+      "body": "The right solution depends on your space, customers and day-to-day work. Industry pages will follow in a later phase.",
+      "restaurants": "Restaurants & Takeaways",
+      "cafes": "Cafés & Bakeries",
+      "salons": "Barbers & Salons",
+      "clinics": "Clinics & Practices",
+      "shops": "Local Shops",
+      "services": "Service Businesses"
+    },
+    "process": {
+      "eyebrow": "Custom orders",
+      "title": "How custom work works",
+      "body": "A clear process takes your idea from the first message to the right product.",
+      "send": {
+        "title": "Send your idea",
+        "text": "Send your logo, an idea or a photo of the intended location."
+      },
+      "mockup": {
+        "title": "Receive a proposal",
+        "text": "Kubikart prepares a mockup or recommends a suitable solution."
+      },
+      "approve": {
+        "title": "Approve the design",
+        "text": "You review the draft and approve the agreed version."
+      },
+      "produce": {
+        "title": "Production",
+        "text": "Kubikart produces the approved products and elements."
+      },
+      "receive": {
+        "title": "Receive and use",
+        "text": "Depending on the order, this is followed by shipping, pickup, delivery or suitable small installation."
+      }
+    },
+    "portfolio": {
+      "eyebrow": "From the workshop",
+      "title": "Visibility in a business setting",
+      "body": "These concept visualizations show possible changes at a counter, window and menu area. They are not published customer projects.",
+      "status": "Concept",
+      "counter": {
+        "title": "Digital counter touchpoint",
+        "type": "Counter & customer contact",
+        "deliverables": "Acrylic stand, NFC area and customizable presentation.",
+        "imageAlt": "Prototype NFC stand during design selection"
+      },
+      "production": {
+        "title": "Personalized small batch",
+        "type": "Production & personalization",
+        "deliverables": "Opening hours, window lettering and coordinated brand elements.",
+        "imageAlt": "Laser production of a personalized wooden item beside an acrylic stand"
+      },
+      "presentation": {
+        "title": "Coordinated hospitality touchpoint",
+        "type": "Menu & guest contact",
+        "deliverables": "Menu board, QR menu and a clear digital touchpoint.",
+        "imageAlt": "Prototype brand presentation with packaging, printed items and a stand"
+      }
+    },
+    "trust": {
+      "title": "Why Kubikart",
+      "local": {
+        "title": "Local to Ulm and Neu-Ulm",
+        "text": "A direct contact for businesses in the region."
+      },
+      "custom": {
+        "title": "Custom and on-brand",
+        "text": "Products and presentation are coordinated with your business."
+      },
+      "onePlace": {
+        "title": "Design and production",
+        "text": "Selection, design and production in one place."
+      },
+      "purchase": {
+        "title": "Purchase or custom quote",
+        "text": "Buy standard products online or request a project."
+      }
+    },
+    "finalCta": {
+      "title": "Not sure what fits your business?",
+      "body": "Send your logo and a photo of your shop, counter, window or menu area. Kubikart will suggest the right products or kit.",
+      "primaryCta": "Get a Free Mockup",
+      "secondaryCta": "Contact Kubikart"
+    }
   }
 }

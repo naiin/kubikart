@@ -71,9 +71,17 @@
   },
   "header": {
     "mobileSummary": "Made in Germany · Schneller Versand",
+    "announcement": {
+      "label": "Aktuelle Kubikart Hinweise",
+      "local": "Für Unternehmen in Ulm & Neu-Ulm",
+      "custom": "Individuelles Design für lokale Unternehmen",
+      "shop": "Onlineshop und individuelle Anfragen"
+    },
     "languageLabel": "Sprache",
     "nav": {
       "shop": "Shop",
+      "businessKits": "Business Kits",
+      "services": "Lösungen",
       "personalize": "Personalisieren",
       "laserService": "Laser Service",
       "printing3d": "3D Druck",
@@ -110,13 +118,20 @@
       }
     },
     "mobile": {
-      "personalizedGifts": "Personalisierte Geschenke"
+      "personalizedGifts": "Personalisierte Geschenke",
+      "customRequest": "Sonderanfertigung",
+      "search": "Suche",
+      "account": "Mein Konto",
+      "faq": "Häufige Fragen"
     },
     "cta": {
+      "freeMockup": "Kostenloses Mockup",
       "projectRequest": "Projekt anfragen",
       "shop": "Zum Shop"
     },
     "accessibility": {
+      "home": "Zur Kubikart Startseite",
+      "logoAlt": "Kubikart",
       "mainNavigation": "Hauptnavigation",
       "mobileNavigation": "Mobile Hauptnavigation",
       "mobileDrawer": "Mobiles Menü",
@@ -257,7 +272,20 @@
     "tagline": "Deine kreative Werkstatt für personalisierte Lasergravuren, 3D-Druck und individuelle Geschenke. Handgefertigt mit Liebe zum Detail in Deutschland.",
     "address": "Franz-Lehar-Str. 08, 89134 Blaustein",
     "projectCta": "Projekt anfragen",
+    "homeLabel": "Zur Kubikart Startseite",
+    "logoAlt": "Kubikart",
+    "socialLabel": "Kubikart in sozialen Netzwerken",
+    "shopAriaLabel": "Shop-Navigation im Footer",
+    "businessAriaLabel": "Geschäftslösungen im Footer",
+    "companyAriaLabel": "Unternehmensnavigation im Footer",
+    "legalAriaLabel": "Rechtliche Navigation im Footer",
     "shopTitle": "Shop",
+    "cart": "Warenkorb",
+    "account": "Mein Konto",
+    "businessTitle": "Für Unternehmen",
+    "businessKits": "Business Kits",
+    "companyTitle": "Unternehmen",
+    "legalTitle": "Rechtliches",
     "shop_allProducts": "Alle Produkte",
     "shop_gifts": "Personalisierte Geschenke",
     "shop_keychains": "Schlüsselanhänger",
@@ -539,5 +567,190 @@
     "faq4_answer": "Ja. Da jedes Stück individuell nach Bestellung gefertigt wird, ist jede Kombination ein persönliches Einzelstück.",
     "faq5_question": "Kann ich das Produkt als Geschenk verschicken lassen?",
     "faq5_answer": "Ja. Wenn du einen Hinweis zur Verpackung oder zum Anlass hast, kannst du ihn bei den Wünschen ergänzen."
+  },
+  "homeRedesign": {
+    "hero": {
+      "eyebrow": "Studio für lokale Sichtbarkeit & personalisierte Produkte",
+      "title": "Mach dein Unternehmen leichter sichtbar, scanbar und vertrauenswürdig.",
+      "body": "Kubikart gestaltet QR- und NFC-Aufsteller, Aufkleber, Menüs und Business Visibility Kits für lokale Unternehmen – plus ausgewählte personalisierte Produkte auf Bestellung.",
+      "primaryCta": "Business Kits entdecken",
+      "secondaryCta": "Produkte kaufen",
+      "supportingCta": "Kostenloses Mockup erhalten",
+      "trust": {
+        "local": "Ulm & Neu-Ulm",
+        "custom": "Individuelles Design",
+        "shop": "Onlineshop und lokaler Service"
+      },
+      "imageAlt": "Zusammenstellung verschiedener Kubikart Produktprototypen und Branding-Elemente",
+      "visualLabel": "Produktprototypen",
+      "visualText": "Bewertungsaufsteller, Menüboards, Beschriftungen und QR-Kontaktpunkte"
+    },
+    "beforeAfter": {
+      "eyebrow": "Vorher und nachher",
+      "title": "Kleine Details verändern, wie professionell ein Unternehmen wirkt.",
+      "body": "Provisorische Aushänge und einzelne QR-Codes werden zu einer abgestimmten Lösung für Theke, Fenster und Menübereich.",
+      "status": "Konzeptdarstellung",
+      "before": {
+        "label": "Vorher",
+        "title": "Provisorische Kundeninformation",
+        "text": "Papier-Aushänge, ein einzelner gedruckter QR-Code und uneinheitliche Menühinweise erschweren einen professionellen Eindruck.",
+        "imageAlt": "Prototypische Produktauswahl während der Planungsphase"
+      },
+      "after": {
+        "label": "Nachher",
+        "title": "Abgestimmte Sichtbarkeit",
+        "text": "Öffnungszeiten, Bewertungsaufsteller und Menüdisplay greifen Gestaltung und Kundenweg gemeinsam auf.",
+        "imageAlt": "Prototypische, koordiniert verpackte Produktzusammenstellung"
+      }
+    },
+    "kits": {
+      "eyebrow": "Business Visibility Kits",
+      "title": "Fertige Sichtbarkeits-Kits für lokale Unternehmen",
+      "body": "Starte mit einem abgestimmten Paket, statt jedes Element einzeln auszuwählen. Die gezeigten Prototypen werden individuell angefragt; es werden keine Preise vorweggenommen.",
+      "prototype": "Prototyp",
+      "cardCta": "Mockup anfragen",
+      "allLink": "Alle Business Kits ansehen",
+      "starter": {
+        "title": "Starter Visibility Kit",
+        "audience": "Für kleine lokale Unternehmen",
+        "description": "Eine kompakte Grundausstattung für wichtige digitale und sichtbare Kontaktpunkte.",
+        "item1": "QR- oder NFC-Aufsteller",
+        "item2": "Öffnungszeiten-Aufkleber",
+        "item3": "Social-Media-QR",
+        "imageAlt": "Prototyp eines NFC-Aufstellers mit personalisierten Produkten"
+      },
+      "gastro": {
+        "title": "Gastro Visibility Kit",
+        "audience": "Für Restaurants, Cafés und Takeaways",
+        "description": "Abgestimmte Elemente für Menü, Theke, Bewertungen und den Auftritt vor Ort.",
+        "item1": "Menü- oder Preisdisplay",
+        "item2": "Google-Bewertungsaufsteller",
+        "item3": "Fenster- oder Türbeschriftung",
+        "imageAlt": "Prototypische Zusammenstellung von Drucksachen, Aufsteller und Verpackung"
+      },
+      "salon": {
+        "title": "Barber & Salon Kit",
+        "audience": "Für Barbershops und Salons",
+        "description": "Eine klare Präsentation für Buchung, Bewertungen und Social-Media-Kontaktpunkte.",
+        "item1": "Bewertungs- oder Buchungsaufsteller",
+        "item2": "Öffnungszeiten-Beschriftung",
+        "item3": "Social-Media-QR",
+        "imageAlt": "Prototypische Produktkomposition mit Acrylaufsteller und personalisierten Elementen"
+      }
+    },
+    "contents": {
+      "title": "Was in den Kits enthalten sein kann",
+      "qr": "QR- / NFC-Aufsteller",
+      "hours": "Öffnungszeiten",
+      "reviews": "Bewertungs-Tools",
+      "boards": "Menüboards",
+      "menus": "Laminierte Menüs",
+      "window": "Fensteraufkleber",
+      "glass": "Milchglas-Elemente",
+      "social": "Social-Media-QR",
+      "payment": "Zahlungs-QR"
+    },
+    "visuals": {
+      "prototype": "Kubikart Prototyp",
+      "openingHours": "Öffnungszeiten",
+      "reviews": "Bewertungen",
+      "menu": "Menü",
+      "social": "Social QR",
+      "booking": "Buchung & Social",
+      "priceList": "Preisliste",
+      "before": "Vorher",
+      "after": "Nachher"
+    },
+    "products": {
+      "eyebrow": "Direkt online kaufen",
+      "title": "Beliebte Produkte",
+      "allLink": "Alle Produkte ansehen",
+      "unavailable": "Die Produktdaten sind momentan nicht verfügbar. Im Shop findest du den aktuellen Katalog, sobald die Verbindung wiederhergestellt ist."
+    },
+    "industries": {
+      "eyebrow": "Für dein Gewerbe",
+      "title": "Für lokale Unternehmen entwickelt",
+      "body": "Die passenden Lösungen unterscheiden sich je nach Fläche, Kundschaft und Arbeitsalltag. Branchen-Seiten folgen in einer späteren Phase.",
+      "restaurants": "Restaurants & Takeaways",
+      "cafes": "Cafés & Bäckereien",
+      "salons": "Barbershops & Salons",
+      "clinics": "Praxen & Kliniken",
+      "shops": "Lokale Geschäfte",
+      "services": "Dienstleistungsbetriebe"
+    },
+    "process": {
+      "eyebrow": "Individuelle Anfertigung",
+      "title": "So funktioniert die Zusammenarbeit",
+      "body": "Ein klarer Ablauf bringt deine Idee von der ersten Nachricht bis zum passenden Produkt.",
+      "send": {
+        "title": "Idee senden",
+        "text": "Sende dein Logo, eine Idee oder ein Foto der vorgesehenen Fläche."
+      },
+      "mockup": {
+        "title": "Vorschlag erhalten",
+        "text": "Kubikart erstellt ein Mockup oder empfiehlt eine passende Lösung."
+      },
+      "approve": {
+        "title": "Design freigeben",
+        "text": "Du prüfst den Entwurf und gibst die abgestimmte Ausführung frei."
+      },
+      "produce": {
+        "title": "Produktion",
+        "text": "Kubikart fertigt die freigegebenen Produkte und Elemente."
+      },
+      "receive": {
+        "title": "Erhalten und einsetzen",
+        "text": "Je nach Auftrag folgen Versand, Abholung, Lieferung oder eine geeignete kleine Montage."
+      }
+    },
+    "portfolio": {
+      "eyebrow": "Aus der Werkstatt",
+      "title": "Sichtbarkeit im geschäftlichen Einsatz",
+      "body": "Diese Konzeptdarstellungen zeigen mögliche Veränderungen an Theke, Fenster und Menübereich. Sie sind keine veröffentlichten Kundenprojekte.",
+      "status": "Konzept",
+      "counter": {
+        "title": "Digitaler Kontaktpunkt für die Theke",
+        "type": "Theke & Kundenkontakt",
+        "deliverables": "Acrylaufsteller, NFC-Fläche und individualisierbare Gestaltung.",
+        "imageAlt": "Prototyp eines NFC-Aufstellers während der Designauswahl"
+      },
+      "production": {
+        "title": "Personalisierte Kleinserie",
+        "type": "Produktion & Personalisierung",
+        "deliverables": "Öffnungszeiten, Fensterbeschriftung und abgestimmte Markenelemente.",
+        "imageAlt": "Laserproduktion eines personalisierten Holzprodukts neben einem Acrylaufsteller"
+      },
+      "presentation": {
+        "title": "Koordinierter Gastro-Kontaktpunkt",
+        "type": "Menü & Gästekontakt",
+        "deliverables": "Menüboard, QR-Menü und klarer digitaler Kontaktpunkt.",
+        "imageAlt": "Prototypische Markenpräsentation mit Verpackung, Drucksachen und Aufsteller"
+      }
+    },
+    "trust": {
+      "title": "Warum Kubikart",
+      "local": {
+        "title": "Lokal bei Ulm und Neu-Ulm",
+        "text": "Direkter Ansprechpartner für Unternehmen in der Region."
+      },
+      "custom": {
+        "title": "Individuell und markengerecht",
+        "text": "Produkte und Gestaltung werden auf deinen Auftritt abgestimmt."
+      },
+      "onePlace": {
+        "title": "Design und Produktion",
+        "text": "Auswahl, Gestaltung und Fertigung an einem Ort."
+      },
+      "purchase": {
+        "title": "Kauf oder individuelles Angebot",
+        "text": "Standardprodukte online kaufen oder ein Projekt anfragen."
+      }
+    },
+    "finalCta": {
+      "title": "Du weißt noch nicht, was zu deinem Unternehmen passt?",
+      "body": "Sende dein Logo und ein Foto deines Geschäfts, deiner Theke, deines Fensters oder Menübereichs. Kubikart schlägt passende Produkte oder ein Kit vor.",
+      "primaryCta": "Kostenloses Mockup erhalten",
+      "secondaryCta": "Kubikart kontaktieren"
+    }
   }
 }

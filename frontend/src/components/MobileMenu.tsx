@@ -1,107 +1,173 @@
 "use client";
 
-import { useEffect } from "react";
-import { createPortal } from "react-dom";
 import Image from "next/image";
+import { useEffect, useRef, type RefObject } from "react";
+import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useHasMounted } from "@/lib/cart";
+import { headerNavigation, mobileUtilityNavigation, type HeaderLinkItem } from "@/lib/header-navigation";
 import { LanguageSwitcher } from "./LanguageSwitcher";
-import { mobileNavigation } from "@/lib/header-navigation";
 
-export function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
+function isActiveRoute(pathname: string, item: HeaderLinkItem) {
+  const prefixes = item.activePrefixes ?? [item.href];
+  return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
+export function MobileMenu({
+  open,
+  pathname,
+  returnFocusRef,
+  onClose,
+}: {
+  open: boolean;
+  pathname: string;
+  returnFocusRef: RefObject<HTMLButtonElement | null>;
+  onClose: () => void;
+}) {
   const t = useTranslations("header");
   const mounted = useHasMounted();
+  const dialogRef = useRef<HTMLElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) {
-      document.body.style.overflow = "";
       return;
     }
+
+    const returnFocusTarget = returnFocusRef.current;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         onClose();
+        return;
+      }
+
+      if (event.key !== "Tab" || !dialogRef.current) {
+        return;
+      }
+
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      const first = focusable[0];
+      const last = focusable.at(-1);
+
+      if (!first || !last) {
+        return;
+      }
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
       }
     }
 
-    document.body.style.overflow = "hidden";
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
+      returnFocusTarget?.focus();
     };
-  }, [onClose, open]);
+  }, [onClose, open, returnFocusRef]);
 
-  if (!mounted) {
+  if (!mounted || !open) {
     return null;
   }
 
   return createPortal(
     <>
-      {open ? <div className="fixed inset-0 z-[70] bg-navy-950/40 backdrop-blur-[1px]" onClick={onClose} aria-hidden="true" /> : null}
+      <div className="fixed inset-0 z-[70] bg-brand/45" onClick={onClose} aria-hidden="true" />
       <aside
+        ref={dialogRef}
         id="mobile-menu-drawer"
         role="dialog"
         aria-modal="true"
         aria-label={t("accessibility.mobileDrawer")}
-        className={`fixed inset-y-0 right-0 z-[80] flex h-full w-[86vw] max-w-[380px] flex-col bg-white shadow-[0_24px_70px_rgba(6,20,38,0.22)] transition-transform duration-300 ease-out ${
-          open ? "translate-x-0" : "translate-x-full pointer-events-none"
-        }`}
+        className="fixed inset-y-0 right-0 z-[80] flex h-full w-[min(90vw,25rem)] flex-col border-l border-border bg-surface-white shadow-kubikart-lg"
       >
-        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-5">
-          <Link href="/" onClick={onClose} className="inline-flex items-center">
-            <Image src="/blue.svg" alt="Kubikart Logo" width={156} height={34} className="h-8 w-auto" priority />
+        <div className="flex min-h-16 items-center justify-between gap-4 border-b border-border px-5 py-2">
+          <Link href="/" onClick={onClose} className="inline-flex rounded-kubikart-sm" aria-label={t("accessibility.home")}>
+            <Image src="/blue.svg" alt={t("accessibility.logoAlt")} width={156} height={34} className="h-8 w-auto" priority />
           </Link>
           <button
+            ref={closeButtonRef}
             type="button"
             onClick={onClose}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-navy-900 transition hover:bg-cream-50"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-kubikart-sm border border-border text-brand transition-colors hover:bg-page"
             aria-label={t("accessibility.closeMenu")}
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6 6 18" />
             </svg>
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-6">
-          <nav aria-label={t("accessibility.mobileNavigation")} className="space-y-1">
-            {mobileNavigation.map((item) => (
-              <Link
-                key={item.labelKey}
-                href={item.href}
-                onClick={onClose}
-                className="flex items-center justify-between rounded-2xl px-4 py-3 text-[15px] font-semibold text-navy-900 transition hover:bg-cream-50 hover:text-accent-600"
-              >
-                <span>{t(item.labelKey)}</span>
-              </Link>
-            ))}
+          <nav aria-label={t("accessibility.mobileNavigation")}>
+            <ul className="space-y-1">
+              {headerNavigation.map((item) => {
+                const active = isActiveRoute(pathname, item);
+
+                return (
+                  <li key={item.labelKey}>
+                    <Link
+                      href={item.href}
+                      onClick={onClose}
+                      aria-current={active ? "page" : undefined}
+                      className={`flex min-h-12 items-center rounded-kubikart-sm border-l-2 px-4 py-3 text-base font-semibold transition-colors ${
+                        active ? "border-accent bg-page text-accent" : "border-transparent text-brand hover:bg-page"
+                      }`}
+                    >
+                      {t(item.labelKey)}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+
+            <div className="my-5 border-t border-border" />
+
+            <ul className="space-y-1">
+              {mobileUtilityNavigation.map((item) => {
+                const active = isActiveRoute(pathname, item);
+
+                return (
+                  <li key={item.labelKey}>
+                    <Link
+                      href={item.href}
+                      onClick={onClose}
+                      aria-current={active ? "page" : undefined}
+                      className={`flex min-h-11 items-center rounded-kubikart-sm px-4 py-2 text-sm font-medium transition-colors ${
+                        active ? "text-accent" : "text-brand hover:bg-page"
+                      }`}
+                    >
+                      {t(item.labelKey)}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
           </nav>
 
-          <div className="mt-8 rounded-[24px] border border-gray-200 bg-cream-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">{t("languageLabel")}</p>
-            <div className="mt-3">
-              <LanguageSwitcher variant="light" fullWidth />
-            </div>
+          <div className="mt-7 border-t border-border pt-5">
+            <p className="mb-3 text-xs font-semibold tracking-[0.08em] text-muted uppercase">{t("languageLabel")}</p>
+            <LanguageSwitcher fullWidth />
           </div>
         </div>
 
-        <div className="border-t border-gray-200 px-5 py-5">
-          <Link
-            href="/kontakt"
-            onClick={onClose}
-            className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-navy-900 px-5 text-sm font-bold text-white transition hover:bg-navy-800"
-          >
-            {t("cta.projectRequest")}
-          </Link>
-          <Link
-            href="/shop"
-            onClick={onClose}
-            className="mt-3 inline-flex h-12 w-full items-center justify-center rounded-xl border border-gray-300 bg-white px-5 text-sm font-bold text-navy-900 transition hover:bg-cream-50"
-          >
-            {t("cta.shop")}
+        <div className="border-t border-border p-5">
+          <Link href="/kontakt" onClick={onClose} className="kk-button kk-button-primary w-full">
+            {t("cta.freeMockup")}
           </Link>
         </div>
       </aside>
