@@ -46,7 +46,7 @@ export function Header() {
         <TopTrustBar />
         <div className="kk-container-full flex min-h-16 items-center justify-between gap-3 py-2 xl:min-h-[4.75rem]">
           <Link href="/" className="flex shrink-0 items-center rounded-kubikart-sm" aria-label={t("accessibility.home")}>
-            <Image src="/blue.svg" alt={t("accessibility.logoAlt")} width={160} height={35} priority className="h-8 w-auto xl:h-9" />
+            <Image src="/blue.svg" alt={t("accessibility.logoAlt")} width={200} height={50} priority className="h-8 w-auto sm:h-10 xl:h-12" />
           </Link>
 
           <nav aria-label={t("accessibility.mainNavigation")} className="hidden min-w-0 items-center xl:flex">

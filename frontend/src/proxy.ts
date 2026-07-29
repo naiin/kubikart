@@ -9,7 +9,7 @@ const apiRateLimit = new Map<string, { count: number; resetAt: number }>();
 const API_RATE_LIMIT = 30; // max requests per window
 const API_RATE_WINDOW = 60_000; // 1 minute
 
-export default function middleware(request: NextRequest) {
+export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // API route protection

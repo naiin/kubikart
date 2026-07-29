@@ -2,7 +2,13 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { ProductJsonLd } from "@/components/product/ProductJsonLd";
 import { ProductPageClient } from "@/components/product/ProductPageClient";
-import { getProductAbsoluteUrl, getProductImageAbsoluteUrl, getProductPageProduct, getRelatedProducts } from "@/lib/product-page";
+import {
+  getProductAbsoluteUrl,
+  getProductImageAbsoluteUrl,
+  getProductPageProduct,
+  getRelatedProducts,
+  type ProductPageProduct,
+} from "@/lib/product-page";
 import { getProduct, getProductReviews, type WCReview } from "@/lib/woocommerce";
 
 type ProductPageProps = {
@@ -17,9 +23,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   const product = await getProductPageProduct(slug, locale);
 
   if (!product) {
-    return {
-      title: "Produkt | Kubikart",
-    };
+    notFound();
   }
 
   const canonical = getProductAbsoluteUrl(locale, product.slug);
@@ -96,7 +100,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
     reviews = [];
   }
 
-  const relatedProducts = getRelatedProducts(product);
+  let relatedProducts: ProductPageProduct[] = [];
+  try {
+    relatedProducts = await getRelatedProducts(product, locale);
+  } catch {
+    relatedProducts = [];
+  }
 
   return (
     <>

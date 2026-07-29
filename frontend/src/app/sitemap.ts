@@ -1,5 +1,4 @@
 import type { MetadataRoute } from "next";
-import { getPlaceholderProducts } from "@/lib/product-page";
 import { getProducts, type WCProduct } from "@/lib/woocommerce";
 import {
   getAbsoluteUrl,
@@ -114,26 +113,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   );
   const productEntries = Object.fromEntries(localizedProducts) as Record<SiteLocale, WCProduct[]>;
 
-  if (!productEntries.de.length && !productEntries.en.length) {
-    for (const product of getPlaceholderProducts()) {
-      const alternates = {
-        de: `/de/shop/${product.slug}`,
-        en: `/en/shop/${product.slug}`,
-      } satisfies Record<SiteLocale, string>;
-
-      for (const locale of SITEMAP_LOCALES) {
-        entries.push({
-          url: getAbsoluteUrl(alternates[locale]),
-          lastModified: now,
-          changeFrequency: "weekly",
-          priority: 0.9,
-          alternates: buildAlternates(alternates),
-        });
-      }
-    }
-
-    return entries;
-  }
+  if (!productEntries.de.length && !productEntries.en.length) return entries;
 
   const slugById = new Map<number, Partial<Record<SiteLocale, string>>>();
   const modifiedBySlug = new Map<string, string | undefined>();

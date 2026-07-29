@@ -37,7 +37,13 @@ describe("POST /api/orders/create", () => {
             product_id: 15,
             quantity: 2,
             price: "9.99",
-            customizations: { engraving: "Max", material: "Oak" },
+            customizations: {
+              engraving_text: "M & T",
+              font: "modern",
+              motif: "heart",
+              special_request: "Keep the back simple",
+              gift_wrapping: "true",
+            },
           },
         ],
         billing: { first_name: "Max", last_name: "Mustermann", email: "max@test.de" },
@@ -65,8 +71,11 @@ describe("POST /api/orders/create", () => {
         quantity: 2,
         total: "19.98",
         meta_data: [
-          { key: "engraving", value: "Max" },
-          { key: "material", value: "Oak" },
+          { key: "engraving_text", value: "M & T" },
+          { key: "font", value: "modern" },
+          { key: "motif", value: "heart" },
+          { key: "special_request", value: "Keep the back simple" },
+          { key: "gift_wrapping", value: "true" },
         ],
       },
     ]);

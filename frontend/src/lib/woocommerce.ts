@@ -72,15 +72,19 @@ export interface WCProduct {
   description: string;
   short_description: string;
   price: string;
+  price_html?: string;
   regular_price: string;
   sale_price: string;
   on_sale: boolean;
+  purchasable?: boolean;
   stock_status: string;
   weight: string;
   dimensions: { length: string; width: string; height: string };
   shipping_class: string;
   shipping_class_id: number;
   categories: { id: number; name: string; slug: string }[];
+  related_ids?: number[];
+  upsell_ids?: number[];
   images: { id: number; src: string; alt: string }[];
   attributes: { id: number; name: string; slug?: string; variation?: boolean; options: string[] }[];
   default_attributes?: { id: number; name: string; option: string }[];
@@ -214,6 +218,19 @@ export async function getProductsByCategory(categoryId: number, lang?: string) {
     params: { category: categoryId, per_page: 50, ...(lang ? { lang } : {}) },
     tags: [CACHE_TAGS.products],
   });
+}
+
+export async function getProductsByIds(productIds: number[], lang?: string) {
+  if (productIds.length === 0) return [];
+
+  return getProducts(
+    {
+      include: productIds.join(","),
+      per_page: Math.min(productIds.length, 100),
+      status: "publish",
+    },
+    lang,
+  );
 }
 
 // Reviews

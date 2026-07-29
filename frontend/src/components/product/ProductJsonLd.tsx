@@ -25,7 +25,9 @@ export function ProductJsonLd({ product, locale }: { product: ProductPageProduct
         "@type": "ListItem",
         position: 3,
         name: product.category.name,
-        item: `${siteUrl}/${locale}/shop`,
+        item: product.category.id
+          ? `${siteUrl}/${locale}/shop?category=${product.category.id}`
+          : `${siteUrl}/${locale}/shop`,
       },
       {
         "@type": "ListItem",

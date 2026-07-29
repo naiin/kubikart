@@ -14,16 +14,7 @@ function buildCustomizationData(formData: FormData, options: ProductPersonalizat
   const customizations: Record<string, string> = {};
 
   for (const option of options) {
-    let value = "";
-
-    if (option.type === "file") {
-      const fileValue = formData.get(option.id);
-      if (fileValue instanceof File && fileValue.name) {
-        value = fileValue.name;
-      }
-    } else {
-      value = String(formData.get(option.id) || "").trim();
-    }
+    const value = String(formData.get(option.id) || "").trim();
 
     if (!value) {
       continue;
@@ -41,7 +32,7 @@ function buildCustomizationData(formData: FormData, options: ProductPersonalizat
   return { customizationSummary, customizations };
 }
 
-function ColorOptionGroup({ option }: { option: ProductPersonalizationOption }) {
+function SelectOptionGroup({ option }: { option: ProductPersonalizationOption }) {
   if (!option.options?.length) {
     return null;
   }
@@ -133,8 +124,8 @@ export function ProductPurchaseForm({
 
       <div className="space-y-5">
         {product.personalizationOptions.map((option) => {
-          if (option.type === "color") {
-            return <ColorOptionGroup key={option.id} option={option} />;
+          if (option.type === "select" && option.options && option.options.length <= 5) {
+            return <SelectOptionGroup key={option.id} option={option} />;
           }
 
           return (
@@ -168,14 +159,14 @@ export function ProductPurchaseForm({
                     </option>
                   ))}
                 </select>
-              ) : option.type === "file" ? (
+              ) : option.type === "checkbox" ? (
                 <input
                   id={option.id}
                   name={option.id}
-                  type="file"
+                  type="checkbox"
+                  value="true"
                   required={option.required}
-                  accept={option.accept}
-                  className="mt-2 block w-full cursor-pointer rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-700 file:mr-4 file:rounded-full file:border-0 file:bg-accent-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-navy-900"
+                  className="mt-2 h-4 w-4 rounded border-gray-300 text-navy-900 focus:ring-navy-900"
                 />
               ) : (
                 <input
