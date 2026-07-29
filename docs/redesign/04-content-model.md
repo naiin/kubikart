@@ -1,8 +1,8 @@
 # Kubikart Simplified Content Model
 
-**Status:** Approved near-term architecture
+**Status:** Implemented architecture
 
-**Phase:** 4A — documentation only
+**Phase:** 4A decision, updated after Phases 7A–7C
 
 **Audit date:** 2026-07-28
 
@@ -30,7 +30,7 @@ The immediate content model contains:
 3. WooCommerce Products assigned to the Business Kits category for all Business Kits.
 4. Existing WordPress or Next.js pages for About, Contact, FAQ, services, and legal content.
 
-One future content type is approved:
+One editorial content type is implemented:
 
 5. A WordPress custom post type named `business_industry`.
 
@@ -56,7 +56,7 @@ The immediate model does **not** include:
 | Product type grouping | WooCommerce Product Category | Used by shop filters and merchandising |
 | Business Kit | WooCommerce Product in Business Kits | Not a custom post type |
 | Business Kit price, stock, and variations | WooCommerce | Must use real commercial data |
-| Business Industry | Future `business_industry` post | Editorial industry page with product references |
+| Business Industry | `business_industry` post | Editorial industry page with product references |
 | About, Contact, FAQ, legal content | Existing frontend or WordPress page architecture | No new content type required |
 | UI and navigation labels | Existing `next-intl` messages | Localized in German and English |
 
@@ -68,11 +68,11 @@ The immediate model does **not** include:
 |---|---|---|
 | Products overview | `/[locale]/shop` | Exists |
 | Product single | `/[locale]/shop/[slug]` | Exists |
-| Business Kits overview | `/[locale]/services/brand-kit` | Exists as a static service page |
-| Business Kit single | `/[locale]/shop/[slug]` | Works through the generic product route |
+| Business Kits overview | `/[locale]/services/brand-kit` | WooCommerce-backed localized category overview |
+| Business Kit single | `/[locale]/shop/[slug]` | Dedicated presentation using the shared product commerce system |
 | Product-category landing | None | Categories currently filter `/shop` by numeric ID |
-| Business Industries overview | None | Future |
-| Business Industry single | None | Future |
+| Business Industries overview | `/[locale]/businesses` | Exists |
+| Business Industry single | `/[locale]/businesses/[industrySlug]` | Exists |
 | Portfolio | None | Deferred |
 | Case Study single | None | Deferred |
 
@@ -91,7 +91,8 @@ The immediate model does **not** include:
 
 `frontend/src/lib/product-page.ts` adapts WooCommerce products to the current detailed product interface while preserving variations, personalization fields, stock, images, prices, ratings, dimensions, and purchasing links.
 
-The later product redesign must remove or isolate production placeholder commerce fallbacks. WooCommerce must remain the only production owner of commercial product data.
+Production placeholder commerce fallbacks have been removed. WooCommerce is
+the only production owner of commercial product data.
 
 ### 4.3 Current WordPress extensions
 
@@ -104,7 +105,9 @@ Version-controlled Kubikart extensions include:
 - Kubikart Payment Gateway;
 - Kubikart Rating Sync.
 
-The only Kubikart custom post type currently found is the private newsletter subscription type. No Industry taxonomy, Business Industry post type, Portfolio, or Case Study model currently exists.
+The implemented Kubikart editorial post type is `business_industry`, provided
+by the version-controlled Business Industries plugin. No Industry taxonomy,
+Portfolio, or Case Study model exists.
 
 ### 4.4 Existing Business Kits
 
@@ -171,15 +174,20 @@ A kit-specific frontend layout may present included items, intended business typ
 
 The product route should select the kit-specific layout through Business Kits category membership. The public URL remains `/[locale]/shop/[productSlug]`.
 
-If a Kit is quotation-led rather than directly purchasable, that commercial state must be explicitly approved and represented consistently in WooCommerce or a narrowly defined future product field. A missing price must not silently invent a quotation state.
+If a Kit is quotation-led rather than directly purchasable, that commercial
+state must be explicitly approved and represented consistently through a
+supported WooCommerce product setting. A missing price must not silently
+invent a quotation state.
 
 Reference-image package tiers must become real WooCommerce variations or separate real products before they can appear. Codex must not create fictional Basic, Standard, or Premium options.
 
-## 7. Future Business Industry post type
+## 7. Business Industry post type
 
 ### 7.1 Purpose
 
-The future `business_industry` post type lets the owner create, localize, order, and publish a business-sector landing page in WordPress without editing Next.js source files.
+The `business_industry` post type lets the owner create, localize, order, and
+publish a business-sector landing page in WordPress without editing Next.js
+source files.
 
 Each post owns its editorial copy and image and references:
 
@@ -210,7 +218,7 @@ No Industry taxonomy is required.
 | `_kubikart_featured_kit_id` | One WooCommerce Product ID | Featured Kit for the Industry |
 | `_kubikart_related_product_ids` | Array of WooCommerce Product IDs | Relevant real products |
 
-The future WordPress implementation must:
+The WordPress implementation:
 
 - use native, version-controlled fields rather than ACF;
 - sanitize and authorize field updates;
@@ -241,7 +249,8 @@ The owner does not create:
 - a Case Study;
 - duplicate product records.
 
-Once published and localized, the post should automatically appear on the frontend Business Industries overview according to publication state and menu order.
+Once published, localized, and revalidated, the post appears on the frontend
+Business Industries overview according to publication state and menu order.
 
 ## 8. Final route map
 
@@ -260,7 +269,7 @@ Existing product and Business Kit URLs remain unchanged.
 
 ## 9. Business Industry REST requirements
 
-The future post type should use the WordPress REST API with `show_in_rest: true`.
+The post type uses the WordPress REST API with `show_in_rest: true`.
 
 Expected read endpoints:
 
@@ -276,12 +285,10 @@ Responses must provide:
 
 Relationship fields return IDs rather than copied WooCommerce objects. The Next.js server should batch-resolve those IDs through the existing authenticated WooCommerce client.
 
-The current Kubikart Security plugin blocks anonymous core WordPress REST reads. The future implementation must choose one narrowly scoped approach:
-
-1. authenticated server-to-server reads using a least-privileged Application Password; or
-2. anonymous `GET` access only to published Business Industry responses.
-
-It must not expose drafts, private posts, protected metadata, credentials, or newsletter data.
+The Kubikart Security plugin blocks anonymous core WordPress REST reads.
+Next.js uses authenticated server-to-server reads. Production must use a
+least-privileged Application Password account. Drafts, private posts,
+unapproved metadata, credentials, and newsletter data are not exposed.
 
 ## 10. Localization and SEO
 
@@ -295,7 +302,7 @@ Current behavior to preserve:
 - canonical and hreflang metadata;
 - dynamic WooCommerce product sitemap entries.
 
-Future Business Industry implementation must add:
+The Business Industry frontend provides:
 
 - localized slugs;
 - locale-correct slug redirects;
@@ -318,12 +325,12 @@ The intended primary navigation is:
 1. Home
 2. Shop
 3. Business Kits
-4. For Businesses
+4. Lösungen / Solutions
 5. About
 6. Contact
 7. Cart
 
-`For Businesses` will link to `/[locale]/businesses` once that route exists.
+`Lösungen` / `Solutions` links to `/[locale]/businesses`.
 
 Portfolio must not appear in primary navigation until real projects justify the feature and its content model.
 
@@ -331,7 +338,7 @@ Account, search, locale controls, mobile behavior, and utility actions remain go
 
 ## 12. Manual owner work
 
-The owner will later:
+The owner must:
 
 1. Approve the small visible customer-facing product-category set.
 2. Decide which legacy categories remain internal, secondary, or hidden from primary navigation.
@@ -347,9 +354,9 @@ The owner will later:
 
 Codex must not create fake Industries, products, prices, Kit contents, projects, customer identities, claims, or results.
 
-## 13. Codex responsibilities
+## 13. Implemented responsibilities
 
-In separately approved implementation phases, Codex may:
+The separately approved implementation phases completed:
 
 - redesign ProductCard and `/shop` while retaining existing numeric filters;
 - redesign the true WooCommerce Product page while preserving commerce behavior;
@@ -362,7 +369,7 @@ In separately approved implementation phases, Codex may:
 
 Codex must not migrate categories, generate commercial content, or publish Industry posts without explicit authorization and owner-approved data.
 
-## 14. Revised implementation order
+## 14. Completed implementation order
 
 ### 1. Simplified content model
 
@@ -408,6 +415,8 @@ The following are explicitly deferred:
 - automatic migration or deletion of legacy categories;
 - category sitemap and category schema work;
 - customer results, testimonials, and project metrics;
-- any generic content-model plugin beyond the future Business Industry requirement.
+- any generic content-model plugin in place of the version-controlled
+  Business Industries implementation.
 
-The immediate next implementation phase is **ProductCard and Shop redesign**.
+The listed implementation phases through Business Industries are complete.
+Portfolio and Case Studies remain deferred.

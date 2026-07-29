@@ -22,14 +22,14 @@ to infer schema.
 Products 83 and 82 had intact legacy list payloads before the live repair.
 Their original values are now retained in
 `_kubikart_custom_fields_backup_v1`, and their reviewed configurations use
-schema version 2. Products 67 and 66 still have no
-`_kubikart_custom_fields` value. The pre-migration representation is stored
+schema version 2. Products 67 and 66 were subsequently migrated to the same
+canonical schema-v2 field model. The pre-migration representation is stored
 in:
 
 `docs/redesign/05-product-field-backup-pre-5a2-2026-07-28.json`
 
-Only products 82 and 83 were explicitly reviewed and saved through the live
-WooCommerce editor. No bulk or load-time migration was run.
+Products 82, 83, 66, and 67 now have reviewed schema-v2 configuration. No
+bulk or load-time migration was run.
 
 ## Raw and canonical payload formats
 
@@ -140,10 +140,9 @@ Unknown types are not converted to text. The REST parser omits them and logs
 a development warning so an incorrectly configured field cannot render as a
 misleading input.
 
-The frontend still uses the existing product presets only when a product has
-no valid `_kubikart_custom_fields` metadata. This is temporary Phase 5A
-migration compatibility. Presets must not be removed until the real product
-fields and commerce flow have been checked in both languages.
+The temporary production preset compatibility was removed in Phase 5B after
+the four migration products had real WordPress configuration. The frontend
+does not create product-specific fields when metadata is absent.
 
 ## Authoring rules
 
@@ -165,8 +164,8 @@ fields and commerce flow have been checked in both languages.
 
 ## Owner-approved keychain target
 
-Products 67 (German) and 66 (English) currently have no stored fields. The
-owner must create them in WordPress; Codex must not seed them automatically.
+Products 67 (German) and 66 (English) now use the following stored canonical
+configuration. It remains the owner’s responsibility to keep it accurate.
 
 The stable keys and option values must match across translations.
 
@@ -232,7 +231,8 @@ gift_wrapping
 all generic helper text is empty, and irrelevant text settings are absent.
 German and English labels/placeholders/option labels remain localized.
 
-Products 67 and 66 contain no custom-field metadata and were not modified.
+Products 67 and 66 were later migrated with the same stable keys and
+language-neutral option values.
 
 ## Repairing an affected product
 
@@ -297,14 +297,14 @@ The WooCommerce REST extension now returns exactly one
 `_kubikart_custom_fields` entry. After saving, verify the response contains
 one entry with the intended canonical types before reviewing the frontend.
 
-## Owner verification before Phase 5B
+## Current owner verification
 
-1. Decide whether products 67 and 66 should receive the documented keychain
-   configuration; they currently have no custom fields.
-2. Configure an automatically reachable local revalidation URL/secret.
+1. Keep all four migrated product configurations synchronized with the real
+   production requirements.
+2. Configure an automatically reachable revalidation URL/secret.
 3. Perform a sandbox PayPal approval and a non-production WooCommerce order
    if end-to-end payment/order persistence must be proven before launch.
 
-The product-field editor and products 82/83 are ready for Phase 5B. Payment
-provider approval and creation of products 66/67 remain separate owner
-verification decisions.
+The product-field editor and all four migration products are compatible with
+the redesigned product page. Payment-provider approval remains a separate
+pre-launch verification task.
