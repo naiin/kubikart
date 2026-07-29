@@ -1,0 +1,117 @@
+{
+  "created_at": "2026-07-28",
+  "source": "WordPress get_post_meta(product_id, \"_kubikart_custom_fields\", true)",
+  "migration_executed": false,
+  "products": [
+    {
+      "product_id": 83,
+      "slug": "graviertes-holz-schneidebrett",
+      "payload": [
+        {
+          "id": "engraving_text",
+          "label": "Gravurtext",
+          "type": "text",
+          "required": true,
+          "helperText": "Pflichtfeld. Maximal 20 Zeichen.",
+          "placeholder": "z.B. M & T",
+          "maxLength": 20
+        },
+        {
+          "id": "font",
+          "label": "Schriftart",
+          "type": "text",
+          "required": true,
+          "helperText": "Pflichtfeld. Maximal 20 Zeichen.",
+          "placeholder": "Schriftart siehe Bild",
+          "maxLength": 20
+        },
+        {
+          "id": "motif",
+          "label": "Motiv oder Symbol",
+          "type": "text",
+          "required": true,
+          "helperText": "",
+          "placeholder": "",
+          "maxLength": null
+        },
+        {
+          "id": "special_request",
+          "label": "Besondere Wünsche",
+          "type": "textarea",
+          "required": false,
+          "helperText": "Optional.",
+          "placeholder": "Zum Beispiel Text auf der Rückseite",
+          "maxLength": null
+        },
+        {
+          "id": "_gift_wrapping",
+          "label": "Geschenkverpackung hinzufügen",
+          "type": "checkbox",
+          "required": false,
+          "helperText": "",
+          "price": 2.5
+        }
+      ]
+    },
+    {
+      "product_id": 82,
+      "slug": "engraved-wooden-cutting-board",
+      "payload": [
+        {
+          "id": "engraving_text",
+          "label": "Engraving text",
+          "type": "text",
+          "required": true,
+          "helperText": "Required Field; Maximum 20 Characters",
+          "placeholder": "e.g. M & T",
+          "maxLength": 20
+        },
+        {
+          "id": "font",
+          "label": "Font",
+          "type": "text",
+          "required": true,
+          "helperText": "Required Field; Maximum 20 Characters",
+          "placeholder": "Font",
+          "maxLength": 20
+        },
+        {
+          "id": "motif",
+          "label": "Motif or symbol",
+          "type": "text",
+          "required": true,
+          "helperText": "Required Field; Maximum 20 Characters",
+          "placeholder": "",
+          "maxLength": 20
+        },
+        {
+          "id": "special_request",
+          "label": "Special requests",
+          "type": "textarea",
+          "required": false,
+          "helperText": "Optional",
+          "placeholder": "For example, text on the back",
+          "maxLength": null
+        },
+        {
+          "id": "gift_wrapping",
+          "label": "Add gift wrapping",
+          "type": "checkbox",
+          "required": false,
+          "helperText": "Optional, price adjustment €2.50",
+          "price": 2.5
+        }
+      ]
+    },
+    {
+      "product_id": 67,
+      "slug": "holz-schluesselanhaenger-mit-gravur",
+      "payload": null
+    },
+    {
+      "product_id": 66,
+      "slug": "engraved-wooden-keychain",
+      "payload": null
+    }
+  ]
+}

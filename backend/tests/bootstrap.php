@@ -94,6 +94,7 @@ class WP_REST_Response {
     }
 
     public function get_data(): mixed  { return $this->data; }
+    public function set_data(mixed $data): void { $this->data = $data; }
     public function get_status(): int  { return $this->status; }
 }
 
@@ -177,6 +178,18 @@ function delete_transient(string $key): bool {
 function update_post_meta(int $post_id, string $key, mixed $value): void {
     $GLOBALS['_wp_post_meta'][$post_id][$key] = $value;
 }
+function add_post_meta(int $post_id, string $key, mixed $value, bool $unique = false): int|false {
+    if ($unique && isset($GLOBALS['_wp_post_meta'][$post_id][$key])) return false;
+    $GLOBALS['_wp_post_meta'][$post_id][$key] = $value;
+    return 1;
+}
+function delete_post_meta(int $post_id, string $key): bool {
+    unset($GLOBALS['_wp_post_meta'][$post_id][$key]);
+    return true;
+}
+function metadata_exists(string $type, int $post_id, string $key): bool {
+    return isset($GLOBALS['_wp_post_meta'][$post_id][$key]);
+}
 
 function get_post_meta(int $post_id, string $key = '', bool $single = false): mixed {
     if ($key === '') return $GLOBALS['_wp_post_meta'][$post_id] ?? [];
@@ -189,6 +202,30 @@ function get_option(string $option, mixed $default = false): mixed {
 
 function sanitize_email(string $email): string { return strtolower(trim($email)); }
 function sanitize_text_field(string $text): string { return trim(strip_tags($text)); }
+function sanitize_textarea_field(string $text): string { return trim(strip_tags($text)); }
+function sanitize_key(string $key): string { return preg_replace('/[^a-z0-9_\\-]/', '', strtolower($key)) ?? ''; }
+function sanitize_title(string $title): string {
+    $title = strtolower(trim($title));
+    return trim(preg_replace('/[^a-z0-9]+/', '-', $title) ?? '', '-');
+}
+function absint(mixed $value): int { return abs((int) $value); }
+function wc_format_decimal(mixed $value): string { return number_format((float) str_replace(',', '.', (string) $value), 2, '.', ''); }
+function esc_attr(mixed $value): string { return htmlspecialchars((string) $value, ENT_QUOTES); }
+function esc_html(mixed $value): string { return htmlspecialchars((string) $value, ENT_QUOTES); }
+function esc_textarea(mixed $value): string { return htmlspecialchars((string) $value, ENT_QUOTES); }
+function selected(mixed $selected, mixed $current, bool $echo = true): string {
+    $result = $selected === $current ? ' selected="selected"' : '';
+    if ($echo) echo $result;
+    return $result;
+}
+function checked(mixed $checked, mixed $current = true, bool $echo = true): string {
+    $result = $checked == $current ? ' checked="checked"' : '';
+    if ($echo) echo $result;
+    return $result;
+}
+function wp_unslash(mixed $value): mixed { return $value; }
+function wp_json_encode(mixed $value, int $flags = 0): string|false { return json_encode($value, $flags); }
+function current_time(string $type, bool $gmt = false): string { return '2026-07-28 12:00:00'; }
 function esc_url_raw(string $url): string { return filter_var($url, FILTER_SANITIZE_URL) ?: ''; }
 function home_url(string $path = ''): string { return 'https://test.local' . $path; }
 function site_url(string $path = ''): string { return 'https://test.local' . $path; }
