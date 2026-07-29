@@ -1,12 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { getCartLineId, readCart, useCart, useHasMounted, writeCart } from "@/lib/cart";
+import { formatCartCurrency, getCartLineId, readCart, useCart, useHasMounted, writeCart } from "@/lib/cart";
 
 export default function CartPage() {
   const t = useTranslations("common");
+  const locale = useLocale();
   const cart = useCart();
   const hasMounted = useHasMounted();
 
@@ -66,7 +67,7 @@ export default function CartPage() {
                       ))}
                     </div>
                   ) : null}
-                  <p className="text-sm text-gray-500 mt-1">€{item.price}</p>
+                  <p className="text-sm text-gray-500 mt-1">{formatCartCurrency(item.price, locale)}</p>
                 </div>
 
                 {/* Quantity */}

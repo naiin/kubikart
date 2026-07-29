@@ -87,6 +87,19 @@ export function getCartLineId(item: Pick<CartItem, "id" | "lineId">) {
   return item.lineId ?? String(item.id);
 }
 
+export function formatCartCurrency(value: string | number, locale: string) {
+  const amount = typeof value === "number" ? value : Number.parseFloat(value);
+
+  if (!Number.isFinite(amount)) {
+    return typeof value === "string" ? value.trim() : "";
+  }
+
+  return new Intl.NumberFormat(locale === "de" ? "de-DE" : "en-DE", {
+    style: "currency",
+    currency: "EUR",
+  }).format(amount);
+}
+
 export function useCart() {
   return useSyncExternalStore(subscribeToCart, readCart, () => EMPTY_CART);
 }
