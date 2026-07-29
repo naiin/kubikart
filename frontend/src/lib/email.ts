@@ -341,6 +341,37 @@ export async function sendContactConfirmation(
   });
 }
 
+export async function sendWithdrawalConfirmation(
+  email: string,
+  data: {
+    receiptId: string;
+    receivedAt: string;
+    name: string;
+    contractReference: string;
+    scope: string;
+    locale: "de" | "en";
+  },
+): Promise<boolean> {
+  const templateUuid = resolveTemplateUuid(process.env.MAILTRAP_TEMPLATE_WITHDRAWAL, "");
+  if (!process.env.MAILTRAP_TOKEN || !templateUuid) {
+    return false;
+  }
+
+  await sendEmail({
+    to: email,
+    templateUuid,
+    variables: {
+      receipt_id: data.receiptId,
+      received_at: data.receivedAt,
+      customer_name: data.name,
+      contract_reference: data.contractReference,
+      withdrawal_scope: data.scope || (data.locale === "de" ? "Gesamter Vertrag" : "Entire contract"),
+      locale: data.locale,
+    },
+  });
+  return true;
+}
+
 /**
  * Welcome email after newsletter subscription
  * Sent after double opt-in confirmation

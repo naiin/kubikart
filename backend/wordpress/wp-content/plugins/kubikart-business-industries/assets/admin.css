@@ -1,0 +1,78 @@
+.kubikart-industry-fields {
+  display: grid;
+  gap: 24px;
+}
+
+.kubikart-industry-fields__notice {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.kubikart-industry-field h3 {
+  margin-bottom: 4px;
+}
+
+.kubikart-product-search {
+  margin: 12px 0 8px;
+}
+
+.kubikart-product-list {
+  max-height: 320px;
+  overflow: auto;
+  border: 1px solid #c3c4c7;
+  background: #fff;
+}
+
+.kubikart-product-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 8px 10px;
+  border-bottom: 1px solid #dcdcde;
+  cursor: pointer;
+}
+
+.kubikart-product-row:last-child {
+  border-bottom: 0;
+}
+
+.kubikart-product-row.is-selected {
+  background: #f0f6fc;
+}
+
+.kubikart-product-row.is-dragging {
+  opacity: 0.55;
+}
+
+.kubikart-product-row__content {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+}
+
+.kubikart-product-row__content small {
+  color: #646970;
+}
+
+.kubikart-language-warning {
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: 50%;
+  background: #dba617;
+  color: #1d2327;
+  font-weight: 700;
+}
+
+.kubikart-sortable-products .dashicons-move {
+  color: #646970;
+  cursor: move;
+}
+
+@media (min-width: 1100px) {
+  .kubikart-industry-fields {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  }
+}

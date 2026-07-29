@@ -1,6 +1,7 @@
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { CACHE_TAGS } from "@/lib/woocommerce";
+import { WORDPRESS_CACHE_TAGS } from "@/lib/wordpress";
 import { createHmac } from "crypto";
 
 const EXPIRE_IMMEDIATELY = { expire: 0 };
@@ -53,6 +54,39 @@ export async function POST(request: NextRequest) {
       }
       revalidateTag(CACHE_TAGS.products, EXPIRE_IMMEDIATELY);
       revalidated.push(CACHE_TAGS.products);
+    } else if (topic.startsWith("industry.")) {
+      const id = Number(body.id);
+      const translations =
+        body.translations && typeof body.translations === "object"
+          ? body.translations as Record<string, { id?: number; slug?: string }>
+          : {};
+
+      revalidateTag(WORDPRESS_CACHE_TAGS.industries, EXPIRE_IMMEDIATELY);
+      revalidateTag(WORDPRESS_CACHE_TAGS.sitemap, EXPIRE_IMMEDIATELY);
+      revalidated.push(WORDPRESS_CACHE_TAGS.industries, WORDPRESS_CACHE_TAGS.sitemap);
+
+      if (Number.isInteger(id) && id > 0) {
+        revalidateTag(WORDPRESS_CACHE_TAGS.industry(id), EXPIRE_IMMEDIATELY);
+        revalidated.push(WORDPRESS_CACHE_TAGS.industry(id));
+      }
+
+      for (const locale of ["de", "en"] as const) {
+        revalidateTag(WORDPRESS_CACHE_TAGS.locale(locale), EXPIRE_IMMEDIATELY);
+        revalidated.push(WORDPRESS_CACHE_TAGS.locale(locale));
+        revalidatePath(`/${locale}/businesses`);
+
+        const translation = translations[locale];
+        if (translation?.id) {
+          revalidateTag(WORDPRESS_CACHE_TAGS.industry(translation.id), EXPIRE_IMMEDIATELY);
+          revalidated.push(WORDPRESS_CACHE_TAGS.industry(translation.id));
+        }
+        if (translation?.slug) {
+          revalidateTag(WORDPRESS_CACHE_TAGS.slug(locale, translation.slug), EXPIRE_IMMEDIATELY);
+          revalidated.push(WORDPRESS_CACHE_TAGS.slug(locale, translation.slug));
+          revalidatePath(`/${locale}/businesses/${translation.slug}`);
+        }
+      }
+      revalidatePath("/sitemap.xml");
     } else if (topic.startsWith("coupon.") || topic.startsWith("order.")) {
       // Orders/coupons don't need frontend cache invalidation
       return NextResponse.json({ skipped: true, topic });

@@ -178,12 +178,12 @@ export function Footer() {
   const shopLinks: FooterLink[] = [
     { label: t("shop_allProducts"), href: "/shop" },
     { label: t("shop_gifts"), href: "/personalisierte-geschenke" },
-    { label: t("shop_acrylicSigns"), href: "/shop/acryl-schilder" },
     { label: t("cart"), href: "/cart" },
     { label: t("account"), href: "/account" },
   ];
 
   const businessLinks: FooterLink[] = [
+    { label: t("businessIndustries"), href: "/businesses" },
     { label: t("businessKits"), href: "/services/brand-kit" },
     { label: t("service_laserEngraving"), href: "/dienstleistungen/lasergravur" },
     { label: t("service_laserCutting"), href: "/dienstleistungen/laserschnitt" },
@@ -246,7 +246,9 @@ export function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="inline-flex min-h-11 items-center text-sm leading-6 text-white/70 underline-offset-4 transition-colors hover:text-accent hover:underline"
+                    className={`inline-flex min-h-11 items-center text-sm leading-6 underline-offset-4 transition-colors hover:text-accent hover:underline ${
+                      link.href === "/legal/widerruf" ? "font-semibold text-accent" : "text-white/70"
+                    }`}
                   >
                     {link.label}
                   </Link>

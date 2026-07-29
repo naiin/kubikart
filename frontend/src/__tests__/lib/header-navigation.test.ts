@@ -23,10 +23,10 @@ describe("header navigation resolution", () => {
     expect(activeLabel("/en/services/brand-kit/")).toBe("nav.businessKits");
   });
 
-  it("selects the services item for its exact route and unmatched descendants", () => {
-    expect(activeLabel("/de/services")).toBe("nav.services");
-    expect(activeLabel("/de/services/custom-order")).toBe("nav.services");
-    expect(activeLabel("/de/dienstleistungen")).toBe("nav.services");
+  it("assigns the WordPress-managed Business Industry routes to For Businesses", () => {
+    expect(activeLabel("/de/businesses")).toBe("nav.businesses");
+    expect(activeLabel("/en/businesses/driving-schools")).toBe("nav.businesses");
+    expect(activeLabel("/de/dienstleistungen")).toBeUndefined();
   });
 
   it("keeps shop descendants assigned to Shop", () => {

@@ -82,14 +82,13 @@ describe("POST /api/contact", () => {
     expect(data.success).toBe(true);
   });
 
-  it("still returns 200 if WP post creation fails (graceful degradation)", async () => {
+  it("returns an error if the inquiry cannot be stored", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({ ok: false, text: async () => "Server Error" })
     );
     const { POST } = await import("@/app/api/contact/route");
     const res = await POST(makeRequest(validBody) as never);
-    // Form still succeeds for the user — data stored best-effort
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(503);
   });
 });

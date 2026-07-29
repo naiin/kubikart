@@ -15,6 +15,7 @@
         <include>
             <directory>wordpress/wp-content/plugins/kubikart-security</directory>
             <directory>wordpress/wp-content/plugins/kubikart-newsletter</directory>
+            <directory>wordpress/wp-content/plugins/kubikart-business-industries</directory>
             <directory>wordpress/wp-content/mu-plugins</directory>
         </include>
     </source>

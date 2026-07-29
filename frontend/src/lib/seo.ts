@@ -29,6 +29,7 @@ export const SEO_ROUTE_SEGMENTS = {
   laserCutting: { de: "/dienstleistungen/laserschnitt" },
   printing3d: { de: "/dienstleistungen/3d-druck", en: "/services/3d-printing" },
   brandKit: { de: "/services/brand-kit", en: "/services/brand-kit" },
+  businesses: { de: "/businesses", en: "/businesses" },
   printingMenus: { de: "/services/printing-menus", en: "/services/printing-menus" },
   impressum: { de: "/legal/impressum" },
   privacy: { de: "/legal/datenschutz" },

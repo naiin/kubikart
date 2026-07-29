@@ -1,6 +1,11 @@
 import type { MetadataRoute } from "next";
 import { getProducts, type WCProduct } from "@/lib/woocommerce";
 import {
+  getBusinessIndustries,
+  WordPressUnavailableError,
+  type BusinessIndustry,
+} from "@/lib/wordpress";
+import {
   getAbsoluteUrl,
   getLocalizedPath,
   SEO_ROUTE_SEGMENTS,
@@ -27,6 +32,7 @@ const STATIC_SITEMAP_ROUTES: StaticSitemapRoute[] = [
   { route: SEO_ROUTE_SEGMENTS.laserCutting, changeFrequency: "weekly", priority: 0.75 },
   { route: SEO_ROUTE_SEGMENTS.printing3d, changeFrequency: "weekly", priority: 0.8 },
   { route: SEO_ROUTE_SEGMENTS.brandKit, changeFrequency: "monthly", priority: 0.7 },
+  { route: SEO_ROUTE_SEGMENTS.businesses, changeFrequency: "weekly", priority: 0.8 },
   { route: SEO_ROUTE_SEGMENTS.printingMenus, changeFrequency: "monthly", priority: 0.7 },
   { route: SEO_ROUTE_SEGMENTS.customRequest, changeFrequency: "weekly", priority: 0.8 },
   { route: SEO_ROUTE_SEGMENTS.about, changeFrequency: "monthly", priority: 0.65 },
@@ -80,6 +86,42 @@ function buildAlternates(route: Partial<Record<SiteLocale, string>>) {
   };
 }
 
+export function buildIndustrySitemapEntries(
+  industryEntries: Record<SiteLocale, BusinessIndustry[]>,
+  now: Date,
+): MetadataRoute.Sitemap {
+  const entries: MetadataRoute.Sitemap = [];
+  const industryById = new Map<number, BusinessIndustry>();
+  for (const locale of SITEMAP_LOCALES) {
+    for (const industry of industryEntries[locale]) {
+      industryById.set(industry.id, industry);
+    }
+  }
+
+  for (const locale of SITEMAP_LOCALES) {
+    for (const industry of industryEntries[locale]) {
+      const alternates: Partial<Record<SiteLocale, string>> = {
+        [locale]: `/${locale}/businesses/${industry.slug}`,
+      };
+      for (const alternateLocale of SITEMAP_LOCALES) {
+        const translatedId = industry.translations[alternateLocale];
+        const translated = translatedId ? industryById.get(translatedId) : undefined;
+        if (translated && translated.locale === alternateLocale) {
+          alternates[alternateLocale] = `/${alternateLocale}/businesses/${translated.slug}`;
+        }
+      }
+      entries.push({
+        url: getAbsoluteUrl(`/${locale}/businesses/${industry.slug}`),
+        lastModified: industry.modified || now,
+        changeFrequency: "monthly",
+        priority: 0.75,
+        alternates: buildAlternates(alternates),
+      });
+    }
+  }
+  return entries;
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const entries: MetadataRoute.Sitemap = [];
@@ -113,47 +155,61 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   );
   const productEntries = Object.fromEntries(localizedProducts) as Record<SiteLocale, WCProduct[]>;
 
-  if (!productEntries.de.length && !productEntries.en.length) return entries;
+  if (productEntries.de.length || productEntries.en.length) {
+    const slugById = new Map<number, Partial<Record<SiteLocale, string>>>();
+    const modifiedBySlug = new Map<string, string | undefined>();
 
-  const slugById = new Map<number, Partial<Record<SiteLocale, string>>>();
-  const modifiedBySlug = new Map<string, string | undefined>();
-
-  for (const locale of SITEMAP_LOCALES) {
-    for (const product of productEntries[locale]) {
-      const localizedSlugs = slugById.get(product.id) || {};
-      localizedSlugs[locale] = product.slug;
-      slugById.set(product.id, localizedSlugs);
-      modifiedBySlug.set(`${locale}:${product.slug}`, product.date_modified_gmt || product.date_modified);
-    }
-  }
-
-  for (const locale of SITEMAP_LOCALES) {
-    for (const product of productEntries[locale]) {
-      const alternates: Partial<Record<SiteLocale, string>> = {
-        [locale]: `/${locale}/shop/${product.slug}`,
-      };
-
-      for (const alternateLocale of SITEMAP_LOCALES) {
-        const translatedId = product.translations?.[alternateLocale];
-        if (!translatedId) {
-          continue;
-        }
-
-        const translatedSlug = slugById.get(translatedId)?.[alternateLocale];
-        if (translatedSlug) {
-          alternates[alternateLocale] = `/${alternateLocale}/shop/${translatedSlug}`;
-        }
+    for (const locale of SITEMAP_LOCALES) {
+      for (const product of productEntries[locale]) {
+        const localizedSlugs = slugById.get(product.id) || {};
+        localizedSlugs[locale] = product.slug;
+        slugById.set(product.id, localizedSlugs);
+        modifiedBySlug.set(`${locale}:${product.slug}`, product.date_modified_gmt || product.date_modified);
       }
+    }
 
-      entries.push({
-        url: getAbsoluteUrl(`/${locale}/shop/${product.slug}`),
-        lastModified: modifiedBySlug.get(`${locale}:${product.slug}`) || now,
-        changeFrequency: "weekly",
-        priority: 0.9,
-        alternates: buildAlternates(alternates),
-      });
+    for (const locale of SITEMAP_LOCALES) {
+      for (const product of productEntries[locale]) {
+        const alternates: Partial<Record<SiteLocale, string>> = {
+          [locale]: `/${locale}/shop/${product.slug}`,
+        };
+
+        for (const alternateLocale of SITEMAP_LOCALES) {
+          const translatedId = product.translations?.[alternateLocale];
+          if (!translatedId) {
+            continue;
+          }
+
+          const translatedSlug = slugById.get(translatedId)?.[alternateLocale];
+          if (translatedSlug) {
+            alternates[alternateLocale] = `/${alternateLocale}/shop/${translatedSlug}`;
+          }
+        }
+
+        entries.push({
+          url: getAbsoluteUrl(`/${locale}/shop/${product.slug}`),
+          lastModified: modifiedBySlug.get(`${locale}:${product.slug}`) || now,
+          changeFrequency: "weekly",
+          priority: 0.9,
+          alternates: buildAlternates(alternates),
+        });
+      }
     }
   }
+
+  let industryEntries: Record<SiteLocale, BusinessIndustry[]> = { de: [], en: [] };
+  try {
+    const localizedIndustries = await Promise.all(
+      SITEMAP_LOCALES.map(async (locale) => [locale, await getBusinessIndustries(locale)] as const),
+    );
+    industryEntries = Object.fromEntries(localizedIndustries) as Record<SiteLocale, BusinessIndustry[]>;
+  } catch (error) {
+    if (!(error instanceof WordPressUnavailableError)) {
+      throw error;
+    }
+  }
+
+  entries.push(...buildIndustrySitemapEntries(industryEntries, now));
 
   return entries;
 }

@@ -136,7 +136,10 @@ function is_user_logged_in(): bool {
     return (bool) ($GLOBALS['_wp_mock_logged_in'] ?? false);
 }
 
-function current_user_can(string $cap): bool {
+function current_user_can(string $cap, mixed ...$args): bool {
+    if (isset($GLOBALS['_wp_mock_current_user_can']) && is_callable($GLOBALS['_wp_mock_current_user_can'])) {
+        return (bool) ($GLOBALS['_wp_mock_current_user_can'])($cap, ...$args);
+    }
     return (bool) ($GLOBALS['_wp_mock_user_can'] ?? true);
 }
 
@@ -213,6 +216,8 @@ function wc_format_decimal(mixed $value): string { return number_format((float) 
 function esc_attr(mixed $value): string { return htmlspecialchars((string) $value, ENT_QUOTES); }
 function esc_html(mixed $value): string { return htmlspecialchars((string) $value, ENT_QUOTES); }
 function esc_textarea(mixed $value): string { return htmlspecialchars((string) $value, ENT_QUOTES); }
+function esc_html__(string $text, ?string $domain = null): string { return esc_html(__($text, $domain)); }
+function esc_attr__(string $text, ?string $domain = null): string { return esc_attr(__($text, $domain)); }
 function selected(mixed $selected, mixed $current, bool $echo = true): string {
     $result = $selected === $current ? ' selected="selected"' : '';
     if ($echo) echo $result;
@@ -232,10 +237,85 @@ function site_url(string $path = ''): string { return 'https://test.local' . $pa
 function trailingslashit(string $url): string { return rtrim($url, '/') . '/'; }
 function is_author(): bool { return false; }
 function is_admin(): bool { return false; }
-function register_post_type(string $slug, array $args): void {}
+function register_post_type(string $slug, array $args): void {
+    $GLOBALS['_wp_post_types'][$slug] = $args;
+}
+function post_type_exists(string $slug): bool {
+    if (isset($GLOBALS['_wp_mock_post_type_exists'])) {
+        return (bool) $GLOBALS['_wp_mock_post_type_exists'];
+    }
+    return $slug === 'product' || isset($GLOBALS['_wp_post_types'][$slug]);
+}
+function register_post_meta(string $post_type, string $key, array $args): void {
+    $GLOBALS['_wp_post_meta_registrations'][$post_type][$key] = $args;
+}
+function register_rest_field(string $object_type, string $attribute, array $args): void {
+    $GLOBALS['_wp_rest_fields'][$object_type][$attribute] = $args;
+}
 function register_rest_route(string $namespace, string $route, array $args): void {
     $GLOBALS['_wp_rest_routes'][$namespace . $route] = $args;
 }
+function register_activation_hook(string $file, callable $callback): void {
+    $GLOBALS['_wp_activation_hooks'][$file] = $callback;
+}
+function register_deactivation_hook(string $file, callable $callback): void {
+    $GLOBALS['_wp_deactivation_hooks'][$file] = $callback;
+}
+function flush_rewrite_rules(): void {
+    $GLOBALS['_wp_flush_rewrite_rules'] = ($GLOBALS['_wp_flush_rewrite_rules'] ?? 0) + 1;
+}
+function add_meta_box(string $id, string $title, callable|string $callback, string $screen, string $context = 'advanced', string $priority = 'default'): void {
+    $GLOBALS['_wp_meta_boxes'][$screen][$id] = compact('title', 'callback', 'context', 'priority');
+}
+function wp_nonce_field(string $action, string $name): void {
+    echo '<input type="hidden" name="' . esc_attr($name) . '" value="test-nonce">';
+}
+function wp_verify_nonce(mixed $nonce, string $action): bool {
+    return ($GLOBALS['_wp_mock_nonce_valid'] ?? true) && $nonce === 'test-nonce';
+}
+function wp_is_post_autosave(int $post_id): int|false {
+    return !empty($GLOBALS['_wp_mock_autosave']) ? $post_id : false;
+}
+function wp_is_post_revision(int $post_id): int|false {
+    return !empty($GLOBALS['_wp_mock_revision']) ? $post_id : false;
+}
+function get_post_type(int|object|null $post = null): string|false {
+    if (is_object($post) && isset($post->post_type)) return $post->post_type;
+    $id = (int) $post;
+    return $GLOBALS['_wp_posts'][$id]->post_type ?? false;
+}
+function get_post(int $post_id): object|null {
+    return $GLOBALS['_wp_posts'][$post_id] ?? null;
+}
+function get_posts(array $args = []): array {
+    $result = wp_mock_fn('get_posts', [$args]);
+    return is_array($result) ? $result : [];
+}
+function get_post_status(int $post_id): string|false {
+    return $GLOBALS['_wp_posts'][$post_id]->post_status ?? false;
+}
+function get_the_title(int $post_id): string {
+    return $GLOBALS['_wp_posts'][$post_id]->post_title ?? '';
+}
+function has_term(string|int $term, string $taxonomy, int $post_id): bool {
+    $terms = $GLOBALS['_wp_product_terms'][$post_id][$taxonomy] ?? [];
+    return in_array($term, $terms, true);
+}
+function get_current_user_id(): int { return 1; }
+function admin_url(string $path = ''): string { return 'https://test.local/wp-admin/' . ltrim($path, '/'); }
+function wp_remote_post(string $url, array $args = []): array|WP_Error {
+    $GLOBALS['_wp_remote_posts'][] = compact('url', 'args');
+    return ['response' => ['code' => 202]];
+}
+function wp_enqueue_script(string $handle, string $src = '', array $deps = [], string|bool|null $ver = false, bool $in_footer = false): void {
+    $GLOBALS['_wp_scripts'][$handle] = compact('src', 'deps', 'ver', 'in_footer');
+}
+function wp_enqueue_style(string $handle, string $src = '', array $deps = [], string|bool|null $ver = false, string $media = 'all'): void {
+    $GLOBALS['_wp_styles'][$handle] = compact('src', 'deps', 'ver', 'media');
+}
+function plugin_dir_url(string $file): string { return 'https://test.local/plugin/'; }
+function plugin_basename(string $file): string { return basename($file); }
+function status_header(int $code): void {}
 function wp_redirect(string $url, int $status = 302): void {}
 function __return_false(): bool { return false; }
 function __return_true(): bool  { return true; }

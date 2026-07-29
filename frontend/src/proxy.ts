@@ -35,7 +35,7 @@ export default function proxy(request: NextRequest) {
     }
 
     // Ensure only POST for form endpoints
-    if ((pathname === "/api/contact" || pathname === "/api/newsletter") && request.method !== "POST") {
+    if ((pathname === "/api/contact" || pathname === "/api/newsletter" || pathname === "/api/withdrawal") && request.method !== "POST") {
       return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
     }
 

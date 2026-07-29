@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
 import { checkForSpam } from "@/lib/security";
 import { sendContactConfirmation } from "@/lib/email";
 
-const WP_URL = process.env.NEXT_PUBLIC_WORDPRESS_URL!;
-const WP_AUTH = "Basic " + Buffer.from(`${process.env.WP_APP_USER}:${process.env.WP_APP_PASSWORD}`).toString("base64");
+const WP_URL = process.env.NEXT_PUBLIC_WORDPRESS_URL?.replace(/\/+$/, "");
+const WP_APP_USER = process.env.WP_APP_USER;
+const WP_APP_PASSWORD = process.env.WP_APP_PASSWORD;
 
 // Rate limiting: simple in-memory store (per-instance)
 const submissions = new Map<string, number[]>();
@@ -22,38 +22,38 @@ export async function POST(request: Request) {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
 
   if (isRateLimited(ip)) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    return Response.json({ error: "Too many requests" }, { status: 429 });
   }
 
   let body;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    return Response.json({ error: "Invalid request" }, { status: 400 });
   }
 
   // Spam/bot detection (5s min for contact form)
   const spamCheck = checkForSpam(body, request, 5000);
   if (spamCheck.isSpam) {
     // Return fake success to not reveal detection to bots
-    return NextResponse.json({ success: true });
+    return Response.json({ success: true });
   }
 
   const { name, email, phone, type, message } = body;
 
   // Validate required fields
   if (!name || !email || !message) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    return Response.json({ error: "Missing required fields" }, { status: 400 });
   }
 
   // Basic email validation
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return NextResponse.json({ error: "Invalid email" }, { status: 400 });
+    return Response.json({ error: "Invalid email" }, { status: 400 });
   }
 
   // Sanitize inputs (strip HTML tags)
-  const sanitize = (str: string) =>
-    str
+  const sanitize = (value: unknown) =>
+    String(value ?? "")
       .replace(/<[^>]*>/g, "")
       .trim()
       .slice(0, 2000);
@@ -65,6 +65,12 @@ export async function POST(request: Request) {
     type: sanitize(type || "personal"),
     message: sanitize(message),
   };
+
+  if (!WP_URL || !WP_APP_USER || !WP_APP_PASSWORD) {
+    console.error("Contact inquiry storage is not configured.");
+    return Response.json({ error: "Unable to save inquiry" }, { status: 503 });
+  }
+  const wpAuth = `Basic ${Buffer.from(`${WP_APP_USER}:${WP_APP_PASSWORD}`).toString("base64")}`;
 
   // Try to submit via CF7 REST API (if CF7 is active and form ID is configured)
   const cf7FormId = process.env.CF7_FORM_ID;
@@ -92,11 +98,7 @@ export async function POST(request: Request) {
             console.error("Failed to send contact confirmation email:", err);
           }
 
-          // Track successful submission for rate limiting
-          const timestamps = submissions.get(ip) || [];
-          timestamps.push(Date.now());
-          submissions.set(ip, timestamps);
-          return NextResponse.json({ success: true });
+          return Response.json({ success: true });
         }
       }
     } catch {
@@ -121,18 +123,18 @@ export async function POST(request: Request) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: WP_AUTH,
+        Authorization: wpAuth,
       },
       body: JSON.stringify(postBody),
     });
 
     if (!wpRes.ok) {
-      // WP post creation failed — still consider it a success for the user
-      // since we can log it server-side
-      console.error("Failed to save contact form to WP:", await wpRes.text());
+      console.error("Failed to save contact form to WP.", { status: wpRes.status });
+      return Response.json({ error: "Unable to save inquiry" }, { status: 503 });
     }
   } catch (err) {
     console.error("Contact form WP submission error:", err);
+    return Response.json({ error: "Unable to save inquiry" }, { status: 503 });
   }
 
   // Send confirmation email to customer
@@ -145,10 +147,5 @@ export async function POST(request: Request) {
     // Don't fail the request if email fails
   }
 
-  // Track for rate limiting
-  const timestamps = submissions.get(ip) || [];
-  timestamps.push(Date.now());
-  submissions.set(ip, timestamps);
-
-  return NextResponse.json({ success: true });
+  return Response.json({ success: true });
 }

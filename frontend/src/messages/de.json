@@ -81,6 +81,7 @@
     "nav": {
       "shop": "Shop",
       "businessKits": "Business Kits",
+      "businesses": "Für Unternehmen",
       "services": "Lösungen",
       "personalize": "Personalisieren",
       "laserService": "Laser Service",
@@ -218,6 +219,66 @@
       "cta": "Jetzt anfragen"
     }
   },
+  "businessIndustries": {
+    "breadcrumbLabel": "Brotkrümelnavigation",
+    "home": "Startseite",
+    "parent": "Für Unternehmen",
+    "missingImage": "Für diesen Unternehmensbereich ist noch kein Bild hinterlegt.",
+    "missingImageLabel": "Kein Bild für {title} hinterlegt",
+    "missingProductImage": "Kein Produktbild für {title} hinterlegt",
+    "missingProductImageText": "Produktbild noch nicht hinterlegt",
+    "available": "Verfügbar",
+    "outOfStock": "Derzeit nicht verfügbar",
+    "productsUnavailable": "Die Produktinformationen sind momentan nicht verfügbar. Die Inhalte zu diesem Unternehmensbereich bleiben weiterhin sichtbar.",
+    "overview": {
+      "metadataTitle": "Lösungen für lokale Unternehmen | Kubikart",
+      "metadataDescription": "Finde passende Kubikart Produkte und Business Kits für unterschiedliche Arten lokaler Unternehmen.",
+      "eyebrow": "Lösungen für lokale Unternehmen",
+      "heading": "Finde Produkte, die zu deinem Unternehmen passen",
+      "intro": "Starte mit deiner Unternehmensart und entdecke ausgewählte Produkte sowie ein vorgeschlagenes Business Kit. Welche Lösung passt, hängt von deinem Standort, deinen Abläufen und deinen Kundenkontaktpunkten ab.",
+      "listHeading": "Unternehmensbereiche",
+      "view": "Lösungen ansehen",
+      "viewAria": "Lösungen für {title} ansehen"
+    },
+    "detail": {
+      "metadataTitle": "{title} | Lösungen von Kubikart",
+      "metadataFallback": "Entdecke passende Kubikart Produkte für {title}.",
+      "eyebrow": "Lösungen für deinen Unternehmensbereich",
+      "contentEyebrow": "Im Kundenkontakt",
+      "contentHeading": "Was für diesen Bereich wichtig ist",
+      "kitEyebrow": "Ausgewähltes Business Kit",
+      "viewKit": "Business Kit ansehen",
+      "productsEyebrow": "Passende Produkte",
+      "productsHeading": "Ausgewählte Produkte für diesen Bereich",
+      "noProducts": "Die ausgewählten Produkte sind momentan nicht veröffentlicht."
+    },
+    "empty": {
+      "title": "Noch keine Unternehmensbereiche veröffentlicht",
+      "text": "Sobald die ersten Bereiche in WordPress veröffentlicht sind, erscheinen sie automatisch hier."
+    },
+    "unavailable": {
+      "title": "Unternehmensbereiche momentan nicht verfügbar",
+      "text": "Die redaktionellen Unternehmensinhalte können gerade nicht geladen werden. Shop, Business Kits und Kontakt bleiben erreichbar.",
+      "metadataTitle": "Unternehmensbereiche momentan nicht verfügbar | Kubikart"
+    },
+    "notFound": {
+      "metadataTitle": "Unternehmensbereich nicht gefunden | Kubikart",
+      "title": "Unternehmensbereich nicht gefunden",
+      "text": "Dieser Unternehmensbereich ist nicht veröffentlicht oder unter dieser Adresse nicht verfügbar."
+    },
+    "actions": {
+      "shop": "Zum Shop",
+      "kits": "Business Kits ansehen",
+      "contact": "Kubikart kontaktieren",
+      "back": "Alle Unternehmensbereiche"
+    },
+    "cta": {
+      "title": "Du weißt nicht, welche Produkte zu deinem Unternehmen passen?",
+      "text": "Sende dein Logo, ein Foto des relevanten Bereichs und eine kurze Beschreibung dessen, was du benötigst.",
+      "contact": "Kubikart kontaktieren",
+      "kits": "Business Kits ansehen"
+    }
+  },
   "businessKitsOverview": {
     "metadataTitle": "Business Visibility Kits für lokale Unternehmen | Kubikart",
     "metadataDescription": "Entdecke echte Kubikart Business Kits mit abgestimmten Produkten für sichtbare Kundenkontaktpunkte.",
@@ -284,6 +345,55 @@
     "processingTime": "Bearbeitungszeit: 1–2 Werktage",
     "trackingInfo": "Nach dem Versand erhalten Sie eine Sendungsverfolgungsnummer per E-Mail."
   },
+  "withdrawal": {
+    "metadataTitle": "Vertrag widerrufen | Kubikart",
+    "metadataDescription": "Widerruf elektronisch an Kubikart übermitteln und Informationen zum gesetzlichen Widerrufsrecht lesen.",
+    "eyebrow": "Rechtliches",
+    "title": "Widerruf",
+    "intro": "Hier kannst du einen online geschlossenen Vertrag elektronisch widerrufen. Alternativ kannst du deinen Widerruf weiterhin per E-Mail oder Post erklären.",
+    "functionEyebrow": "Elektronische Widerrufsfunktion",
+    "functionTitle": "Vertrag online widerrufen",
+    "functionIntro": "Die Funktion führt dich durch die erforderlichen Angaben. Vor dem Absenden kannst du alles noch einmal prüfen.",
+    "startButton": "Vertrag widerrufen",
+    "detailsTitle": "Angaben zum Widerruf",
+    "requiredNote": "Mit * gekennzeichnete Felder sind erforderlich.",
+    "name": "Name",
+    "email": "E-Mail-Adresse",
+    "emailHelp": "An diese Adresse wird die Eingangsbestätigung übermittelt, sobald der E-Mail-Versand eingerichtet ist.",
+    "contractReference": "Bestellung oder Vertrag",
+    "contractReferenceHelp": "Gib möglichst die Bestellnummer oder eine andere eindeutige Vertragsangabe ein.",
+    "scope": "Betroffene Waren oder Vertragsteile",
+    "scopeHelp": "Optional. Leer lassen, wenn du den gesamten Vertrag widerrufen möchtest.",
+    "reviewButton": "Angaben prüfen",
+    "cancelButton": "Abbrechen",
+    "reviewTitle": "Widerruf prüfen",
+    "reviewIntro": "Prüfe deine Angaben. Mit dem nächsten Button wird der Widerruf verbindlich übermittelt.",
+    "entireContract": "Gesamter Vertrag",
+    "confirmButton": "Widerruf bestätigen",
+    "editButton": "Angaben ändern",
+    "submitting": "Wird übermittelt …",
+    "error": "Der Widerruf konnte nicht sicher gespeichert werden. Bitte versuche es erneut oder sende ihn an info@kubikart.de.",
+    "successTitle": "Widerruf ist eingegangen",
+    "successText": "Deine Widerrufserklärung wurde mit Datum und Uhrzeit gespeichert.",
+    "emailSent": "Eine Eingangsbestätigung wurde an deine E-Mail-Adresse gesendet. Zusätzlich wurde eine speicherbare Bestätigung heruntergeladen.",
+    "downloadNotice": "Eine speicherbare Eingangsbestätigung wurde heruntergeladen. Bewahre sie als Nachweis auf.",
+    "receiptId": "Eingangs-ID",
+    "receivedAt": "Eingegangen am",
+    "downloadReceipt": "Bestätigung erneut herunterladen",
+    "receiptTitle": "Kubikart – Eingangsbestätigung des Widerrufs",
+    "instructionTitle": "Widerrufsbelehrung",
+    "rightParagraph1": "Du hast das Recht, binnen vierzehn Tagen ohne Angabe von Gründen diesen Vertrag zu widerrufen. Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag, an dem du oder ein von dir benannter Dritter, der nicht der Beförderer ist, die Waren in Besitz genommen hast beziehungsweise hat.",
+    "rightParagraph2": "Um dein Widerrufsrecht auszuüben, musst du Kubikart mittels einer eindeutigen Erklärung über deinen Entschluss informieren. Du kannst dafür die elektronische Funktion oben, eine E-Mail oder einen Brief verwenden.",
+    "rightParagraph3": "Zur Wahrung der Widerrufsfrist reicht es aus, dass du die Mitteilung über die Ausübung des Widerrufsrechts vor Ablauf der Widerrufsfrist absendest.",
+    "consequencesTitle": "Folgen des Widerrufs",
+    "consequences1": "Wenn du diesen Vertrag widerrufst, erstatten wir alle von dir erhaltenen Zahlungen einschließlich der Lieferkosten, ausgenommen Mehrkosten einer anderen als der angebotenen günstigsten Standardlieferung, unverzüglich und spätestens binnen vierzehn Tagen ab Eingang des Widerrufs.",
+    "consequences2": "Für die Rückzahlung verwenden wir dasselbe Zahlungsmittel wie bei der ursprünglichen Transaktion, sofern nicht ausdrücklich etwas anderes vereinbart wurde. Wir können die Rückzahlung verweigern, bis wir die Waren zurückerhalten haben oder du den Nachweis der Rücksendung erbracht hast.",
+    "returns": "Du musst die Waren unverzüglich und spätestens binnen vierzehn Tagen nach deiner Mitteilung zurücksenden. Du trägst die unmittelbaren Kosten der Rücksendung.",
+    "exclusionTitle": "Ausschluss des Widerrufsrechts",
+    "exclusionText": "Das Widerrufsrecht besteht insbesondere nicht bei Verträgen über Waren, die nicht vorgefertigt sind und für deren Herstellung eine individuelle Auswahl oder Bestimmung maßgeblich ist oder die eindeutig auf persönliche Bedürfnisse zugeschnitten sind.",
+    "pdfLabel": "Zusätzliche PDF-Fassung:",
+    "pdfLink": "Widerrufsbelehrung herunterladen"
+  },
   "account": {
     "title": "Mein Konto",
     "dashboard": "Übersicht",
@@ -330,6 +440,7 @@
     "cart": "Warenkorb",
     "account": "Mein Konto",
     "businessTitle": "Für Unternehmen",
+    "businessIndustries": "Branchenlösungen",
     "businessKits": "Business Kits",
     "companyTitle": "Unternehmen",
     "legalTitle": "Rechtliches",
@@ -348,7 +459,7 @@
     "infoTitle": "Informationen",
     "info_about": "Über uns",
     "info_shipping": "Versand & Lieferung",
-    "info_withdrawal": "Widerrufsrecht",
+    "info_withdrawal": "Vertrag widerrufen",
     "info_terms": "AGB",
     "info_privacy": "Datenschutz",
     "info_imprint": "Impressum",
@@ -763,7 +874,8 @@
     "kits": {
       "eyebrow": "Business Visibility Kits",
       "title": "Fertige Sichtbarkeits-Kits für lokale Unternehmen",
-      "body": "Starte mit einem abgestimmten Paket, statt jedes Element einzeln auszuwählen. Die gezeigten Prototypen werden individuell angefragt; es werden keine Preise vorweggenommen.",
+      "body": "Entdecke veröffentlichte Business Kits direkt aus dem Kubikart Shop. Preise, Verfügbarkeit und Details stammen aus WooCommerce.",
+      "unavailable": "Die Business Kits können gerade nicht geladen werden. Die Übersicht und der Kontakt bleiben erreichbar.",
       "prototype": "Prototyp",
       "cardCta": "Mockup anfragen",
       "allLink": "Alle Business Kits ansehen",
@@ -827,7 +939,9 @@
     "industries": {
       "eyebrow": "Für dein Gewerbe",
       "title": "Für lokale Unternehmen entwickelt",
-      "body": "Die passenden Lösungen unterscheiden sich je nach Fläche, Kundschaft und Arbeitsalltag. Branchen-Seiten folgen in einer späteren Phase.",
+      "body": "Wähle eine veröffentlichte Branchenlösung mit passenden Produkten und einem empfohlenen Business Kit.",
+      "allLink": "Alle Branchenlösungen ansehen",
+      "unavailable": "Die Branchenlösungen können gerade nicht geladen werden.",
       "restaurants": "Restaurants & Takeaways",
       "cafes": "Cafés & Bäckereien",
       "salons": "Barbershops & Salons",

@@ -81,6 +81,7 @@
     "nav": {
       "shop": "Shop",
       "businessKits": "Business Kits",
+      "businesses": "For Businesses",
       "services": "Solutions",
       "personalize": "Personalize",
       "laserService": "Laser Service",
@@ -218,6 +219,66 @@
       "cta": "Request a Quote"
     }
   },
+  "businessIndustries": {
+    "breadcrumbLabel": "Breadcrumb",
+    "home": "Home",
+    "parent": "For Businesses",
+    "missingImage": "No image has been added for this business area yet.",
+    "missingImageLabel": "No image added for {title}",
+    "missingProductImage": "No product image added for {title}",
+    "missingProductImageText": "Product image not added yet",
+    "available": "Available",
+    "outOfStock": "Currently unavailable",
+    "productsUnavailable": "Product information is temporarily unavailable. The editorial information for this business area remains available.",
+    "overview": {
+      "metadataTitle": "Solutions for local businesses | Kubikart",
+      "metadataDescription": "Find relevant Kubikart products and Business Kits for different types of local business.",
+      "eyebrow": "Solutions for local businesses",
+      "heading": "Find products that fit your type of business",
+      "intro": "Start with your business type and explore selected products and a suggested Business Kit. The suitable solution depends on your location, workflow and customer touchpoints.",
+      "listHeading": "Business areas",
+      "view": "View solutions",
+      "viewAria": "View solutions for {title}"
+    },
+    "detail": {
+      "metadataTitle": "{title} | Kubikart solutions",
+      "metadataFallback": "Explore suitable Kubikart products for {title}.",
+      "eyebrow": "Solutions for your business area",
+      "contentEyebrow": "Customer touchpoints",
+      "contentHeading": "What matters for this business area",
+      "kitEyebrow": "Featured Business Kit",
+      "viewKit": "View Business Kit",
+      "productsEyebrow": "Relevant products",
+      "productsHeading": "Selected products for this business area",
+      "noProducts": "The selected products are not currently published."
+    },
+    "empty": {
+      "title": "No business areas published yet",
+      "text": "Published WordPress Business Industries will appear here automatically."
+    },
+    "unavailable": {
+      "title": "Business areas are temporarily unavailable",
+      "text": "The editorial business content cannot be loaded right now. The Shop, Business Kits and Contact remain available.",
+      "metadataTitle": "Business areas temporarily unavailable | Kubikart"
+    },
+    "notFound": {
+      "metadataTitle": "Business area not found | Kubikart",
+      "title": "Business area not found",
+      "text": "This business area is not published or is unavailable at this address."
+    },
+    "actions": {
+      "shop": "Visit the Shop",
+      "kits": "View Business Kits",
+      "contact": "Contact Kubikart",
+      "back": "All business areas"
+    },
+    "cta": {
+      "title": "Not sure which products fit your business?",
+      "text": "Send your logo, a photo of the relevant area and a short description of what you need.",
+      "contact": "Contact Kubikart",
+      "kits": "View Business Kits"
+    }
+  },
   "businessKitsOverview": {
     "metadataTitle": "Business Visibility Kits for local businesses | Kubikart",
     "metadataDescription": "Explore real Kubikart Business Kits with coordinated products for visible customer touchpoints.",
@@ -284,6 +345,55 @@
     "processingTime": "Processing time: 1–2 business days",
     "trackingInfo": "After shipping, you will receive a tracking number via email."
   },
+  "withdrawal": {
+    "metadataTitle": "Withdraw a contract | Kubikart",
+    "metadataDescription": "Submit a withdrawal electronically to Kubikart and read information about the statutory right of withdrawal.",
+    "eyebrow": "Legal",
+    "title": "Right of withdrawal",
+    "intro": "You can use this page to withdraw electronically from a contract concluded online. You may still declare your withdrawal by email or post.",
+    "functionEyebrow": "Electronic withdrawal function",
+    "functionTitle": "Withdraw a contract online",
+    "functionIntro": "The function guides you through the required information. You can review everything before submitting it.",
+    "startButton": "Withdraw contract",
+    "detailsTitle": "Withdrawal details",
+    "requiredNote": "Fields marked with * are required.",
+    "name": "Name",
+    "email": "Email address",
+    "emailHelp": "The acknowledgement will be sent to this address once transactional email is configured.",
+    "contractReference": "Order or contract",
+    "contractReferenceHelp": "Where possible, enter the order number or another clear contract reference.",
+    "scope": "Goods or parts of the contract concerned",
+    "scopeHelp": "Optional. Leave blank if you wish to withdraw from the entire contract.",
+    "reviewButton": "Review details",
+    "cancelButton": "Cancel",
+    "reviewTitle": "Review withdrawal",
+    "reviewIntro": "Check your details. The next button submits the withdrawal declaration.",
+    "entireContract": "Entire contract",
+    "confirmButton": "Confirm withdrawal",
+    "editButton": "Edit details",
+    "submitting": "Submitting …",
+    "error": "The withdrawal could not be stored safely. Please try again or send it to info@kubikart.de.",
+    "successTitle": "Withdrawal received",
+    "successText": "Your withdrawal declaration was stored with its date and time of receipt.",
+    "emailSent": "An acknowledgement was sent to your email address. A storable confirmation was also downloaded.",
+    "downloadNotice": "A storable acknowledgement was downloaded. Keep it as evidence of submission.",
+    "receiptId": "Receipt ID",
+    "receivedAt": "Received at",
+    "downloadReceipt": "Download acknowledgement again",
+    "receiptTitle": "Kubikart – acknowledgement of withdrawal",
+    "instructionTitle": "Withdrawal information",
+    "rightParagraph1": "You have the right to withdraw from this contract within fourteen days without giving a reason. The withdrawal period is fourteen days from the day on which you, or a third party named by you who is not the carrier, takes possession of the goods.",
+    "rightParagraph2": "To exercise the right of withdrawal, you must inform Kubikart of your decision through a clear statement. You may use the electronic function above, email or post.",
+    "rightParagraph3": "To meet the withdrawal deadline, it is sufficient to send the notification that you are exercising the right of withdrawal before the withdrawal period expires.",
+    "consequencesTitle": "Effects of withdrawal",
+    "consequences1": "If you withdraw from this contract, we will reimburse all payments received from you, including delivery costs except additional costs caused by a delivery method other than the least expensive standard delivery offered, without undue delay and no later than fourteen days after receiving the withdrawal.",
+    "consequences2": "We use the same payment method for reimbursement as for the original transaction unless expressly agreed otherwise. We may withhold reimbursement until we receive the goods or you provide evidence that you returned them.",
+    "returns": "You must return the goods without undue delay and no later than fourteen days after notifying us. You bear the direct cost of returning the goods.",
+    "exclusionTitle": "Exclusion of the right of withdrawal",
+    "exclusionText": "In particular, the right of withdrawal does not apply to contracts for goods that are not prefabricated and for which an individual choice or decision is decisive for production, or which are clearly tailored to personal needs.",
+    "pdfLabel": "Additional PDF version:",
+    "pdfLink": "Download withdrawal information"
+  },
   "account": {
     "title": "My Account",
     "dashboard": "Dashboard",
@@ -330,6 +440,7 @@
     "cart": "Cart",
     "account": "My Account",
     "businessTitle": "For Businesses",
+    "businessIndustries": "Business Industries",
     "businessKits": "Business Kits",
     "companyTitle": "Company",
     "legalTitle": "Legal",
@@ -348,7 +459,7 @@
     "infoTitle": "Information",
     "info_about": "About Us",
     "info_shipping": "Shipping & Delivery",
-    "info_withdrawal": "Right of Withdrawal",
+    "info_withdrawal": "Withdraw contract",
     "info_terms": "Terms & Conditions",
     "info_privacy": "Privacy Policy",
     "info_imprint": "Imprint",
@@ -763,7 +874,8 @@
     "kits": {
       "eyebrow": "Business Visibility Kits",
       "title": "Ready-made visibility kits for local businesses",
-      "body": "Start with a coordinated package instead of choosing every item separately. The shown prototypes are requested individually; no prices are assumed.",
+      "body": "Explore published Business Kits directly from the Kubikart Shop. Prices, availability and details come from WooCommerce.",
+      "unavailable": "The Business Kits cannot be loaded right now. The overview and contact options remain available.",
       "prototype": "Prototype",
       "cardCta": "Request a Mockup",
       "allLink": "View all Business Kits",
@@ -827,7 +939,9 @@
     "industries": {
       "eyebrow": "For your business",
       "title": "Built for local businesses",
-      "body": "The right solution depends on your space, customers and day-to-day work. Industry pages will follow in a later phase.",
+      "body": "Choose a published business-industry guide with relevant products and a featured Business Kit.",
+      "allLink": "View all business industries",
+      "unavailable": "The business-industry guides cannot be loaded right now.",
       "restaurants": "Restaurants & Takeaways",
       "cafes": "Cafés & Bakeries",
       "salons": "Barbers & Salons",
