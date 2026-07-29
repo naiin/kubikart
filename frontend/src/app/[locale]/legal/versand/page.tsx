@@ -27,6 +27,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
 export default async function VersandPage() {
   const t = await getTranslations("shipping");
+  const freeShippingThreshold = Number.parseFloat(process.env.FREE_SHIPPING_THRESHOLD || "50");
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-12">
@@ -63,7 +64,7 @@ export default async function VersandPage() {
           <ul className="space-y-2 text-blue-800">
             <li className="flex items-start gap-2">
               <span className="mt-0.5">✓</span>
-              <span>{t("freeShippingNote")}</span>
+              <span>{t("freeShippingNote", { threshold: freeShippingThreshold.toFixed(2) })}</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-0.5">✓</span>

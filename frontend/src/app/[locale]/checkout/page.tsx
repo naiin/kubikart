@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState, useEffect, useEffectEvent } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { getCartLineId, readCart, useCart, useHasMounted, writeCart } from "@/lib/cart";
 import { useAuth } from "@/lib/auth";
 import { Link } from "@/i18n/navigation";
@@ -12,6 +12,7 @@ type Step = "information" | "shipping" | "payment";
 
 export default function CheckoutPage() {
   const t = useTranslations("common");
+  const locale = useLocale();
   const { user } = useAuth();
   const cart = useCart();
   const hasMounted = useHasMounted();
@@ -109,6 +110,7 @@ export default function CheckoutPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
+          <h1 className="text-2xl font-semibold text-gray-900 mb-3">{t("checkout")}</h1>
           <p className="text-gray-500 text-lg mb-4">{t("emptyCart")}</p>
           <Link href="/shop" className="text-sm font-semibold text-navy-900 hover:underline">
             ← {t("continueShopping")}
@@ -192,6 +194,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <h1 className="sr-only">{t("checkout")}</h1>
       <div className="mx-auto max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-12">
           {/* Left: Form */}
@@ -581,7 +584,14 @@ export default function CheckoutPage() {
 
               {/* Free shipping notice */}
               {subtotal < freeShippingThreshold && shippingCost > 0 && (
-                <p className="mt-4 text-xs text-gray-500 text-center">Noch €{(freeShippingThreshold - subtotal).toFixed(2)} bis zum kostenlosen Versand!</p>
+                <p className="mt-4 text-xs text-gray-500 text-center">
+                  {t("freeShippingRemaining", {
+                    amount: new Intl.NumberFormat(locale === "de" ? "de-DE" : "en-DE", {
+                      style: "currency",
+                      currency: "EUR",
+                    }).format(freeShippingThreshold - subtotal),
+                  })}
+                </p>
               )}
             </div>
           </div>

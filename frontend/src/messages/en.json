@@ -35,7 +35,9 @@
     "outOfStock": "Out of Stock",
     "inStock": "In Stock",
     "freeShipping": "Free Shipping",
+    "freeShippingRemaining": "{amount} until free shipping!",
     "remove": "Remove",
+    "close": "Close",
     "login": "Log In",
     "register": "Register",
     "logout": "Log Out",
@@ -81,7 +83,6 @@
     "nav": {
       "shop": "Shop",
       "businessKits": "Business Kits",
-      "businesses": "For Businesses",
       "services": "Solutions",
       "personalize": "Personalize",
       "laserService": "Laser Service",
@@ -341,7 +342,7 @@
     "euTitle": "Shipping within the EU",
     "euTime": "5–10 business days",
     "euDesc": "Shipping to EU countries depending on destination.",
-    "freeShippingNote": "Free shipping within Germany on orders over €50!",
+    "freeShippingNote": "Free shipping within Germany for order values of {threshold} € or more.",
     "processingTime": "Processing time: 1–2 business days",
     "trackingInfo": "After shipping, you will receive a tracking number via email."
   },
@@ -440,7 +441,7 @@
     "cart": "Cart",
     "account": "My Account",
     "businessTitle": "For Businesses",
-    "businessIndustries": "Business Industries",
+    "solutions": "Solutions",
     "businessKits": "Business Kits",
     "companyTitle": "Company",
     "legalTitle": "Legal",
@@ -937,17 +938,14 @@
       "unavailable": "Product data is currently unavailable. The current catalog will appear in the shop when the connection has been restored."
     },
     "industries": {
-      "eyebrow": "For your business",
-      "title": "Built for local businesses",
-      "body": "Choose a published business-industry guide with relevant products and a featured Business Kit.",
-      "allLink": "View all business industries",
-      "unavailable": "The business-industry guides cannot be loaded right now.",
-      "restaurants": "Restaurants & Takeaways",
-      "cafes": "Cafés & Bakeries",
-      "salons": "Barbers & Salons",
-      "clinics": "Clinics & Practices",
-      "shops": "Local Shops",
-      "services": "Service Businesses"
+      "eyebrow": "Solutions by business type",
+      "title": "Products suited to the way your business works",
+      "body": "Choose your type of business to discover relevant products and a suggested Business Kit.",
+      "allLink": "View all solutions",
+      "view": "View solution",
+      "viewAria": "View the solution for {title}",
+      "empty": "No business solutions are currently published. More options are available in the Shop and Business Kits.",
+      "unavailable": "The business-industry guides cannot be loaded right now."
     },
     "process": {
       "eyebrow": "Custom orders",

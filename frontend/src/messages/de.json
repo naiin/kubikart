@@ -35,7 +35,9 @@
     "outOfStock": "Ausverkauft",
     "inStock": "Auf Lager",
     "freeShipping": "Kostenloser Versand",
+    "freeShippingRemaining": "Noch {amount} bis zum kostenlosen Versand!",
     "remove": "Entfernen",
+    "close": "Schließen",
     "login": "Anmelden",
     "register": "Registrieren",
     "logout": "Abmelden",
@@ -81,7 +83,6 @@
     "nav": {
       "shop": "Shop",
       "businessKits": "Business Kits",
-      "businesses": "Für Unternehmen",
       "services": "Lösungen",
       "personalize": "Personalisieren",
       "laserService": "Laser Service",
@@ -341,7 +342,7 @@
     "euTitle": "Versand innerhalb der EU",
     "euTime": "5–10 Werktage",
     "euDesc": "Versand in EU-Länder je nach Zielland.",
-    "freeShippingNote": "Ab einem Bestellwert von 50€ liefern wir innerhalb Deutschlands versandkostenfrei!",
+    "freeShippingNote": "Ab einem Bestellwert von {threshold} € liefern wir innerhalb Deutschlands versandkostenfrei.",
     "processingTime": "Bearbeitungszeit: 1–2 Werktage",
     "trackingInfo": "Nach dem Versand erhalten Sie eine Sendungsverfolgungsnummer per E-Mail."
   },
@@ -440,7 +441,7 @@
     "cart": "Warenkorb",
     "account": "Mein Konto",
     "businessTitle": "Für Unternehmen",
-    "businessIndustries": "Branchenlösungen",
+    "solutions": "Lösungen",
     "businessKits": "Business Kits",
     "companyTitle": "Unternehmen",
     "legalTitle": "Rechtliches",
@@ -937,17 +938,14 @@
       "unavailable": "Die Produktdaten sind momentan nicht verfügbar. Im Shop findest du den aktuellen Katalog, sobald die Verbindung wiederhergestellt ist."
     },
     "industries": {
-      "eyebrow": "Für dein Gewerbe",
-      "title": "Für lokale Unternehmen entwickelt",
-      "body": "Wähle eine veröffentlichte Branchenlösung mit passenden Produkten und einem empfohlenen Business Kit.",
-      "allLink": "Alle Branchenlösungen ansehen",
-      "unavailable": "Die Branchenlösungen können gerade nicht geladen werden.",
-      "restaurants": "Restaurants & Takeaways",
-      "cafes": "Cafés & Bäckereien",
-      "salons": "Barbershops & Salons",
-      "clinics": "Praxen & Kliniken",
-      "shops": "Lokale Geschäfte",
-      "services": "Dienstleistungsbetriebe"
+      "eyebrow": "Lösungen nach Branche",
+      "title": "Passende Produkte für Ihren Geschäftsalltag",
+      "body": "Wählen Sie Ihren Geschäftstyp, um relevante Produkte und ein vorgeschlagenes Business Kit zu entdecken.",
+      "allLink": "Alle Lösungen ansehen",
+      "view": "Lösung ansehen",
+      "viewAria": "Lösung für {title} ansehen",
+      "empty": "Aktuell sind keine Branchenlösungen veröffentlicht. Weitere Geschäftslösungen finden Sie im Shop und bei den Business Kits.",
+      "unavailable": "Die Branchenlösungen können gerade nicht geladen werden."
     },
     "process": {
       "eyebrow": "Individuelle Anfertigung",

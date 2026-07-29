@@ -183,7 +183,7 @@ export function Footer() {
   ];
 
   const businessLinks: FooterLink[] = [
-    { label: t("businessIndustries"), href: "/businesses" },
+    { label: t("solutions"), href: "/businesses" },
     { label: t("businessKits"), href: "/services/brand-kit" },
     { label: t("service_laserEngraving"), href: "/dienstleistungen/lasergravur" },
     { label: t("service_laserCutting"), href: "/dienstleistungen/laserschnitt" },

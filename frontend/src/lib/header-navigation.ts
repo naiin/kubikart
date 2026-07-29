@@ -77,7 +77,11 @@ export function getActiveNavigationItem<T extends HeaderLinkItem>(
 export const headerNavigation: HeaderLinkItem[] = [
   { labelKey: "nav.shop", href: "/shop", activePrefixes: ["/shop", "/search", "/personalisierte-geschenke"] },
   { labelKey: "nav.businessKits", href: "/services/brand-kit", activePrefixes: ["/services/brand-kit"] },
-  { labelKey: "nav.businesses", href: "/businesses", activePrefixes: ["/businesses"] },
+  {
+    labelKey: "nav.services",
+    href: "/businesses",
+    activePrefixes: ["/businesses", "/services", "/dienstleistungen"],
+  },
   { labelKey: "nav.about", href: "/ueber-uns", activePrefixes: ["/ueber-uns"] },
   { labelKey: "nav.contact", href: "/kontakt", activePrefixes: ["/kontakt"] },
 ];

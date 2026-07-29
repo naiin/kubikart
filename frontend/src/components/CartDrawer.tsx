@@ -85,6 +85,11 @@ export function CartDrawer() {
 
             {/* Drawer */}
             <div
+              role="dialog"
+              aria-modal={open ? "true" : undefined}
+              aria-label={t("cart")}
+              aria-hidden={!open}
+              inert={!open}
               className={`fixed top-0 right-0 z-[9999] h-full w-full max-w-md transform bg-white shadow-2xl transition-transform duration-300 ease-in-out flex flex-col ${
                 open ? "translate-x-0" : "translate-x-full pointer-events-none"
               }`}
@@ -94,8 +99,8 @@ export function CartDrawer() {
                 <h2 className="text-lg font-semibold text-gray-900">
                   {t("cart")} ({itemCount})
                 </h2>
-                <button onClick={() => setOpen(false)} className="rounded-lg p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <button type="button" onClick={() => setOpen(false)} aria-label={t("close")} className="rounded-lg p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
