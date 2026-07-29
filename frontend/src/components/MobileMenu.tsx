@@ -6,13 +6,8 @@ import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useHasMounted } from "@/lib/cart";
-import { headerNavigation, mobileUtilityNavigation, type HeaderLinkItem } from "@/lib/header-navigation";
+import { getActiveNavigationItem, headerNavigation, mobileUtilityNavigation } from "@/lib/header-navigation";
 import { LanguageSwitcher } from "./LanguageSwitcher";
-
-function isActiveRoute(pathname: string, item: HeaderLinkItem) {
-  const prefixes = item.activePrefixes ?? [item.href];
-  return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
-}
 
 export function MobileMenu({
   open,
@@ -29,6 +24,8 @@ export function MobileMenu({
   const mounted = useHasMounted();
   const dialogRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const activePrimaryItem = getActiveNavigationItem(pathname, headerNavigation);
+  const activeUtilityItem = getActiveNavigationItem(pathname, mobileUtilityNavigation);
 
   useEffect(() => {
     if (!open) {
@@ -116,7 +113,7 @@ export function MobileMenu({
           <nav aria-label={t("accessibility.mobileNavigation")}>
             <ul className="space-y-1">
               {headerNavigation.map((item) => {
-                const active = isActiveRoute(pathname, item);
+                const active = item === activePrimaryItem;
 
                 return (
                   <li key={item.labelKey}>
@@ -139,7 +136,7 @@ export function MobileMenu({
 
             <ul className="space-y-1">
               {mobileUtilityNavigation.map((item) => {
-                const active = isActiveRoute(pathname, item);
+                const active = item === activeUtilityItem;
 
                 return (
                   <li key={item.labelKey}>

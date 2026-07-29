@@ -56,7 +56,7 @@
   --color-success: var(--kubikart-success);
   --color-warning: var(--kubikart-warning);
 
-  --font-heading: var(--font-sora);
+  --font-heading: var(--font-montserrat);
   --font-body: var(--font-inter);
 
   --radius-kubikart-sm: var(--kubikart-radius-sm);
@@ -109,7 +109,7 @@
   h4,
   h5,
   h6 {
-    font-family: var(--font-sora), var(--font-inter), system-ui, sans-serif;
+    font-family: var(--font-montserrat), var(--font-inter), system-ui, sans-serif;
   }
 
   :focus-visible {
@@ -173,20 +173,36 @@
   .kk-heading-3,
   .kk-heading-4 {
     color: var(--kubikart-brand);
-    font-family: var(--font-sora), var(--font-inter), system-ui, sans-serif;
-    font-weight: 700;
+    font-family: var(--font-montserrat), var(--font-inter), system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.025em;
     text-wrap: balance;
     overflow-wrap: anywhere;
   }
 
   .kk-display {
     font-size: 2.5rem;
+    letter-spacing: -0.04em;
     line-height: 1.05;
   }
 
   .kk-heading-1 {
     font-size: 2.25rem;
-    line-height: 1.1;
+    letter-spacing: -0.035em;
+    line-height: 1.08;
+  }
+
+  .kk-page-intro-heading {
+    color: var(--kubikart-brand);
+    max-width: 20ch;
+    font-family: var(--font-montserrat), var(--font-inter), system-ui, sans-serif;
+    font-size: clamp(2.4rem, 4.25vw, 3.9rem);
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    line-height: 1.05;
+    text-wrap: balance;
+    hyphens: auto;
+    overflow-wrap: normal;
   }
 
   .kk-heading-2 {

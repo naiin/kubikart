@@ -81,7 +81,7 @@ export default async function BrandKitPage({ params }: BrandKitPageProps) {
 
           <div className="mt-8 max-w-4xl">
             <p className="kk-eyebrow">{t("eyebrow")}</p>
-            <h1 className="kk-heading-1 mt-3">{t("heading")}</h1>
+            <h1 className="kk-page-intro-heading mt-3">{t("heading")}</h1>
             <p className="mt-5 max-w-3xl text-base leading-7 text-muted sm:text-lg">{t("intro")}</p>
             <div className="mt-7 flex flex-wrap gap-3">
               <a href="#business-kits" className="kk-button kk-button-primary">{t("explore")}</a>

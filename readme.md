@@ -94,7 +94,7 @@ Browser / Mobile
 | UI library         | React                               | 19.x    |
 | Language           | TypeScript                          | 5.x     |
 | Styling            | Tailwind CSS v4                     | 4.x     |
-| Font               | Manrope (Google Fonts)              | –       |
+| Fonts              | Montserrat headings + Inter UI (locally hosted) | variable |
 | Icons              | Inline SVG only                     | –       |
 | i18n               | next-intl                           | 4.x     |
 | Backend CMS        | WordPress                           | 6.x     |
@@ -161,7 +161,7 @@ website/                              ← monorepo root
         │   ├── robots.ts             ← robots.txt generation
         │   ├── sitemap.ts            ← dynamic XML sitemap (all pages + products)
         │   ├── [locale]/             ← all user-facing pages
-        │   │   ├── layout.tsx        ← root layout (Manrope font, Header, Footer, AuthProvider)
+        │   │   ├── layout.tsx        ← root layout (local Montserrat/Inter, Header, Footer, AuthProvider)
         │   │   ├── page.tsx          ← homepage
         │   │   ├── shop/
         │   │   │   ├── page.tsx      ← product listing + filters + sorting
@@ -1046,8 +1046,9 @@ lando php vendor/bin/phpunit --coverage-text
 
 ### Typography
 
-- **Primary font:** Manrope (Google Fonts, loaded via `next/font/google`)
-- **Fallback:** Inter, system-ui, sans-serif
+- **Heading font:** Montserrat (locally hosted through `next/font/local`)
+- **Body/UI font:** Inter (locally hosted through `next/font/local`)
+- **Fallback:** system-ui, sans-serif
 - **Do not** use decorative fonts for UI text
 
 ### Icon rule

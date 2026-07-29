@@ -25,6 +25,16 @@ import {
 } from "@/lib/product-configuration";
 import type { WCReview } from "@/lib/woocommerce";
 import PayPalExpressButton from "@/components/checkout/PayPalExpressButton";
+import {
+  BusinessKitCustomisation,
+  BusinessKitDetails,
+  BusinessKitFinalCta,
+  BusinessKitProcess,
+  BusinessKitSupportStrip,
+  OtherBusinessKits,
+} from "@/components/business-kits/BusinessKitProductSections";
+import { isWooCommercePlaceholderImage } from "@/lib/business-kits";
+import type { WCProduct } from "@/lib/woocommerce";
 
 function getInitialSelections(product: ProductPageProduct) {
   const initialSelections: Record<string, string> = {};
@@ -103,10 +113,21 @@ function QuantitySelector({ quantity, onChange }: { quantity: number; onChange: 
 
 // ─── Product Gallery ────────────────────────────────────────────────────────────
 
-function ProductGallery({ images, activeIndex, onSelect }: { images: { src: string; alt: string }[]; activeIndex: number; onSelect: (i: number) => void }) {
+function ProductGallery({
+  images,
+  activeIndex,
+  onSelect,
+  aspect = "portrait",
+}: {
+  images: { src: string; alt: string }[];
+  activeIndex: number;
+  onSelect: (i: number) => void;
+  aspect?: "portrait" | "landscape";
+}) {
   const t = useTranslations("productPage");
   const active = images[activeIndex] || images[0];
   const [zoomed, setZoomed] = useState(false);
+  const aspectClass = aspect === "landscape" ? "aspect-[4/3]" : "aspect-[4/5]";
 
   useEffect(() => {
     if (!zoomed) return;
@@ -122,7 +143,7 @@ function ProductGallery({ images, activeIndex, onSelect }: { images: { src: stri
   return (
     <>
       {!active ? (
-        <div className="flex aspect-[4/5] items-center justify-center rounded-kubikart-lg border border-border bg-surface text-center text-sm text-muted">
+        <div className={`flex ${aspectClass} items-center justify-center rounded-kubikart-lg border border-border bg-surface text-center text-sm text-muted`}>
           <div>
             <svg className="mx-auto mb-3 h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" d="m4 16 4.6-4.6a2 2 0 0 1 2.8 0L16 16m-2-2 1.6-1.6a2 2 0 0 1 2.8 0L20 14M6 20h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z" />
@@ -152,7 +173,7 @@ function ProductGallery({ images, activeIndex, onSelect }: { images: { src: stri
         </div>
 
         {/* Main image */}
-        <div className="relative order-1 aspect-4/5 overflow-hidden rounded-kubikart-lg border border-border bg-surface md:order-2">
+        <div className={`relative order-1 ${aspectClass} overflow-hidden rounded-kubikart-lg border border-border bg-surface md:order-2`}>
           <Image src={active.src} alt={active.alt} fill priority sizes="(min-width: 1024px) 52vw, 100vw" className="object-cover" unoptimized />
           <button
             type="button"
@@ -734,16 +755,50 @@ function RelatedProductsSection({ products }: { products: ProductPageProduct[] }
   );
 }
 
+function ProductHeading({
+  eyebrow,
+  name,
+  reviewRating,
+  reviewCount,
+}: {
+  eyebrow: string;
+  name: string;
+  reviewRating: number;
+  reviewCount: number;
+}) {
+  return (
+    <div>
+      <p className="text-xs font-semibold tracking-[0.08em] text-accent uppercase">{eyebrow}</p>
+      <h1 className="mt-3 font-heading text-[34px] leading-[1.1] font-bold tracking-[-0.035em] text-brand sm:text-[44px]">
+        {name}
+      </h1>
+      <div className="mt-3">
+        <StarRating rating={reviewRating} count={reviewCount} />
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page Component ────────────────────────────────────────────────────────
 
 type ProductPageClientProps = {
   product: ProductPageProduct;
   reviews: WCReview[];
   relatedProducts: ProductPageProduct[];
+  presentation?: "standard" | "business-kit";
+  otherBusinessKits?: WCProduct[];
 };
 
-function ProductPageClientContent({ product, reviews, relatedProducts }: ProductPageClientProps) {
+function ProductPageClientContent({
+  product,
+  reviews,
+  relatedProducts,
+  presentation = "standard",
+  otherBusinessKits = [],
+}: ProductPageClientProps) {
   const t = useTranslations("productPage");
+  const kitT = useTranslations("businessKitProduct");
+  const isBusinessKit = presentation === "business-kit";
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(() => getInitialSelections(product));
@@ -758,6 +813,9 @@ function ProductPageClientContent({ product, reviews, relatedProducts }: Product
   const images = selectedVariation?.image
     ? [selectedVariation.image, ...baseImages.filter((image) => image.src !== selectedVariation.image?.src)]
     : baseImages;
+  const visibleImages = isBusinessKit
+    ? images.filter((image) => !isWooCommercePlaceholderImage(image))
+    : images;
   const displayedPrice = selectedVariation?.price || product.price;
   const isOutOfStock = (selectedVariation?.availability || product.availability) === "out_of_stock";
   const configurationState: ProductConfigurationState = { selectedOptions, textInputs, checkboxValues };
@@ -862,20 +920,24 @@ function ProductPageClientContent({ product, reviews, relatedProducts }: Product
             </svg>
           </li>
           <li>
-            <Link href="/shop" className="hover:text-navy-900 transition-colors">
-              {t("breadcrumbShop")}
+            <Link href={isBusinessKit ? "/services/brand-kit" : "/shop"} className="hover:text-brand transition-colors">
+              {isBusinessKit ? kitT("breadcrumbBusinessKits") : t("breadcrumbShop")}
             </Link>
           </li>
-          <li aria-hidden="true">
-            <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M4 2l4 4-4 4" />
-            </svg>
-          </li>
-          <li>
-            <Link href={product.category.id ? `/shop?category=${product.category.id}` : "/shop"} className="transition-colors hover:text-brand">
-              {product.category.name}
-            </Link>
-          </li>
+          {!isBusinessKit ? (
+            <>
+              <li aria-hidden="true">
+                <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 2l4 4-4 4" />
+                </svg>
+              </li>
+              <li>
+                <Link href={product.category.id ? `/shop?category=${product.category.id}` : "/shop"} className="transition-colors hover:text-brand">
+                  {product.category.name}
+                </Link>
+              </li>
+            </>
+          ) : null}
           <li aria-hidden="true">
             <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M4 2l4 4-4 4" />
@@ -888,30 +950,51 @@ function ProductPageClientContent({ product, reviews, relatedProducts }: Product
       </nav>
 
       {/* Main product section */}
-      <section className="kk-container-full pb-16 lg:pb-20">
-        <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:gap-14">
+      <section className={`kk-container-full pb-16 lg:pb-20 ${isBusinessKit ? "lg:pb-24" : ""}`}>
+        <div className={`grid grid-cols-1 items-start gap-10 ${isBusinessKit ? "lg:grid-cols-[1.2fr_0.9fr] lg:gap-x-14 lg:gap-y-6" : "lg:grid-cols-[1.15fr_0.85fr] lg:gap-14"}`}>
+          {isBusinessKit ? (
+            <div className="order-1 lg:col-start-2 lg:row-start-1">
+              <ProductHeading
+                eyebrow={kitT("eyebrow")}
+                name={product.name}
+                reviewRating={reviewRating}
+                reviewCount={reviewCount}
+              />
+            </div>
+          ) : null}
+
           {/* Left – Gallery */}
-          <ProductGallery images={images} activeIndex={selectedImage} onSelect={setSelectedImage} />
+          <div className={isBusinessKit ? "order-2 lg:col-start-1 lg:row-start-1 lg:row-span-2" : ""}>
+            <ProductGallery
+              images={visibleImages}
+              activeIndex={selectedImage}
+              onSelect={setSelectedImage}
+              aspect={isBusinessKit ? "landscape" : "portrait"}
+            />
+          </div>
 
           {/* Right – Product Info & Purchase */}
-          <div>
-            {/* Badge */}
-            <p className="text-xs font-semibold tracking-[0.08em] text-accent uppercase">{product.category.name}</p>
-
-            {/* Title */}
-            <h1 className="mt-3 font-heading text-[34px] leading-[1.1] font-bold tracking-[-0.035em] text-brand sm:text-[44px]">{product.name}</h1>
-
-            {/* Rating */}
-            <div className="mt-3">
-              <StarRating rating={reviewRating} count={reviewCount} />
-            </div>
+          <div className={isBusinessKit ? "order-3 lg:col-start-2 lg:row-start-2" : ""}>
+            {!isBusinessKit ? (
+              <ProductHeading
+                eyebrow={product.category.name}
+                name={product.name}
+                reviewRating={reviewRating}
+                reviewCount={reviewCount}
+              />
+            ) : null}
 
             {/* Price */}
-            <div className="mt-5">
+            <div className={isBusinessKit ? "" : "mt-5"}>
               <p className="font-heading text-[30px] font-bold tracking-[-0.03em] text-accent sm:text-[34px]">
                 {formatProductPrice({ ...displayedPrice, amount: totalUnitPrice })}
               </p>
-              <p className="mt-1 text-[13px] text-muted">{product.priceNote}</p>
+              <p className="mt-1 text-[13px] text-muted">{isBusinessKit ? kitT("priceNote") : product.priceNote}</p>
+              {isBusinessKit ? (
+                <p className={`mt-2 text-sm font-semibold ${isOutOfStock ? "text-danger" : "text-brand"}`} role="status">
+                  {isOutOfStock ? t("availabilityOutOfStock") : t("availabilityInStock")}
+                </p>
+              ) : null}
               <p className="mt-1.5 text-[12px] leading-relaxed text-gray-500">
                 {t("taxNoticePrefix")}{" "}
                 <Link href="/legal/agb" className="underline hover:text-gray-700">
@@ -976,6 +1059,7 @@ function ProductPageClientContent({ product, reviews, relatedProducts }: Product
         </div>
       </section>
 
+      {isBusinessKit ? <BusinessKitSupportStrip /> : (
       <section aria-label={t("supportTitle")} className="border-y border-border bg-brand text-white">
         <div className="kk-container-full grid gap-3 py-5 sm:grid-cols-2 lg:grid-cols-4">
           {[t("supportCustomisable"), t("supportSecurePayment"), t("supportEnquiry"), t("supportLocal")].map((item) => (
@@ -985,19 +1069,32 @@ function ProductPageClientContent({ product, reviews, relatedProducts }: Product
           ))}
         </div>
       </section>
+      )}
 
-      <ProductTabs product={product} reviews={reviews} />
+      {isBusinessKit ? (
+        <>
+          <BusinessKitDetails product={product} reviews={reviews} />
+          <BusinessKitCustomisation product={product} />
+          <BusinessKitProcess />
+          <OtherBusinessKits products={otherBusinessKits} />
+          <BusinessKitFinalCta />
+        </>
+      ) : (
+        <>
+          <ProductTabs product={product} reviews={reviews} />
 
-      {/* Additional product sections */}
-      <div className="kk-container-full space-y-16 py-16 lg:space-y-20 lg:py-20">
-        <ProductHowItWorks />
-        {product.benefits.length ? <ProductBenefits benefits={product.benefits} /> : null}
-        <ProductLeadCTA product={product} />
-        {product.faqs.length ? <ProductFAQ faqs={product.faqs} /> : null}
-      </div>
+          {/* Additional product sections */}
+          <div className="kk-container-full space-y-16 py-16 lg:space-y-20 lg:py-20">
+            <ProductHowItWorks />
+            {product.benefits.length ? <ProductBenefits benefits={product.benefits} /> : null}
+            <ProductLeadCTA product={product} />
+            {product.faqs.length ? <ProductFAQ faqs={product.faqs} /> : null}
+          </div>
 
-      {/* Related products */}
-      <RelatedProductsSection products={relatedProducts} />
+          {/* Related products */}
+          <RelatedProductsSection products={relatedProducts} />
+        </>
+      )}
 
       {/* Bottom spacing */}
       <div className="h-24" />
@@ -1005,6 +1102,6 @@ function ProductPageClientContent({ product, reviews, relatedProducts }: Product
   );
 }
 
-export function ProductPageClient({ product, reviews, relatedProducts }: ProductPageClientProps) {
-  return <ProductPageClientContent key={product.id} product={product} reviews={reviews} relatedProducts={relatedProducts} />;
+export function ProductPageClient(props: ProductPageClientProps) {
+  return <ProductPageClientContent key={props.product.id} {...props} />;
 }

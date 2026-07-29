@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 
@@ -48,17 +47,19 @@ export function HeroSection() {
             </div>
           </div>
 
-          {/* Hero image with black overlay */}
-          <div className="relative aspect-4/3 overflow-hidden rounded-[28px] shadow-[0_22px_50px_rgba(10,29,55,0.10)] lg:aspect-square">
-            <Image
-              src="/hero.png"
-              alt="Kubikart Produkte: Personalisierte Geschenke und Geschäftsbeschilderung aus Holz, Acryl und 3D-Druck"
-              fill
-              priority
-              sizes="(min-width: 1024px) 42rem, (min-width: 640px) 80vw, 100vw"
-              className="object-cover"
-            />
-            <div className="absolute inset-0 bg-black/40 rounded-[28px]" aria-hidden="true" />
+          {/* Hero image — CSS background so it always fills the panel */}
+          <div
+            className="min-h-[320px] sm:min-h-[400px] lg:min-h-[480px] overflow-hidden rounded-[28px] shadow-[0_22px_50px_rgba(10,29,55,0.10)]"
+            style={{
+              backgroundImage: "url('/hero.png')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+            role="img"
+            aria-label="Kubikart Produkte: QR-Bewertungsständer, Speisekarte und NFC-Stand in einem modernen Salon"
+          >
+            {/* Dark overlay */}
+            <div className="h-full w-full min-h-[320px] sm:min-h-[400px] lg:min-h-[480px] bg-black/30 rounded-[28px]" />
           </div>
         </div>
       </div>

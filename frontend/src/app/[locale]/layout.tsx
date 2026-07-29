@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Sora } from "next/font/google";
+import localFont from "next/font/local";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
@@ -10,14 +10,20 @@ import { AuthProvider } from "@/lib/auth";
 import { getSiteUrl } from "@/lib/seo";
 import "../globals.css";
 
-const inter = Inter({
+const inter = localFont({
+  src: "../../assets/fonts/inter/Inter-Variable.woff2",
   variable: "--font-inter",
-  subsets: ["latin"],
+  display: "swap",
+  weight: "100 900",
+  style: "normal",
 });
 
-const sora = Sora({
-  variable: "--font-sora",
-  subsets: ["latin"],
+const montserrat = localFont({
+  src: "../../assets/fonts/montserrat/Montserrat-Variable.woff2",
+  variable: "--font-montserrat",
+  display: "swap",
+  weight: "100 900",
+  style: "normal",
 });
 
 export const metadata: Metadata = {
@@ -45,7 +51,7 @@ export default async function LocaleLayout({ children, params }: { children: Rea
   const messages = (await import(`@/messages/${locale}.json`)).default;
 
   return (
-    <html lang={locale} className={`${inter.variable} ${sora.variable} h-full antialiased`}>
+    <html lang={locale} className={`${inter.variable} ${montserrat.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-white text-gray-900">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <AuthProvider>

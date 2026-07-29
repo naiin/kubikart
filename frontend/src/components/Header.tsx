@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useCallback, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
-import { headerNavigation } from "@/lib/header-navigation";
+import { getActiveNavigationItem, headerNavigation } from "@/lib/header-navigation";
 import { CartDrawer } from "./CartDrawer";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { MobileMenu } from "./MobileMenu";
@@ -28,13 +28,9 @@ function UserIcon() {
   );
 }
 
-function isActiveRoute(pathname: string, href: string, activePrefixes?: string[]) {
-  const prefixes = activePrefixes ?? [href];
-  return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
-}
-
 export function Header() {
   const pathname = usePathname();
+  const activeNavigationItem = getActiveNavigationItem(pathname, headerNavigation);
   const t = useTranslations("header");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -51,7 +47,7 @@ export function Header() {
 
           <nav aria-label={t("accessibility.mainNavigation")} className="hidden min-w-0 items-center xl:flex">
             {headerNavigation.map((item) => {
-              const active = isActiveRoute(pathname, item.href, item.activePrefixes);
+              const active = item === activeNavigationItem;
 
               return (
                 <Link

@@ -133,7 +133,7 @@ The exact file may differ by repository, but the intended structure is:
   --color-success: var(--kubikart-success);
   --color-warning: var(--kubikart-warning);
 
-  --font-heading: var(--font-sora);
+  --font-heading: var(--font-montserrat);
   --font-body: var(--font-inter);
 }
 ```
@@ -158,20 +158,22 @@ Do not delete them until repository search confirms that no consumer remains.
 
 ## Fonts
 
-- Heading font: **Sora**
+- Heading and editorial display font: **Montserrat**
 - Body and UI font: **Inter**
 
-Use Next.js font loading and CSS variables.
+Use explicitly local variable WOFF2 files through `next/font/local` and CSS
+variables. Do not load either family from Google Fonts or another runtime
+font service.
 
 ## Heading scale
 
 | Role | Desktop | Mobile | Weight | Line height |
 |---|---:|---:|---:|---:|
-| Display | 64 px | 40 px | 700 | 1.05 |
-| H1 | 52 px | 36 px | 700 | 1.1 |
-| H2 | 40 px | 30 px | 700 | 1.15 |
-| H3 | 28 px | 24 px | 650–700 | 1.2 |
-| H4 | 22 px | 20 px | 650 | 1.3 |
+| Display | 64 px | 40 px | 600 | 1.05 |
+| H1 | 52 px | 36 px | 600 | 1.08 |
+| H2 | 40 px | 30 px | 600 | 1.15 |
+| H3 | 28 px | 24 px | 600 | 1.2 |
+| H4 | 22 px | 20 px | 600 | 1.3 |
 
 ## Body scale
 
@@ -475,7 +477,7 @@ For every redesigned page:
 
 - Uses approved colours
 - Contains no green branding
-- Uses Sora and Inter correctly
+- Uses locally hosted Montserrat for headings and Inter for body/UI
 - Has a clear primary CTA
 - Does not overuse cards
 - Does not have an unnecessarily large hero
