@@ -2,7 +2,8 @@
 
 Production WordPress deployment is intentionally local-only. GitHub Actions
 does not deploy the backend and the repository never stores production
-database credentials or a production `wp-config.php`.
+database credentials or a production `wp-config.php`. The tracked
+`backend/wordpress/wp-config.php` is exclusively for the local Lando database.
 
 ## Configuration
 
@@ -77,9 +78,10 @@ The deployment then:
 6. performs a serialized-safe URL replacement through remote WP-CLI
 7. verifies the database, site URL, WooCommerce, products, users, and REST API
 
-The local ignored `backend/wordpress/wp-config.php` continues to point to the
-local Lando database. Production connection values are generated only into the
-remote config during deployment; they are never committed.
+The tracked `backend/wordpress/wp-config.php` continues to point exclusively to
+the local Lando database and uses development-only salts. Production connection
+values are generated only into the remote config during deployment; they are
+never committed or copied from the local file.
 
 ## Recovery
 

@@ -48,7 +48,7 @@ jobs:
       - name: Reject backend secrets and backup artifacts
         run: |
           forbidden="$({
-            git ls-files 'backend/.env.deploy.local' 'backend/wordpress/wp-config.php'
+            git ls-files 'backend/.env.deploy.local'
             git ls-files | grep -E '(^|/)(backups?|recovery|generated-media)/|\.(sql|sql\.gz|dump|zip|tar|tar\.gz|tgz|bz2|7z)$' || true
           } | sort -u)"
           if [ -n "$forbidden" ]; then

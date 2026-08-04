@@ -38,6 +38,7 @@ frontend/.env.staging
 # Exclude everything inside wordpress/ ...
 backend/wordpress/*
 !backend/wordpress/.htaccess
+!backend/wordpress/wp-config.php
 
 # ... but keep our custom content directories
 !backend/wordpress/wp-content
@@ -62,8 +63,8 @@ backend/wordpress/wp-content/upgrade-temp-backup/
 backend/wordpress/wp-content/cache/
 backend/wordpress/wp-content/languages/
 
-# WordPress config with secrets
-backend/wordpress/wp-config.php
+# Production WordPress config and deployment secrets. The tracked
+# backend/wordpress/wp-config.php contains local Lando-only values.
 backend/.env.deploy.local
 
 # ============================================================
