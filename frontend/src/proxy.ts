@@ -1,6 +1,6 @@
 import createMiddleware from "next-intl/middleware";
 import { NextRequest, NextResponse } from "next/server";
-import { routing } from "./i18n/routing";
+import { getRootLocaleRedirect, routing } from "./i18n/routing";
 import { applyRateLimit, getApiRateLimitPolicy } from "./lib/rate-limit";
 
 const intlMiddleware = createMiddleware(routing);
@@ -82,6 +82,15 @@ export default async function proxy(request: NextRequest) {
     }
 
     return NextResponse.next();
+  }
+
+  // The public root is always the German storefront. Keep explicit /en URLs
+  // available through navigation, but never select them from headers/cookies.
+  const rootLocaleRedirect = getRootLocaleRedirect(pathname);
+  if (rootLocaleRedirect) {
+    const germanHomepage = request.nextUrl.clone();
+    germanHomepage.pathname = rootLocaleRedirect;
+    return NextResponse.redirect(germanHomepage, 308);
   }
 
   const exists = await dynamicResourceExists(pathname);
