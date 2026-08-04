@@ -75,6 +75,9 @@ backend/.phpunit.result.cache
 backend/generated-media/
 backend/recovery/
 backend/backups/
+backend/backups/**
+backend/recovery/**
+backend/generated-media/**
 backups/
 
 # Large binary archives — never commit

@@ -1,7 +1,0 @@
-wp-content/uploads/
-wp-content/cache/
-wp-content/upgrade/
-wp-content/backup*/
-wp-config.php
-.DS_Store
-.git/
