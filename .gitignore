@@ -37,6 +37,7 @@ frontend/.env.staging
 
 # Exclude everything inside wordpress/ ...
 backend/wordpress/*
+!backend/wordpress/.htaccess
 
 # ... but keep our custom content directories
 !backend/wordpress/wp-content

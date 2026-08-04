@@ -10,7 +10,6 @@ the current remote database and WordPress files.
 from __future__ import annotations
 
 import argparse
-import getpass
 import gzip
 import hashlib
 import os
@@ -22,7 +21,7 @@ import sys
 import tempfile
 import urllib.error
 import urllib.request
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -92,11 +91,6 @@ class Config:
 
 def read_config() -> Config:
     load_local_env(LOCAL_ENV_FILE)
-    password = os.environ.get("REMOTE_DB_PASSWORD", "")
-    if not password:
-        password = getpass.getpass("Remote WordPress database password: ")
-    if not password:
-        raise DeployError("The remote database password is required")
     config = Config(
         ssh_host=required_env("DEPLOY_SSH_HOST"),
         ssh_user=required_env("DEPLOY_SSH_USER"),
@@ -105,7 +99,7 @@ def read_config() -> Config:
         db_host=required_env("REMOTE_DB_HOST"),
         db_name=required_env("REMOTE_DB_NAME"),
         db_user=required_env("REMOTE_DB_USER"),
-        db_password=password,
+        db_password=os.environ.get("REMOTE_DB_PASSWORD", ""),
         wordpress_url=required_env("PRODUCTION_WORDPRESS_URL").rstrip("/"),
         frontend_url=required_env("PRODUCTION_FRONTEND_URL").rstrip("/"),
         local_wp_container=os.environ.get("LOCAL_WP_CONTAINER", "kubikartbackend_appserver_1"),
@@ -153,6 +147,19 @@ def ssh(config: Config, remote_command: str, *, capture: bool = False) -> subpro
     return run([*ssh_base(config), remote_command], capture=capture)
 
 
+def resolve_database_password(config: Config) -> Config:
+    """Use an explicit local override or read the current remote WP config over SSH."""
+    if config.db_password:
+        return config
+    wp = f"wp --allow-root --path={shlex.quote(config.remote_app_dir)}"
+    result = ssh(config, f"{wp} config get DB_PASSWORD", capture=True)
+    password = result.stdout.decode().rstrip("\r\n")
+    if not password:
+        raise DeployError("Could not obtain DB_PASSWORD from the existing remote wp-config.php")
+    log("Using the existing remote WordPress database credential over authenticated SSH")
+    return replace(config, db_password=password)
+
+
 def mysql_option_value(value: str) -> str:
     return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
@@ -164,16 +171,15 @@ def create_mysql_config(config: Config, run_dir: Path) -> Path:
         f"host={mysql_option_value(config.db_host)}\n"
         f"user={mysql_option_value(config.db_user)}\n"
         f"password={mysql_option_value(config.db_password)}\n"
-        "protocol=tcp\n"
-        "connect-timeout=20\n",
+        "protocol=tcp\n",
         encoding="utf-8",
     )
     path.chmod(0o600)
     return path
 
 
-def gzip_test(path: Path, required_marker: bytes) -> None:
-    if not path.exists() or path.stat().st_size < 1024:
+def gzip_test(path: Path, required_marker: bytes, *, minimum_size: int = 1024) -> None:
+    if not path.exists() or path.stat().st_size < minimum_size:
         raise DeployError(f"Backup is missing or unexpectedly small: {path}")
     marker_found = False
     with gzip.open(path, "rb") as stream:
@@ -192,22 +198,20 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def backup_remote_database(config: Config, mysql_config: Path, destination: Path) -> None:
+def backup_remote_database(config: Config, remote_mysql_config: str, destination: Path) -> None:
     log("Backing up the current remote database locally")
-    command = [
-        "mysqldump",
-        f"--defaults-extra-file={mysql_config}",
-        "--single-transaction",
-        "--quick",
-        "--routines",
-        "--triggers",
-        "--events",
-        "--hex-blob",
-        config.db_name,
-    ]
+    command = " ".join(shlex.quote(part) for part in [
+        "mysqldump", f"--defaults-extra-file={remote_mysql_config}",
+        "--single-transaction", "--quick", "--routines", "--triggers",
+        "--events", "--hex-blob", "--no-tablespaces", config.db_name,
+    ])
     with destination.open("wb") as raw_output, gzip.GzipFile(fileobj=raw_output, mode="wb", compresslevel=6) as compressed:
-        subprocess.run(command, stdout=compressed, check=True)
-    gzip_test(destination, b"-- Table structure for table")
+        process = subprocess.Popen([*ssh_base(config), command], stdout=subprocess.PIPE)
+        assert process.stdout is not None
+        shutil.copyfileobj(process.stdout, compressed)
+        if process.wait() != 0:
+            raise DeployError("Remote database backup failed")
+    gzip_test(destination, b"-- Dump completed on", minimum_size=128)
 
 
 def backup_remote_files(config: Config, destination: Path) -> None:
@@ -232,7 +236,11 @@ def export_local_database(config: Config, destination: Path) -> str:
         f"cd {shlex.quote(config.local_wp_path)} && wp --allow-root db export - --add-drop-table",
     ]
     with destination.open("wb") as raw_output, gzip.GzipFile(fileobj=raw_output, mode="wb", compresslevel=6) as compressed:
-        subprocess.run(command, stdout=compressed, check=True)
+        process = subprocess.Popen(command, stdout=subprocess.PIPE)
+        assert process.stdout is not None
+        shutil.copyfileobj(process.stdout, compressed)
+        if process.wait() != 0:
+            raise DeployError("Local WordPress database export failed")
     gzip_test(destination, b"CREATE TABLE")
     return site_url
 
@@ -275,8 +283,17 @@ def prepare_remote_config(config: Config, destination: Path) -> None:
     destination.chmod(0o600)
 
 
-def mysql_query(mysql_config: Path, db_name: str, sql: bytes, *, capture: bool = False) -> subprocess.CompletedProcess[bytes]:
-    return run(["mysql", f"--defaults-extra-file={mysql_config}", db_name], input_data=sql, capture=capture)
+def remote_mysql_query(
+    config: Config,
+    remote_mysql_config: str,
+    sql: bytes,
+    *,
+    capture: bool = False,
+) -> subprocess.CompletedProcess[bytes]:
+    command = " ".join(shlex.quote(part) for part in [
+        "mysql", f"--defaults-extra-file={remote_mysql_config}", config.db_name,
+    ])
+    return run([*ssh_base(config), command], input_data=sql, capture=capture)
 
 
 def replace_remote_files(config: Config, prepared_config: Path, run_id: str) -> None:
@@ -287,9 +304,6 @@ def replace_remote_files(config: Config, prepared_config: Path, run_id: str) -> 
     run([
         "rsync", "-az", "--delete", "--delay-updates",
         "--exclude", "wp-config.php",
-        "--exclude", "wp-content/cache/",
-        "--exclude", "wp-content/upgrade/",
-        "--exclude", "wp-content/backup*/",
         "-e", remote_shell,
         f"{LOCAL_WORDPRESS_DIR}/",
         f"{config.ssh_target}:{config.remote_app_dir}/",
@@ -302,7 +316,7 @@ def replace_remote_files(config: Config, prepared_config: Path, run_id: str) -> 
     )
 
 
-def drop_remote_database(mysql_config: Path, config: Config) -> None:
+def drop_remote_database(remote_mysql_config: str, config: Config) -> None:
     log("Deleting all current objects from the remote WordPress database")
     query = (
         "SELECT CONCAT('DROP ', IF(TABLE_TYPE='VIEW','VIEW','TABLE'), ' IF EXISTS `', "
@@ -310,18 +324,24 @@ def drop_remote_database(mysql_config: Path, config: Config) -> None:
         f"WHERE table_schema={php_quote(config.db_name)} ORDER BY TABLE_TYPE='VIEW' DESC;"
     )
     result = run(
-        ["mysql", f"--defaults-extra-file={mysql_config}", "--batch", "--skip-column-names", "-e", query],
+        [*ssh_base(config), " ".join(shlex.quote(part) for part in [
+            "mysql", f"--defaults-extra-file={remote_mysql_config}",
+            "--batch", "--skip-column-names", "-e", query,
+        ])],
         capture=True,
     )
     statements = result.stdout.decode().strip()
     if statements:
-        mysql_query(mysql_config, config.db_name, f"SET FOREIGN_KEY_CHECKS=0;\n{statements}\nSET FOREIGN_KEY_CHECKS=1;\n".encode())
+        remote_mysql_query(config, remote_mysql_config, f"SET FOREIGN_KEY_CHECKS=0;\n{statements}\nSET FOREIGN_KEY_CHECKS=1;\n".encode())
 
 
-def import_database(mysql_config: Path, config: Config, dump: Path) -> None:
+def import_database(remote_mysql_config: str, config: Config, dump: Path) -> None:
     log("Importing the local WordPress database into the remote database")
     with gzip.open(dump, "rb") as source:
-        process = subprocess.Popen(["mysql", f"--defaults-extra-file={mysql_config}", config.db_name], stdin=subprocess.PIPE)
+        command = " ".join(shlex.quote(part) for part in [
+            "mysql", f"--defaults-extra-file={remote_mysql_config}", config.db_name,
+        ])
+        process = subprocess.Popen([*ssh_base(config), command], stdin=subprocess.PIPE)
         assert process.stdin is not None
         shutil.copyfileobj(source, process.stdin)
         process.stdin.close()
@@ -329,10 +349,10 @@ def import_database(mysql_config: Path, config: Config, dump: Path) -> None:
             raise DeployError("Remote database import failed")
 
 
-def restore_database(mysql_config: Path, config: Config, backup: Path) -> None:
+def restore_database(remote_mysql_config: str, config: Config, backup: Path) -> None:
     log("Import failed; restoring the pre-deployment remote database backup")
-    drop_remote_database(mysql_config, config)
-    import_database(mysql_config, config, backup)
+    drop_remote_database(remote_mysql_config, config)
+    import_database(remote_mysql_config, config, backup)
 
 
 def normalize_and_verify(config: Config, local_site_url: str) -> None:
@@ -359,6 +379,12 @@ def verify_http(config: Config) -> None:
         with urllib.request.urlopen(request, timeout=30) as response:
             if response.status != 200:
                 raise DeployError(f"WordPress REST API returned HTTP {response.status}")
+    except urllib.error.HTTPError as error:
+        body = error.read()
+        if error.code == 401 and b'"code":"rest_not_logged_in"' in body:
+            log("WordPress REST API is reachable and correctly requires authentication")
+            return
+        raise DeployError(f"WordPress REST API verification failed: HTTP {error.code}") from error
     except urllib.error.URLError as error:
         raise DeployError(f"WordPress REST API verification failed: {error}") from error
 
@@ -375,7 +401,8 @@ def main() -> int:
     run_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     run_dir = BACKUP_ROOT / run_id
     run_dir.mkdir(parents=True, exist_ok=False)
-    mysql_config = create_mysql_config(config, run_dir)
+    mysql_config: Path | None = None
+    remote_mysql_config = f"{EXPECTED_REMOTE_ROOT}.kubikart-mysql-{run_id}.cnf"
     remote_db_backup = run_dir / f"remote-before-{run_id}.sql.gz"
     remote_files_backup = run_dir / f"remote-wordpress-before-{run_id}.tar.gz"
     local_db_dump = run_dir / f"local-wordpress-{run_id}.sql.gz"
@@ -383,8 +410,12 @@ def main() -> int:
     try:
         log("Validating SSH target and exact remote application directory")
         ssh(config, f"test -d {shlex.quote(config.remote_app_dir)} && test -f {shlex.quote(config.remote_app_dir + '/wp-config.php')}")
-        mysql_query(mysql_config, config.db_name, b"SELECT 1;", capture=True)
-        backup_remote_database(config, mysql_config, remote_db_backup)
+        config = resolve_database_password(config)
+        mysql_config = create_mysql_config(config, run_dir)
+        run([*scp_base(config), str(mysql_config), f"{config.ssh_target}:{remote_mysql_config}"])
+        ssh(config, f"chmod 600 {shlex.quote(remote_mysql_config)}")
+        remote_mysql_query(config, remote_mysql_config, b"SELECT 1;", capture=True)
+        backup_remote_database(config, remote_mysql_config, remote_db_backup)
         backup_remote_files(config, remote_files_backup)
         local_site_url = export_local_database(config, local_db_dump)
         prepare_remote_config(config, prepared_config)
@@ -408,10 +439,10 @@ def main() -> int:
             raise DeployError("Confirmation did not match; no destructive operation was performed")
         replace_remote_files(config, prepared_config, run_id)
         try:
-            drop_remote_database(mysql_config, config)
-            import_database(mysql_config, config, local_db_dump)
+            drop_remote_database(remote_mysql_config, config)
+            import_database(remote_mysql_config, config, local_db_dump)
         except Exception:
-            restore_database(mysql_config, config, remote_db_backup)
+            restore_database(remote_mysql_config, config, remote_db_backup)
             raise
         normalize_and_verify(config, local_site_url)
         verify_http(config)
@@ -419,7 +450,12 @@ def main() -> int:
         log(f"Recovery artifacts: {run_dir}")
         return 0
     finally:
-        mysql_config.unlink(missing_ok=True)
+        try:
+            ssh(config, f"rm -f -- {shlex.quote(remote_mysql_config)}")
+        except (DeployError, subprocess.CalledProcessError):
+            log(f"WARNING: could not remove temporary remote MySQL config: {remote_mysql_config}")
+        if mysql_config is not None:
+            mysql_config.unlink(missing_ok=True)
         prepared_config.unlink(missing_ok=True)
 
 

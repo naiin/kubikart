@@ -9,7 +9,9 @@ database credentials or a production `wp-config.php`.
 1. Copy `.env.deploy.local.example` to `.env.deploy.local`.
 2. Configure the SSH target, exact WordPress path, database host/name/user,
    WordPress URL, and frontend URL.
-3. Leave `REMOTE_DB_PASSWORD` empty to receive a secure terminal prompt.
+3. Normally leave `REMOTE_DB_PASSWORD` empty. The script reads the existing
+   value from the remote `wp-config.php` over authenticated SSH before replacing
+   anything. A local value is only an optional override.
 4. Restrict the file:
 
    ```bash
@@ -22,6 +24,11 @@ The server must contain the public half of a local SSH key in
 `~/.ssh/authorized_keys`. The matching private key remains on the local
 machine. Set `DEPLOY_SSH_KEY` only when the default SSH agent/key selection is
 not correct.
+
+Strato database connections are executed by its command-line MySQL client over
+the same SSH session. The deployer uploads an owner-readable temporary client
+configuration, streams backups and imports through SSH, and removes that file
+when the run finishes. Direct external access to port 3306 is not required.
 
 ## Preflight and backup
 
@@ -62,7 +69,8 @@ confirmation sentence is typed exactly.
 The deployment then:
 
 1. replaces the remote WordPress files from `backend/wordpress`
-2. preserves ignored runtime directories until replacements are available
+2. deletes remote-only files so the remote tree matches the local source,
+   preserving only the separately generated production `wp-config.php`
 3. installs a generated production `wp-config.php`
 4. drops the target database objects and imports the local Lando database
 5. automatically restores the database backup when import fails
