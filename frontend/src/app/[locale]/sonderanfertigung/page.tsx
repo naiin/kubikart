@@ -21,7 +21,9 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
   return buildPageMetadata({
     locale,
-    routeSegments: SEO_ROUTE_SEGMENTS.customRequest,
+    // This route currently reuses the contact page unchanged. Consolidate its
+    // search signals until owner-reviewed bespoke-production content exists.
+    routeSegments: SEO_ROUTE_SEGMENTS.contact,
     title: content.title,
     description: content.description,
   });

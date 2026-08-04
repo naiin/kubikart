@@ -3,6 +3,8 @@ import { useSyncExternalStore } from "react";
 export interface CartItem {
   lineId?: string;
   id: number;
+  productId?: number;
+  variationId?: number;
   name: string;
   price: string;
   image: string;
@@ -12,6 +14,15 @@ export interface CartItem {
   customizations?: Record<string, string>;
   weight?: number; // kg
   dimensions?: { length: number; width: number; height: number }; // cm
+}
+
+export function toServerCartItems(items: CartItem[]) {
+  return items.map((item) => ({
+    productId: item.productId ?? item.id,
+    ...(item.variationId ? { variationId: item.variationId } : {}),
+    quantity: item.quantity,
+    ...(item.customizations ? { customizations: item.customizations } : {}),
+  }));
 }
 
 const CART_STORAGE_KEY = "kubikart-cart";
@@ -85,6 +96,19 @@ export function writeCart(cart: CartItem[]) {
 
 export function getCartLineId(item: Pick<CartItem, "id" | "lineId">) {
   return item.lineId ?? String(item.id);
+}
+
+export function formatCartCurrency(value: string | number, locale: string) {
+  const amount = typeof value === "number" ? value : Number.parseFloat(value);
+
+  if (!Number.isFinite(amount)) {
+    return typeof value === "string" ? value.trim() : "";
+  }
+
+  return new Intl.NumberFormat(locale === "de" ? "de-DE" : "en-DE", {
+    style: "currency",
+    currency: "EUR",
+  }).format(amount);
 }
 
 export function useCart() {

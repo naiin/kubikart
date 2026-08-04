@@ -2,8 +2,20 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { ProductJsonLd } from "@/components/product/ProductJsonLd";
 import { ProductPageClient } from "@/components/product/ProductPageClient";
-import { getProductAbsoluteUrl, getProductImageAbsoluteUrl, getProductPageProduct, getRelatedProducts } from "@/lib/product-page";
-import { getProduct, getProductReviews, type WCReview } from "@/lib/woocommerce";
+import {
+  getOtherBusinessKits,
+  isBusinessKitProduct,
+  isWooCommercePlaceholderImage,
+} from "@/lib/business-kits";
+import {
+  getProductAbsoluteUrl,
+  getProductImageAbsoluteUrl,
+  getProductPageProduct,
+  getRelatedProducts,
+  type ProductPageProduct,
+} from "@/lib/product-page";
+import { getProduct, getProductReviews, type WCProduct, type WCReview } from "@/lib/woocommerce";
+import { getRobotsMetadata } from "@/lib/seo";
 
 type ProductPageProps = {
   params: Promise<{
@@ -17,13 +29,15 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   const product = await getProductPageProduct(slug, locale);
 
   if (!product) {
-    return {
-      title: "Produkt | Kubikart",
-    };
+    notFound();
   }
 
   const canonical = getProductAbsoluteUrl(locale, product.slug);
-  const primaryImage = product.images[0];
+  const siteLocale = locale === "en" ? "en" : "de";
+  const businessKit = isBusinessKitProduct(product, siteLocale);
+  const primaryImage = product.images.find(
+    (image) => !businessKit || !isWooCommercePlaceholderImage(image),
+  );
   const languages: Record<string, string> = {
     [locale]: canonical,
   };
@@ -57,6 +71,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
       canonical,
       languages,
     },
+    robots: getRobotsMetadata(),
     openGraph: {
       title: product.seoTitle,
       description: product.seoDescription,
@@ -72,6 +87,12 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
             },
           ]
         : undefined,
+    },
+    twitter: {
+      card: primaryImage ? "summary_large_image" : "summary",
+      title: product.seoTitle,
+      description: product.seoDescription,
+      images: primaryImage ? [getProductImageAbsoluteUrl(primaryImage.src)] : undefined,
     },
   };
 }
@@ -89,6 +110,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
     redirect(`/${locale}/shop/${product.slug}`);
   }
 
+  const siteLocale = locale === "en" ? "en" : "de";
+  const businessKit = isBusinessKitProduct(product, siteLocale);
+
   let reviews: WCReview[] = [];
   try {
     reviews = await getProductReviews(product.id);
@@ -96,12 +120,36 @@ export default async function ProductPage({ params }: ProductPageProps) {
     reviews = [];
   }
 
-  const relatedProducts = getRelatedProducts(product);
+  let relatedProducts: ProductPageProduct[] = [];
+  let otherBusinessKits: WCProduct[] = [];
+  if (businessKit) {
+    try {
+      otherBusinessKits = await getOtherBusinessKits(
+        siteLocale,
+        product.id,
+        product.relatedProductIds,
+      );
+    } catch (error) {
+      console.error("Unable to load localized Business Kits for the product presentation.", error);
+    }
+  } else {
+    try {
+      relatedProducts = await getRelatedProducts(product, locale);
+    } catch {
+      relatedProducts = [];
+    }
+  }
 
   return (
     <>
-      <ProductJsonLd product={product} locale={locale} />
-      <ProductPageClient product={product} reviews={reviews} relatedProducts={relatedProducts} />
+      <ProductJsonLd product={product} locale={locale} businessKit={businessKit} />
+      <ProductPageClient
+        product={product}
+        reviews={reviews}
+        relatedProducts={relatedProducts}
+        presentation={businessKit ? "business-kit" : "standard"}
+        otherBusinessKits={otherBusinessKits}
+      />
     </>
   );
 }

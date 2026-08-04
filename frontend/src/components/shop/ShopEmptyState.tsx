@@ -1,29 +1,27 @@
-import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 
-export function ShopEmptyState() {
+export function ShopEmptyState({ unavailable = false }: { unavailable?: boolean }) {
   const t = useTranslations("shopPage");
 
   return (
-    <div className="text-center py-16 px-4">
-      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 mb-6">
-        <svg className="h-8 w-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    <div className="rounded-kubikart-lg border border-border bg-surface-white px-5 py-12 text-center sm:px-8">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-page text-brand">
+        <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+          {unavailable ? (
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M10.3 3.8 2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z" />
+          ) : (
+            <><circle cx="11" cy="11" r="6.5" /><path strokeLinecap="round" d="m16 16 4 4" /></>
+          )}
         </svg>
       </div>
-      <h3 className="text-lg font-bold text-navy-900 mb-2">{t("emptyTitle")}</h3>
-      <p className="text-sm text-gray-500 max-w-md mx-auto mb-6">{t("emptyText")}</p>
-      <div className="flex flex-wrap justify-center gap-3">
-        <Link
-          href="/shop"
-          className="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-navy-900 hover:bg-gray-100 transition-colors"
-        >
-          {t("filterReset")}
+      <h2 className="kk-heading-3 mt-5">{t(unavailable ? "unavailableTitle" : "emptyTitle")}</h2>
+      <p className="kk-body-small mx-auto mt-3 max-w-xl text-muted">{t(unavailable ? "unavailableText" : "emptyText")}</p>
+      <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+        <Link href="/shop" className="kk-button kk-button-secondary">
+          {unavailable ? t("tryAgain") : t("filterReset")}
         </Link>
-        <Link
-          href="/services"
-          className="inline-flex items-center justify-center rounded-xl bg-accent-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-accent-500 transition-colors"
-        >
+        <Link href="/sonderanfertigung" className="kk-button kk-button-primary">
           {t("emptyCtaCustom")}
         </Link>
       </div>

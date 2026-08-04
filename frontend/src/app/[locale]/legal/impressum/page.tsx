@@ -9,7 +9,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     locale,
     routeSegments: SEO_ROUTE_SEGMENTS.impressum,
     title: "Impressum | Kubikart",
-    description: "Rechtliche Anbieterkennzeichnung und Kontaktdaten von Kubikart gemäß § 5 TMG.",
+    description: "Rechtliche Anbieterkennzeichnung und Kontaktdaten von Kubikart gemäß § 5 DDG.",
     index: locale === "de",
   });
 }
@@ -20,7 +20,7 @@ export default function ImpressumPage() {
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Impressum</h1>
 
       <div className="prose prose-gray max-w-none">
-        <h2>Angaben gemäß § 5 TMG</h2>
+        <h2>Angaben gemäß § 5 DDG</h2>
         <p>
           KubikArt
           <br />
@@ -41,23 +41,13 @@ export default function ImpressumPage() {
           DE454943872
         </p>
 
-        <h2>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV</h2>
+        <h2>Verantwortlich für redaktionelle Inhalte nach § 18 Abs. 2 MStV</h2>
         <p>
           Hussnain Raza
           <br />
           Franz-Lehar-Str. 08
           <br />
           89134 Blaustein
-        </p>
-
-        <h2>EU-Streitschlichtung</h2>
-        <p>
-          Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit:{" "}
-          <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noopener noreferrer">
-            https://ec.europa.eu/consumers/odr/
-          </a>
-          .<br />
-          Unsere E-Mail-Adresse finden Sie oben im Impressum.
         </p>
 
         <h2>Verbraucherstreitbeilegung / Universalschlichtungsstelle</h2>

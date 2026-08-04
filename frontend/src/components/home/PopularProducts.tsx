@@ -1,13 +1,10 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { getTranslations } from "next-intl/server";
-import { getLocale } from "next-intl/server";
-import { getProducts, WCProduct } from "@/lib/woocommerce";
 import { ProductCard } from "@/components/ProductCard";
+import { getProducts, type WCProduct } from "@/lib/woocommerce";
 
 export async function PopularProducts() {
-  const t = await getTranslations("homepage");
-  const locale = await getLocale();
-
+  const [t, locale] = await Promise.all([getTranslations("homeRedesign.products"), getLocale()]);
   let products: WCProduct[] = [];
 
   try {
@@ -16,31 +13,40 @@ export async function PopularProducts() {
     products = [];
   }
 
-  if (products.length === 0) return null;
+  if (products.length === 0) {
+    return (
+      <section className="kk-section-major bg-surface">
+        <div className="kk-container">
+          <div className="rounded-kubikart-lg border border-border bg-surface-white px-6 py-10 text-center">
+            <h2 className="kk-heading-2">{t("title")}</h2>
+            <p className="kk-body mt-4 text-muted">{t("unavailable")}</p>
+            <Link href="/shop" className="kk-link mt-5 inline-flex min-h-11 items-center font-semibold">
+              {t("allLink")}
+            </Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
-    <section className="py-20 sm:py-24 bg-cream-50">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex items-end justify-between mb-10">
-          <h2 className="text-[28px] sm:text-[38px] font-bold leading-[1.15] tracking-[-0.03em] text-navy-900">{t("productsTitle")}</h2>
-          <Link href="/shop" className="hidden sm:inline-flex items-center text-sm font-semibold text-navy-900 hover:text-accent-600 transition-colors">
-            {t("productsLink")} →
+    <section className="kk-section-major bg-surface">
+      <div className="kk-container-full">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold tracking-[0.12em] text-accent uppercase">{t("eyebrow")}</p>
+            <h2 className="kk-heading-2 mt-3">{t("title")}</h2>
+          </div>
+          <Link href="/shop" className="kk-link inline-flex min-h-11 items-center gap-2 font-semibold">
+            {t("allLink")}
+            <span aria-hidden="true">→</span>
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {products.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
-        </div>
-
-        <div className="mt-8 text-center sm:hidden">
-          <Link
-            href="/shop"
-            className="inline-flex items-center justify-center rounded-xl bg-navy-900 px-7 py-3.5 text-[15px] font-bold text-white hover:bg-navy-800 transition-colors"
-          >
-            {t("productsLink")}
-          </Link>
         </div>
       </div>
     </section>

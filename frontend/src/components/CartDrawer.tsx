@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -12,6 +12,8 @@ export function CartDrawer() {
   const [open, setOpen] = useState(false);
   const cart = useCart();
   const hasMounted = useHasMounted();
+  const triggerButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     function onCartUpdated() {
@@ -36,6 +38,31 @@ export function CartDrawer() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const returnFocusTarget = triggerButtonRef.current;
+    const previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+      returnFocusTarget?.focus();
+    };
+  }, [open]);
+
   function updateQuantity(lineId: string, delta: number) {
     const updated = readCart()
       .map((item) => (getCartLineId(item) === lineId ? { ...item, quantity: Math.max(0, item.quantity + delta) } : item))
@@ -56,11 +83,14 @@ export function CartDrawer() {
     <>
       {/* Cart Icon Button for Header */}
       <button
+        ref={triggerButtonRef}
+        type="button"
         onClick={() => setOpen(true)}
-        className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-700 transition hover:bg-cream-50 hover:text-navy-900"
-        aria-label="Warenkorb öffnen"
+        className="relative inline-flex h-11 w-11 items-center justify-center rounded-kubikart-sm text-brand transition-colors hover:bg-page"
+        aria-label={`${t("cart")} (${itemCount})`}
+        aria-expanded={open}
       >
-        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -68,7 +98,7 @@ export function CartDrawer() {
           />
         </svg>
         {itemCount > 0 && (
-          <span className="absolute right-0 top-0 flex h-[18px] min-w-[18px] -translate-y-1/4 translate-x-1/4 items-center justify-center rounded-full bg-accent-600 px-1 text-[10px] font-bold leading-none text-white">
+          <span className="absolute right-0 top-0 flex h-[18px] min-w-[18px] -translate-y-1/4 translate-x-1/4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-white">
             {itemCount > 99 ? "99+" : itemCount}
           </span>
         )}
@@ -77,13 +107,28 @@ export function CartDrawer() {
       {/* Portal: Overlay + Drawer rendered outside header */}
       {hasMounted &&
         createPortal(
-          <>
+          <div
+            className={`fixed inset-y-0 left-0 z-[9998] w-dvw max-w-full overflow-x-clip ${
+              open ? "" : "pointer-events-none"
+            }`}
+          >
             {/* Overlay */}
-            {open && <div className="fixed inset-0 z-[9998] bg-black/40 transition-opacity" onClick={() => setOpen(false)} />}
+            {open && (
+              <div
+                className="absolute inset-0 bg-black/40 transition-opacity"
+                onClick={() => setOpen(false)}
+                aria-hidden="true"
+              />
+            )}
 
             {/* Drawer */}
             <div
-              className={`fixed top-0 right-0 z-[9999] h-full w-full max-w-md transform bg-white shadow-2xl transition-transform duration-300 ease-in-out flex flex-col ${
+              role="dialog"
+              aria-modal={open ? "true" : undefined}
+              aria-label={t("cart")}
+              aria-hidden={!open}
+              inert={!open}
+              className={`absolute inset-y-0 right-0 z-[1] flex w-[min(28rem,100%)] transform flex-col bg-white shadow-2xl transition-transform duration-300 ease-in-out ${
                 open ? "translate-x-0" : "translate-x-full pointer-events-none"
               }`}
             >
@@ -92,8 +137,8 @@ export function CartDrawer() {
                 <h2 className="text-lg font-semibold text-gray-900">
                   {t("cart")} ({itemCount})
                 </h2>
-                <button onClick={() => setOpen(false)} className="rounded-lg p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <button ref={closeButtonRef} type="button" onClick={() => setOpen(false)} aria-label={t("close")} className="rounded-lg p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -135,7 +180,7 @@ export function CartDrawer() {
                           {item.customizationSummary?.length ? (
                             <div className="mt-1 space-y-0.5">
                               {item.customizationSummary.map((line, i) => (
-                                <p key={i} className="text-[11px] text-gray-500 line-clamp-1">
+                                <p key={i} className="break-words text-[11px] text-gray-500">
                                   {line}
                                 </p>
                               ))}
@@ -202,7 +247,7 @@ export function CartDrawer() {
                 </div>
               )}
             </div>
-          </>,
+          </div>,
           document.body,
         )}
     </>

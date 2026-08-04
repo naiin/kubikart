@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
-import { HeroSection } from "@/components/home/HeroSection";
-import { ServiceCategories } from "@/components/home/ServiceCategories";
+import { BeforeAfterSection } from "@/components/home/BeforeAfterSection";
+import { CustomOrderProcess } from "@/components/home/CustomOrderProcess";
+import { FeaturedKits } from "@/components/home/FeaturedKits";
+import { FeaturedPortfolio } from "@/components/home/FeaturedPortfolio";
+import { HomeHero } from "@/components/home/HomeHero";
+import { HomepageFinalCta } from "@/components/home/HomepageFinalCta";
+import { HomepageTrustStrip } from "@/components/home/HomepageTrustStrip";
+import { IndustryLinks } from "@/components/home/IndustryLinks";
+import { KitContentsStrip } from "@/components/home/KitContentsStrip";
 import { PopularProducts } from "@/components/home/PopularProducts";
-import { BusinessHighlight } from "@/components/home/BusinessHighlight";
-import { HowItWorks } from "@/components/home/HowItWorks";
-import { CustomerReviews } from "@/components/home/CustomerReviews";
-import { AboutTrust } from "@/components/home/AboutTrust";
-import { ProjectCTA } from "@/components/home/ProjectCTA";
+import { SiteJsonLd } from "@/components/seo/SiteJsonLd";
 import { buildPageMetadata, normalizeLocale, SEO_ROUTE_SEGMENTS } from "@/lib/seo";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -16,14 +19,14 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const content =
     locale === "en"
       ? {
-          title: "Kubikart | Personalized products, laser engraving and 3D printing",
+          title: "Kubikart | Visibility products and personalized products",
           description:
-            "Kubikart creates personalized products, laser engraving, laser cutting and 3D printing projects with a premium made-in-Germany finish.",
+            "Kubikart creates QR and NFC stands, stickers, menus, visibility kits and selected personalized products for local businesses and private customers.",
         }
       : {
-          title: "Kubikart | Personalisierte Produkte, Lasergravur und 3D-Druck",
+          title: "Kubikart | Sichtbarkeitslösungen und personalisierte Produkte",
           description:
-            "Kubikart fertigt personalisierte Produkte, Lasergravur, Laserschnitt und 3D-Druck Projekte mit hochwertiger Umsetzung und persönlichem Service.",
+            "Kubikart gestaltet QR- und NFC-Aufsteller, Aufkleber, Menüs, Sichtbarkeits-Kits und ausgewählte personalisierte Produkte für lokale Unternehmen und Privatkunden.",
         };
 
   return buildPageMetadata({
@@ -34,17 +37,22 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   });
 }
 
-export default async function HomePage() {
+export default function HomePage() {
   return (
     <>
-      <HeroSection />
-      <ServiceCategories />
-      <PopularProducts />
-      <BusinessHighlight />
-      <HowItWorks />
-      <CustomerReviews />
-      <AboutTrust />
-      <ProjectCTA />
+      <SiteJsonLd />
+      <div className="overflow-clip bg-page">
+        <HomeHero />
+        <BeforeAfterSection />
+        <FeaturedKits />
+        <KitContentsStrip />
+        <PopularProducts />
+        <IndustryLinks />
+        <CustomOrderProcess />
+        <FeaturedPortfolio />
+        <HomepageTrustStrip />
+        <HomepageFinalCta />
+      </div>
     </>
   );
 }

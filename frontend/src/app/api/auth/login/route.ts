@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { wcApi } from "@/lib/woocommerce";
 import { sendLoginAlert } from "@/lib/email";
+import { setSessionCookie, type SessionUser } from "@/lib/auth-session";
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,7 +33,13 @@ export async function POST(request: NextRequest) {
     }
 
     const customer = customers[0];
-    const token = Buffer.from(`${customer.id}:${customer.email}:${Date.now()}`).toString("base64");
+    const user: SessionUser = {
+      id: customer.id,
+      email: customer.email,
+      firstName: customer.first_name,
+      lastName: customer.last_name,
+      username: customer.username,
+    };
 
     try {
       const acceptLang = request.headers.get("accept-language") ?? "";
@@ -54,16 +61,9 @@ export async function POST(request: NextRequest) {
       console.error("Failed to send login alert email:", err);
     }
 
-    return NextResponse.json({
-      user: {
-        id: customer.id,
-        email: customer.email,
-        firstName: customer.first_name,
-        lastName: customer.last_name,
-        username: customer.username,
-      },
-      token,
-    });
+    const response = NextResponse.json({ user });
+    setSessionCookie(response, user);
+    return response;
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json({ error: "Authentication failed" }, { status: 500 });

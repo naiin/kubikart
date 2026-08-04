@@ -41,34 +41,31 @@ jobs:
     name: Frontend - Verify
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    defaults:
-      run:
-        working-directory: frontend
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 11.5.0
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: pnpm lint:ci
+        run: pnpm --filter frontend lint:ci
 
       - name: Typecheck
-        run: pnpm typecheck
+        run: pnpm --filter frontend typecheck
 
       - name: Run frontend unit and API tests
-        run: pnpm test:coverage
+        run: pnpm --filter frontend test:coverage
 
       - name: Upload frontend coverage
         if: always()
@@ -79,4 +76,4 @@ jobs:
           retention-days: 7
 
       - name: Production build
-        run: pnpm build
+        run: pnpm --filter frontend build

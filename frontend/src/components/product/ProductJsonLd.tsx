@@ -1,10 +1,31 @@
 import { useTranslations } from "next-intl";
+import { isWooCommercePlaceholderImage } from "@/lib/business-kits";
 import { getAvailabilitySchema, getProductAbsoluteUrl, getProductImageAbsoluteUrl, getSiteUrl, type ProductPageProduct } from "@/lib/product-page";
+import { serializeJsonLd } from "@/lib/seo";
 
-export function ProductJsonLd({ product, locale }: { product: ProductPageProduct; locale: string }) {
+export function ProductJsonLd({
+  product,
+  locale,
+  businessKit = false,
+}: {
+  product: ProductPageProduct;
+  locale: string;
+  businessKit?: boolean;
+}) {
   const t = useTranslations("productPage");
   const siteUrl = getSiteUrl();
   const productUrl = getProductAbsoluteUrl(locale, product.slug);
+  const standardCategoryBreadcrumb = {
+    "@type": "ListItem",
+    position: 3,
+    name: product.category.name,
+    item: product.category.id
+      ? `${siteUrl}/${locale}/shop?category=${product.category.id}`
+      : `${siteUrl}/${locale}/shop`,
+  };
+  const schemaImages = product.images
+    .filter((image) => !businessKit || !isWooCommercePlaceholderImage(image))
+    .map((image) => getProductImageAbsoluteUrl(image.src));
   const breadcrumbList = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -18,18 +39,15 @@ export function ProductJsonLd({ product, locale }: { product: ProductPageProduct
       {
         "@type": "ListItem",
         position: 2,
-        name: t("jsonLdShop"),
-        item: `${siteUrl}/${locale}/shop`,
+        name: businessKit ? t("jsonLdBusinessKits") : t("jsonLdShop"),
+        item: businessKit
+          ? `${siteUrl}/${locale}/services/brand-kit`
+          : `${siteUrl}/${locale}/shop`,
       },
+      ...(businessKit ? [] : [standardCategoryBreadcrumb]),
       {
         "@type": "ListItem",
-        position: 3,
-        name: product.category.name,
-        item: `${siteUrl}/${locale}/shop`,
-      },
-      {
-        "@type": "ListItem",
-        position: 4,
+        position: businessKit ? 3 : 4,
         name: product.name,
         item: productUrl,
       },
@@ -40,13 +58,18 @@ export function ProductJsonLd({ product, locale }: { product: ProductPageProduct
     "@type": "Product",
     name: product.name,
     description: product.description,
-    image: product.images.map((image) => getProductImageAbsoluteUrl(image.src)),
-    sku: product.sku,
     brand: {
       "@type": "Brand",
       name: "Kubikart",
     },
-    offers: {
+  };
+
+  if (product.sku) {
+    productSchema.sku = product.sku;
+  }
+
+  if (product.purchasable === true && product.price.amount > 0) {
+    productSchema.offers = {
       "@type": "Offer",
       url: productUrl,
       priceCurrency: product.price.currency,
@@ -57,8 +80,12 @@ export function ProductJsonLd({ product, locale }: { product: ProductPageProduct
         "@type": "Organization",
         name: "Kubikart",
       },
-    },
-  };
+    };
+  }
+
+  if (schemaImages.length > 0) {
+    productSchema.image = schemaImages;
+  }
 
   if (product.reviewCount && product.averageRating) {
     productSchema.aggregateRating = {
@@ -70,8 +97,8 @@ export function ProductJsonLd({ product, locale }: { product: ProductPageProduct
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbList) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(productSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbList) }} />
     </>
   );
 }

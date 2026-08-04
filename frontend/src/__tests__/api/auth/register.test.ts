@@ -33,7 +33,7 @@ describe("POST /api/auth/register", () => {
     expect(res.status).toBe(409);
   });
 
-  it("returns 200 with user and token on successful registration", async () => {
+  it("returns 200 with user and a secure session cookie on successful registration", async () => {
     vi.stubGlobal(
       "fetch",
       vi
@@ -53,7 +53,9 @@ describe("POST /api/auth/register", () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.user.email).toBe("new@test.com");
-    expect(typeof data.token).toBe("string");
+    expect(data.token).toBeUndefined();
+    expect(res.headers.get("set-cookie")).toContain("kubikart_session=");
+    expect(res.headers.get("set-cookie")).toContain("HttpOnly");
   });
 
   it("returns 500 when WooCommerce customer creation fails", async () => {

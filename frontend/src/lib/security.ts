@@ -7,6 +7,19 @@
 
 const ALLOWED_ORIGINS = [process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000", "https://kubikart.de", "https://www.kubikart.de"];
 
+function normalizedOrigin(value: string): string | null {
+  try {
+    return new URL(value).origin;
+  } catch {
+    return null;
+  }
+}
+
+function isAllowedUrl(value: string): boolean {
+  const origin = normalizedOrigin(value);
+  return origin !== null && ALLOWED_ORIGINS.some((allowed) => normalizedOrigin(allowed) === origin);
+}
+
 /** Minimum time (ms) a human needs to fill a form. 2 seconds for newsletter, 5 for contact. */
 const MIN_SUBMISSION_TIME_MS = 2000;
 
@@ -41,12 +54,12 @@ export function checkForSpam(body: Record<string, unknown>, request: Request, mi
   const referer = request.headers.get("referer");
 
   if (origin) {
-    const isAllowed = ALLOWED_ORIGINS.some((allowed) => origin.startsWith(allowed));
+    const isAllowed = isAllowedUrl(origin);
     if (!isAllowed) {
       return { isSpam: true, reason: "invalid_origin" };
     }
   } else if (referer) {
-    const isAllowed = ALLOWED_ORIGINS.some((allowed) => referer.startsWith(allowed));
+    const isAllowed = isAllowedUrl(referer);
     if (!isAllowed) {
       return { isSpam: true, reason: "invalid_referer" };
     }

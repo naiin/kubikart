@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from "vitest";
-import { readCart, writeCart, getCartLineId, type CartItem } from "@/lib/cart";
+import { formatCartCurrency, readCart, writeCart, getCartLineId, type CartItem } from "@/lib/cart";
 
 const CART_KEY = "kubikart-cart";
 
@@ -81,5 +81,20 @@ describe("getCartLineId", () => {
 
   it("falls back to string id when lineId is undefined", () => {
     expect(getCartLineId({ id: 99, lineId: undefined })).toBe("99");
+  });
+});
+
+describe("formatCartCurrency", () => {
+  it("formats a numeric cart value once for German", () => {
+    expect(formatCartCurrency("47.40", "de")).toBe("47,40 €");
+  });
+
+  it("does not duplicate a currency symbol already present in configured-product storage", () => {
+    expect(formatCartCurrency("47.40 €", "de")).toBe("47,40 €");
+    expect(formatCartCurrency("47.40 €", "en")).toBe("€47.40");
+  });
+
+  it("preserves an unparseable value instead of inventing a price", () => {
+    expect(formatCartCurrency("Not available", "de")).toBe("Not available");
   });
 });

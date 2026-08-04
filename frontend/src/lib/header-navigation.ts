@@ -1,82 +1,112 @@
-export type HeaderNavChild = {
-  labelKey: string;
-  href: string;
-  descriptionKey: string;
-};
-
-export type HeaderNavItem = {
-  labelKey: string;
-  href: string;
-  activePrefixes?: string[];
-  children?: HeaderNavChild[];
-};
+import { routing } from "@/i18n/routing";
 
 export type HeaderLinkItem = {
   labelKey: string;
   href: string;
+  localizedHrefs?: Partial<Record<(typeof routing.locales)[number], string>>;
+  activePrefixes?: string[];
 };
 
-export type TrustItem = {
-  labelKey: string;
-  icon: "origin" | "heart" | "shield" | "truck";
-};
+const localeSegments = new Set<string>(routing.locales);
 
-export const headerNavigation: HeaderNavItem[] = [
-  { labelKey: "nav.shop", href: "/shop", activePrefixes: ["/shop", "/search"] },
-  { labelKey: "nav.personalize", href: "/personalisierte-geschenke", activePrefixes: ["/personalisierte-geschenke"] },
+export function normalizeNavigationPath(pathname: string) {
+  const pathWithoutQueryOrHash = pathname.split(/[?#]/, 1)[0] || "/";
+  const segments = pathWithoutQueryOrHash.split("/").filter(Boolean);
+
+  if (segments[0] && localeSegments.has(segments[0])) {
+    segments.shift();
+  }
+
+  return segments.length > 0 ? `/${segments.join("/")}` : "/";
+}
+
+function matchesPathSegment(currentPath: string, candidatePath: string) {
+  if (candidatePath === "/") {
+    return currentPath === "/";
+  }
+
+  return currentPath === candidatePath || currentPath.startsWith(`${candidatePath}/`);
+}
+
+export function getActiveNavigationItem<T extends HeaderLinkItem>(
+  pathname: string,
+  items: readonly T[],
+): T | undefined {
+  const currentPath = normalizeNavigationPath(pathname);
+  let bestMatch:
+    | {
+        item: T;
+        exact: boolean;
+        matchLength: number;
+        itemIndex: number;
+      }
+    | undefined;
+
+  items.forEach((item, itemIndex) => {
+    const candidates = item.activePrefixes ?? [item.href];
+
+    for (const candidate of candidates) {
+      const normalizedCandidate = normalizeNavigationPath(candidate);
+      if (!matchesPathSegment(currentPath, normalizedCandidate)) {
+        continue;
+      }
+
+      const match = {
+        item,
+        exact: currentPath === normalizedCandidate,
+        matchLength: normalizedCandidate.length,
+        itemIndex,
+      };
+
+      const isBetterMatch =
+        !bestMatch ||
+        Number(match.exact) > Number(bestMatch.exact) ||
+        (match.exact === bestMatch.exact && match.matchLength > bestMatch.matchLength) ||
+        (match.exact === bestMatch.exact &&
+          match.matchLength === bestMatch.matchLength &&
+          match.itemIndex < bestMatch.itemIndex);
+
+      if (isBetterMatch) {
+        bestMatch = match;
+      }
+    }
+  });
+
+  return bestMatch?.item;
+}
+
+export function getNavigationHref(
+  item: HeaderLinkItem,
+  locale: (typeof routing.locales)[number],
+) {
+  return item.localizedHrefs?.[locale] ?? item.href;
+}
+
+export const headerNavigation: HeaderLinkItem[] = [
+  { labelKey: "nav.shop", href: "/shop", activePrefixes: ["/shop", "/search", "/personalisierte-geschenke"] },
+  { labelKey: "nav.businessKits", href: "/services/brand-kit", activePrefixes: ["/services/brand-kit"] },
   {
-    labelKey: "nav.laserService",
-    href: "/dienstleistungen",
-    activePrefixes: ["/dienstleistungen", "/services/laser"],
-    children: [
-      {
-        labelKey: "submenu.laserEngraving.title",
-        href: "/dienstleistungen/lasergravur",
-        descriptionKey: "submenu.laserEngraving.description",
-      },
-      {
-        labelKey: "submenu.laserCutting.title",
-        href: "/dienstleistungen/laserschnitt",
-        descriptionKey: "submenu.laserCutting.description",
-      },
-      {
-        labelKey: "submenu.acrylicSigns.title",
-        href: "/shop/acryl-schilder",
-        descriptionKey: "submenu.acrylicSigns.description",
-      },
-      {
-        labelKey: "submenu.customRequest.title",
-        href: "/sonderanfertigung",
-        descriptionKey: "submenu.customRequest.description",
-      },
-    ],
+    labelKey: "nav.services",
+    href: "/businesses",
+    activePrefixes: ["/businesses"],
   },
-  { labelKey: "nav.printing3d", href: "/dienstleistungen/3d-druck", activePrefixes: ["/dienstleistungen/3d-druck", "/services/3d-printing"] },
+  {
+    labelKey: "nav.productionServices",
+    href: "/services",
+    localizedHrefs: {
+      de: "/dienstleistungen",
+      en: "/services",
+    },
+    activePrefixes: ["/services", "/dienstleistungen"],
+  },
   { labelKey: "nav.about", href: "/ueber-uns", activePrefixes: ["/ueber-uns"] },
   { labelKey: "nav.contact", href: "/kontakt", activePrefixes: ["/kontakt"] },
 ];
 
-export const trustItems: TrustItem[] = [
-  { labelKey: "trust.madeInGermany", icon: "origin" },
-  { labelKey: "trust.handmade", icon: "heart" },
-  { labelKey: "trust.quality", icon: "shield" },
-  { labelKey: "trust.shipping", icon: "truck" },
-];
-
-export const topBarLinks: HeaderLinkItem[] = [
-  { labelKey: "links.faq", href: "/faq" },
-  { labelKey: "links.about", href: "/ueber-uns" },
-];
-
-export const mobileNavigation: HeaderLinkItem[] = [
-  { labelKey: "nav.shop", href: "/shop" },
+export const mobileUtilityNavigation: HeaderLinkItem[] = [
   { labelKey: "mobile.personalizedGifts", href: "/personalisierte-geschenke" },
-  { labelKey: "submenu.laserEngraving.title", href: "/dienstleistungen/lasergravur" },
-  { labelKey: "submenu.laserCutting.title", href: "/dienstleistungen/laserschnitt" },
-  { labelKey: "nav.printing3d", href: "/dienstleistungen/3d-druck" },
-  { labelKey: "submenu.acrylicSigns.title", href: "/shop/acryl-schilder" },
-  { labelKey: "submenu.customRequest.title", href: "/sonderanfertigung" },
-  { labelKey: "nav.about", href: "/ueber-uns" },
-  { labelKey: "nav.contact", href: "/kontakt" },
-  { labelKey: "links.faq", href: "/faq" },
+  { labelKey: "mobile.customRequest", href: "/sonderanfertigung" },
+  { labelKey: "mobile.search", href: "/search" },
+  { labelKey: "mobile.account", href: "/account" },
+  { labelKey: "mobile.faq", href: "/faq" },
 ];

@@ -1,287 +1,447 @@
-# Kubikart — Agent Instructions
+# Kubikart — Repository Agent Instructions
 
-> This file instructs the **GitHub Copilot CLI agent** how to work on this project.
-> IDE Copilot instructions are in `.github/copilot-instructions.md`.
-
----
-
-## Project
-
-This is the **Kubikart** website — a German small-business e-commerce site.
-
-**Business offerings:**
-- Personalized products (laser-engraved, 3D-printed, acrylic, wood)
-- Laser engraving & laser cutting
-- 3D printing
-- Personalized gifts
-- NFC social media stands
-- Acrylic signs, wooden keychains
-- Individual custom project inquiries (Sonderanfertigung)
-
-**Architecture:** Headless — Next.js 16 frontend + WooCommerce REST API backend.
-
-The website supports both e-commerce (shop, cart, checkout, account) and static service/landing pages.
+> This file is the permanent operating contract for Codex and other coding agents working in this repository.
 
 ---
 
-## Tech Stack
+## 1. Project Scope
 
-| Layer | Technology |
-|---|---|
-| Frontend | Next.js 16 (App Router), React 19, TypeScript |
-| Styling | Tailwind CSS v4 (`@import "tailwindcss"` syntax) |
-| Icons | Inline SVGs only — no icon library |
-| i18n | next-intl v4 — German (`de`) default + English (`en`) |
-| Backend | WordPress 6.x + WooCommerce + Polylang Pro |
-| Custom Plugins | kubikart-newsletter (double opt-in), kubikart-security |
-| Local Dev | Lando (Nginx + PHP 8.3 + MySQL 8.0) |
-| Package Manager | pnpm |
-| Payment | Stripe + PayPal |
+Kubikart already has a working architecture:
 
----
+- Next.js frontend
+- React and TypeScript
+- Tailwind CSS v4
+- WordPress backend
+- WooCommerce products, variations, prices, stock, reviews, customers and orders
+- existing cart, checkout, payment and account functionality
 
-## Current Status
+The project is **not** an architecture rewrite.
 
-### ✅ Already Built
+The current redesign scope is:
 
-- Full homepage (Hero, Services, Products, HowItWorks, Reviews, Trust, CTA sections)
-- Shop page (filters, toolbar, grid, SEO, FAQ)
-- Product detail page (gallery, purchase form, reviews, FAQ, structured data)
-- Cart (slide-out CartDrawer + full `/cart` page)
-- Checkout (multi-step: information → shipping → payment via Stripe/PayPal)
-- Account page (profile + order history)
-- Auth system (register, login, localStorage + cross-tab sync)
-- Service pages: Lasergravur, Laserschnitt, 3D-Druck, overview (`/dienstleistungen`)
-- Contact page + ContactForm with bot protection (honeypot + timing + origin)
-- FAQ page, About Us, Sonderanfertigung, Personalisierte Geschenke
-- Search page
-- All legal pages: Impressum, Datenschutz, AGB, Versand, Widerruf
-- Newsletter (DSGVO double opt-in, welcome coupon via WooCommerce)
-- Cookie banner (GDPR)
-- i18n routing (DE + EN) with next-intl v4
-- WooCommerce webhook cache revalidation (`/api/revalidate`)
-- Rate limiting middleware (30 req/60s per IP on API routes)
-- Security headers (HSTS, X-Frame-Options, nosniff, etc.)
-- Dynamic shipping rate calculation
-
-### ⬜ Likely Still Needed
-
-- Production deployment (Vercel + managed WP hosting)
-- SMTP email for newsletter/order confirmations (Resend/Mailgun)
-- Order confirmation emails
-- Password reset / forgot password flow
-- Sitemap.xml + robots.txt
-- Real product catalog in WooCommerce
-- CDN for WordPress media
-- Analytics/conversion tracking
+1. Replace the old frontend visual identity with the approved Kubikart design system.
+2. Redesign the shared header and footer.
+3. Redesign the homepage.
+4. Redesign existing product overview, category and product-detail layouts.
+5. Add Business Kits overview and detail layouts.
+6. Add Industries overview and detail layouts.
+7. Add Portfolio overview and Case Study layouts.
+8. Preserve all working WooCommerce and WordPress functionality.
 
 ---
 
-## Key File Locations
+## 2. Sources of Truth
 
-```
-frontend/src/
-├── app/[locale]/         → all pages (locale = "de" | "en")
-├── app/api/              → server-side API routes (auth, orders, contact, newsletter, stripe, paypal, shipping, revalidate)
-├── components/
-│   ├── home/             → homepage section components
-│   ├── product/          → product detail components
-│   ├── shop/             → shop page components
-│   └── checkout/         → checkout components
-├── lib/
-│   ├── woocommerce.ts    → WC REST API client + all TypeScript types
-│   ├── cart.ts           → localStorage cart management
-│   ├── auth.tsx          → auth context (localStorage-based)
-│   ├── security.ts       → rate limiting + bot detection
-│   └── header-navigation.ts
-├── i18n/
-│   └── navigation.ts     → use THIS for Link, useRouter, usePathname
-└── messages/
-    ├── de.json           → German translations (primary)
-    └── en.json           → English translations
-```
+Use the following priority order:
 
----
+1. `AGENTS.md`
+2. `docs/redesign/01-design-system.md`
+3. The relevant page-layout specification under `docs/redesign/`
+4. Existing functional contracts and tests
+5. Existing implementation
 
-## Critical Conventions
+The existing frontend is a source of **functional behaviour**, not a source of visual design.
 
-### Localization (MOST IMPORTANT)
-- **Never hardcode user-facing text.** All copy lives in `messages/de.json` and `messages/en.json`.
-- Use `useTranslations("namespace")` in client components, `getTranslations("namespace")` in server components.
-- Always add keys to **both** `de.json` and `en.json`.
-- Import `Link`, `useRouter`, `usePathname` from **`@/i18n/navigation`** — never from `next/link` or `next/navigation`.
+### Critical styling rule
 
-### WooCommerce API
-- Use `wcApi<T>(endpoint, options)` from `@/lib/woocommerce.ts` for all product/order data.
-- Pass cache tags: `tags: [CACHE_TAGS.products]` or `CACHE_TAGS.product(slug)`.
-- All WC type definitions (e.g. `WCProduct`, `WCCategory`) are in `woocommerce.ts`.
+Do not copy the old colour palette, old spacing, old component appearance or old page composition merely because it already exists in Tailwind, CSS or React components.
 
-### API Routes
-- Located at `src/app/api/`.
-- All routes must enforce rate limiting from `security.ts`.
-- Return `Response.json()` — not `NextResponse.json()`.
+The old styling system may be inspected only to:
 
-### Icons
-- **No icon libraries.** Always use inline `<svg>` with `aria-hidden="true"`.
+- identify where classes and variables are used
+- understand responsive behaviour that must not break
+- preserve accessibility and interaction
+- migrate components safely
+- determine when legacy styles can be removed
 
-### Styling
-- Tailwind CSS v4 — `@import "tailwindcss"` syntax in `globals.css`.
-- Brand-color Tailwind classes: `navy-900`, `navy-800`, `orange-600`, `cream-50` etc.
-- CTA buttons: `bg-orange-600 hover:bg-orange-500 text-white` with `rounded-full`.
-- Cards: `rounded-2xl` border `border-gray-200` soft shadow.
+For all new or redesigned UI, the written redesign documentation is authoritative.
 
-### Component Rendering
-- Prefer **Server Components** for pages and data fetching.
-- Use `"use client"` only when needed (state, browser APIs, event handlers).
-- Keep `"use client"` components as leaf nodes.
-
-### Do NOT
-- ❌ Hardcode German/English strings in components
-- ❌ Import Link from `next/link`
-- ❌ Add icon libraries
-- ❌ Use Tailwind v3 `@tailwind` directives
-- ❌ Skip adding keys to both translation files
-- ❌ Add `NODE_TLS_REJECT_UNAUTHORIZED=0` outside `.env.local`
+Reference images are secondary visual guidance. Written specifications override image-generation mistakes such as green branding, fake prices, fake reviews or invented customer claims.
 
 ---
 
-## General Style
+## 3. Mandatory Preservation Rules
 
-Keep the website:
+Do not remove, replace or bypass working:
 
-- Clean
-- Modern
-- Premium
-- User-friendly
-- SEO-friendly
-- Mobile responsive
-- Easy to navigate
-- Trustworthy
-- Not crowded
+- WooCommerce product retrieval
+- product variations
+- product add-ons or personalisation data
+- quantity selection
+- stock handling
+- add-to-cart behaviour
+- cart persistence
+- coupons
+- shipping
+- taxes
+- checkout validation
+- Stripe
+- PayPal
+- account and order functionality
+- reviews
+- contact and quote forms
+- transactional email integrations
+- localisation
+- metadata
+- canonical URLs
+- hreflang
+- sitemap logic
+- structured data
+- image handling
+- caching and revalidation
+- environment variables
+- deployment behaviour
 
-Avoid making the UI look like a cheap marketplace.
+Do not rename routes, API fields, WordPress slugs, WooCommerce identifiers or environment variables unless the task explicitly authorises it.
 
-Use lots of whitespace, clear headings, simple cards, and strong CTAs.
-
-## Brand Colors
-
-Use this palette:
-
-```css
---navy-950: #061426;
---navy-900: #0a1d37;
---navy-800: #102a4c;
-
---orange-600: #f78801;
---orange-500: #ff9b2f;
---orange-100: #fff3e4;
-
---cream-50: #faf7f2;
---white: #ffffff;
-
---gray-950: #101828;
---gray-700: #344054;
---gray-500: #667085;
---gray-300: #d0d5dd;
---gray-200: #e5e7eb;
---gray-100: #f3f4f6;
-```
-
-Use navy as the main brand color.
-
-Use orange only as an accent.
-
-Use white and cream backgrounds.
-
-## Typography
-
-Preferred font:
-
-```text
-Manrope
-```
-
-Fallback:
-
-```text
-Inter, system-ui, sans-serif
-```
-
-Use strong but clean typography.
-
-Do not use decorative fonts for UI text.
-
-## UI Rules
-
-- Use semantic HTML.
-- Use one H1 per page.
-- Use proper H2/H3 hierarchy.
-- Use accessible buttons and links.
-- Use descriptive alt text.
-- Use responsive layouts.
-- Use reusable components.
-- Use data arrays for repeatable cards and navigation links.
-- Use Tailwind CSS if available.
-- Do not add unnecessary dependencies.
-- Do not add large animation libraries.
-- Prefer simple hover effects and subtle transitions.
-- Prefer light borders and soft shadows.
-- Avoid heavy shadows.
-
-## Component Quality
-
-Code should be:
-
-- Clean
-- Typed
-- Easy to maintain
-- Split into clear components
-- Easy to adjust later
-- Compatible with existing project structure
-
-Before changing structure, inspect the existing project files and follow the project’s current conventions.
-
-## SEO Rules
-
-- Use clear page titles and headings.
-- Use German copy.
-- Use internal links to shop and service pages.
-- Keep content readable.
-- Make the main offer immediately clear.
-
-Important homepage keywords:
-
-```text
-Personalisierte Produkte
-Lasergravur
-Laserschnitt
-3D-Druck
-Personalisierte Geschenke
-Sonderanfertigungen
-Made in Germany
-```
-
-## Output Expectation
-
-When implementing a feature:
-
-1. Inspect the existing project files and follow current conventions.
-2. Check `messages/de.json` and `en.json` for existing translation keys before adding new ones.
-3. Implement clean responsive UI aligned with Kubikart branding.
-4. Run `pnpm lint` and `pnpm build` from `frontend/` to verify no errors.
-5. Summarize what changed and any follow-up steps needed.
+Do not replace dynamic commercial data with hard-coded data.
 
 ---
 
-## Development Commands
+## 4. No Fake Commercial Content
 
-```bash
-# Frontend
-cd frontend && pnpm dev       # Dev server at http://localhost:3000
-cd frontend && pnpm build     # Production build
-cd frontend && pnpm lint      # ESLint
+Never introduce production fallbacks containing fake:
 
-# Backend
-cd backend && lando start     # WordPress at https://kubikart-backend.lndo.site
-cd backend && lando stop
-```
+- products
+- prices
+- stock
+- reviews
+- customer names
+- testimonials
+- business results
+- delivery times
+- production times
+- trust badges
+- payment methods
+- portfolio clients
+- statistics
+
+If WordPress or WooCommerce is unavailable, show an explicit loading, unavailable or error state.
+
+Placeholder content is permitted only in isolated development fixtures that:
+
+- are clearly labelled
+- cannot be returned in production
+- cannot enter metadata
+- cannot enter the sitemap
+- cannot be indexed
+
+---
+
+## 5. Approved Brand Direction
+
+Kubikart is a modern local visibility studio and online shop.
+
+Primary business direction:
+
+- QR/NFC stands
+- Google Review tools
+- opening-hours stickers
+- menu products
+- small signs
+- window and mirror graphics
+- Business Visibility Kits
+- selected personalised products
+
+Brand qualities:
+
+- professional
+- clean
+- practical
+- trustworthy
+- local
+- modern
+- warm
+- small-business friendly
+
+Avoid:
+
+- green as the main brand colour
+- generic SaaS styling
+- excessive gradients
+- glassmorphism
+- excessive card grids
+- oversized heroes on every page
+- decorative animation without a functional purpose
+- cheap craft-market appearance
+- crowded navigation
+
+Approved tokens and component rules are defined in:
+
+`docs/redesign/01-design-system.md`
+
+---
+
+## 6. Page and Hero Rules
+
+Only the homepage may use a large marketing hero.
+
+Use compact or medium page introductions for:
+
+- product overview
+- product categories
+- Business Kits
+- Industries
+- Portfolio
+
+Use compact page headers for:
+
+- individual products
+- individual Business Kits
+- case studies
+- About
+- Contact
+- FAQ
+- legal pages
+- cart
+- checkout
+- account pages
+
+Do not force every route into the same hero layout.
+
+---
+
+## 7. Content Ownership
+
+Commercial product data must remain in WooCommerce:
+
+- title
+- slug
+- product ID
+- price
+- sale price
+- variations
+- stock
+- images
+- reviews
+- purchasing behaviour
+
+Marketing content may be code-managed initially for:
+
+- Industries
+- Portfolio
+- Case Studies
+- page introductions
+- business explanations
+
+Business Kits should use WooCommerce products wherever they are directly purchasable.
+
+Do not duplicate WooCommerce prices, stock or variation data in static content files.
+
+---
+
+## 8. Component Rules
+
+Prefer reusable components and composition.
+
+Expected shared component families:
+
+- layout
+- navigation
+- typography
+- buttons and links
+- section wrappers
+- cards
+- product cards
+- media frames
+- badges and chips
+- forms
+- WooCommerce controls
+- Business Kit sections
+- portfolio sections
+- calls to action
+
+Do not create a new page-specific copy of an existing shared component unless the behaviour genuinely differs.
+
+Do not create one giant universal component with dozens of mode flags.
+
+Use small, typed and composable components.
+
+---
+
+## 9. Server and Client Boundaries
+
+Prefer server components for:
+
+- page structure
+- content rendering
+- WordPress and WooCommerce reads
+- metadata
+- static marketing sections
+
+Use client components only for genuine interaction, including:
+
+- mobile menu
+- gallery controls
+- filters
+- variation selection
+- personalisation controls
+- cart actions
+- checkout interactions
+- forms
+- accordions where needed
+
+Do not convert an entire page to a client component merely because one child is interactive.
+
+---
+
+## 10. Accessibility Requirements
+
+All redesigned UI must include:
+
+- semantic landmarks
+- logical heading hierarchy
+- keyboard navigation
+- visible focus states
+- accessible labels
+- appropriate button and link semantics
+- sufficient colour contrast
+- meaningful image alt text
+- reduced-motion support
+- no keyboard traps
+- mobile-friendly touch targets
+
+Icon-only controls require accessible names.
+
+---
+
+## 11. Responsive Requirements
+
+Every redesigned route must be checked at minimum at:
+
+- 360 px
+- 768 px
+- 1024 px
+- 1440 px
+
+Requirements:
+
+- no horizontal overflow
+- no clipped text
+- no overlapping controls
+- usable mobile navigation
+- long German text must fit
+- product controls must remain usable
+- tables must have a deliberate mobile treatment
+- media must not cause layout shift
+
+---
+
+## 12. Tailwind and Legacy Style Migration
+
+Tailwind CSS v4 is retained.
+
+The old Tailwind/CSS design is considered legacy.
+
+For each redesign phase:
+
+1. Identify the legacy styles used by the target components.
+2. Add or use the approved new tokens.
+3. Migrate only the components in the current phase.
+4. Do not globally delete legacy styles while unmigrated routes still use them.
+5. Search the repository before removing any token, utility or class.
+6. Remove legacy styling only when no consumer remains and validation passes.
+
+Do not extend the old visual theme.
+
+Do not choose new styles by averaging old and new values.
+
+New components must use the approved design tokens.
+
+Legacy tokens should be marked clearly and must not be used in newly written components.
+
+---
+
+## 13. Workflow for Every Implementation Task
+
+Before coding:
+
+1. Read `AGENTS.md`.
+2. Read `docs/redesign/01-design-system.md`.
+3. Read the relevant layout document.
+4. Inspect the current route and its dependencies.
+5. Identify the existing functionality that must remain.
+6. List the files expected to change.
+7. Keep the task limited to one phase or route family.
+
+During implementation:
+
+- modify the smallest coherent set of files
+- reuse existing functional logic
+- use approved tokens
+- avoid unrelated refactors
+- preserve current URLs and data contracts
+- add explicit states for loading, empty data and failure
+
+After implementation:
+
+- run formatting if configured
+- run lint
+- run type-check
+- run relevant tests
+- run the production build
+- report all failures honestly
+- summarise changed files
+- summarise preserved behaviour
+- identify remaining legacy styles
+
+Do not declare completion if the production build fails or a critical commerce flow is broken.
+
+---
+
+## 14. Phase Boundaries
+
+Do not implement multiple major phases in one task unless explicitly requested.
+
+Recommended order:
+
+1. Design-system foundation
+2. Header and footer
+3. Homepage
+4. Product cards and product overview
+5. Product category
+6. Individual product
+7. Business Kits overview
+8. Individual Business Kit
+9. Industries
+10. Portfolio and Case Studies
+11. About, Contact and FAQ
+12. Cart, checkout and account styling
+13. Final accessibility, performance and SEO validation
+
+---
+
+## 15. Prohibited Actions
+
+Do not:
+
+- replace Next.js
+- replace WordPress or WooCommerce
+- remove the cart
+- remove checkout
+- introduce another commerce engine
+- introduce a page builder
+- add ACF or custom post types without an approved task
+- duplicate product data
+- redesign all routes in one task
+- copy the old theme into the new design system
+- use reference-image colours when they conflict with the written design system
+- invent content to make a page appear finished
+- change legal text
+- perform broad dependency upgrades during a layout task
+- modify unrelated infrastructure
+
+---
+
+## 16. Completion Report Format
+
+Every completed task must report:
+
+1. Scope implemented
+2. Files changed
+3. Existing functionality preserved
+4. Legacy styling still present
+5. Commands run
+6. Results
+7. Known limitations
+8. Recommended next phase

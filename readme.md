@@ -94,7 +94,7 @@ Browser / Mobile
 | UI library         | React                               | 19.x    |
 | Language           | TypeScript                          | 5.x     |
 | Styling            | Tailwind CSS v4                     | 4.x     |
-| Font               | Manrope (Google Fonts)              | –       |
+| Fonts              | Montserrat headings + Inter UI (locally hosted) | variable |
 | Icons              | Inline SVG only                     | –       |
 | i18n               | next-intl                           | 4.x     |
 | Backend CMS        | WordPress                           | 6.x     |
@@ -120,12 +120,13 @@ website/                              ← monorepo root
 ├── package.json                      ← root scripts
 ├── AGENTS.md                         ← GitHub Copilot agent instructions
 │
-├── docs/                             ← design briefs & internal docs
-│   ├── Business.md                   ← business strategy & brand guide
-│   ├── COMPLETION-CHECKLIST.md       ← project progress tracker
-│   ├── MAILTRAP-SETUP.md             ← email template setup guide
-│   ├── PHASE1-COMPLETE.md            ← phase 1 summary
-│   └── kubikart-*.md                 ← page-level briefs
+├── docs/                             ← current design, operations, SEO, and owner documentation
+│   ├── Business.md                   ← business strategy and brand guide
+│   ├── KUBIKART-OWNER-HANDBOOK.md    ← routine WordPress/WooCommerce administration
+│   ├── MAILTRAP-SETUP.md             ← transactional email setup
+│   ├── MIGRATION-STRATO.md            ← backend migration procedure
+│   ├── redesign/                     ← authoritative design and content specifications
+│   └── seo/                          ← SEO audit, implementation, and launch checks
 │
 ├── backend/
 │   ├── .lando.yml                    ← Lando config (Nginx + PHP 8.3 + MySQL 8.0)
@@ -161,7 +162,7 @@ website/                              ← monorepo root
         │   ├── robots.ts             ← robots.txt generation
         │   ├── sitemap.ts            ← dynamic XML sitemap (all pages + products)
         │   ├── [locale]/             ← all user-facing pages
-        │   │   ├── layout.tsx        ← root layout (Manrope font, Header, Footer, AuthProvider)
+        │   │   ├── layout.tsx        ← root layout (local Montserrat/Inter, Header, Footer, AuthProvider)
         │   │   ├── page.tsx          ← homepage
         │   │   ├── shop/
         │   │   │   ├── page.tsx      ← product listing + filters + sorting
@@ -511,17 +512,17 @@ All API routes are under `/api/`. Rate limiting: 30 req/60s per IP (middleware-l
 
 | Method | Endpoint                    | Rate limit      | Description                                               |
 | ------ | --------------------------- | --------------- | --------------------------------------------------------- |
-| POST   | `/api/auth/login`           | 30/60s (global) | Authenticate; returns `{user, token}`                     |
+| POST   | `/api/auth/login`           | 30/60s (global) | Authenticate; returns `{user}` and sets signed HTTP-only session cookie |
 | POST   | `/api/auth/register`        | 30/60s (global) | Create WC customer; password min 8 chars                  |
 | POST   | `/api/auth/forgot-password` | 3/10min per IP  | Trigger WP password reset email; always returns 200       |
 | POST   | `/api/auth/reset-password`  | –               | Proxy to kubikart-security; validates key + sets password |
 
 ### Orders
 
-| Method | Endpoint             | Auth required                                                                         | Description                               |
-| ------ | -------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------- |
-| GET    | `/api/orders`        | `x-customer-id` header                                                                | Fetch order history from WooCommerce      |
-| POST   | `/api/orders/create` | `x-auth-token` + `x-customer-id` (optional, guests allowed if billing email provided) | Create WC order + send confirmation email |
+| Method | Endpoint             | Auth required                                      | Description                               |
+| ------ | -------------------- | -------------------------------------------------- | ----------------------------------------- |
+| GET    | `/api/orders`        | Verified signed HTTP-only session cookie           | Fetch the signed-in customer's order history |
+| POST   | `/api/orders/create` | Session optional; guest billing email is supported | Create WC order + send confirmation email |
 
 ### Newsletter
 
@@ -563,38 +564,23 @@ All API routes are under `/api/`. Rate limiting: 30 req/60s per IP (middleware-l
 
 ## 9. Authentication System
 
-### Token format
+### Session format
 
-Tokens are Base64-encoded strings: `customer_id:email:timestamp`
-
-Example: `Buffer.from("42:hans@example.com:1718000000000").toString("base64")`
-
-> ⚠️ Tokens are not HMAC-signed (roadmap item). Validate by decoding and comparing `customer_id` to the `x-customer-id` header — implemented in `/api/orders/create`.
+The server issues a time-limited session payload signed with HMAC-SHA-256 using
+`AUTH_SESSION_SECRET`. Signatures are checked with a constant-time comparison.
+Unsigned, altered, malformed, and expired sessions are rejected.
 
 ### Storage
 
-| Key              | Value                         |
-| ---------------- | ----------------------------- |
-| `kubikart-user`  | JSON-serialised `User` object |
-| `kubikart-token` | Base64 token string           |
-
-### Cross-tab sync
-
-The `AuthProvider` uses `useSyncExternalStore` and listens to:
-
-- `auth-updated` — fired by `writeStoredSession` / `clearStoredSession`
-- `storage` — fired by other tabs changing localStorage
+Authentication is stored only in the `kubikart_session` cookie. It is
+HTTP-only, `SameSite=Lax`, scoped to `/`, and `Secure` in production. Browser
+JavaScript cannot read the session. Cart storage remains separate.
 
 ### Server-side usage
 
-For protected API routes, the client sends:
-
-```
-x-customer-id: 42
-x-auth-token: <base64 token>
-```
-
-The API decodes the token and asserts `token.customer_id === x-customer-id`.
+Protected API routes verify the signed cookie with `getRequestSession()`. The
+WooCommerce customer ID is derived only from `session.user.id`; caller-supplied
+identity headers are ignored.
 
 ---
 
@@ -788,7 +774,11 @@ Silent rejection: bots receive a fake `200 OK` so they can't detect the protecti
 | `/api/auth/forgot-password` | 3 requests / 10 min / IP            |
 | All API routes              | 30 requests / 60s / IP (middleware) |
 
-> ⚠️ **Rate limiting is in-memory per process.** On Vercel (serverless), each cold start resets the map. For production with high traffic, replace with Redis/Upstash.
+Rate limiting uses Upstash Redis when `UPSTASH_REDIS_REST_URL` and
+`UPSTASH_REDIS_REST_TOKEN` are configured. Local development falls back to a
+process-local counter; that fallback is not suitable for multi-instance
+production. Webhooks use a higher delivery-safe limit, while authentication,
+order creation, payment, and public form endpoints use stricter policies.
 
 ### Security headers (Next.js config)
 
@@ -1046,8 +1036,9 @@ lando php vendor/bin/phpunit --coverage-text
 
 ### Typography
 
-- **Primary font:** Manrope (Google Fonts, loaded via `next/font/google`)
-- **Fallback:** Inter, system-ui, sans-serif
+- **Heading font:** Montserrat (locally hosted through `next/font/local`)
+- **Body/UI font:** Inter (locally hosted through `next/font/local`)
+- **Fallback:** system-ui, sans-serif
 - **Do not** use decorative fonts for UI text
 
 ### Icon rule

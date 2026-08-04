@@ -18,10 +18,53 @@ class KubikartSecurityTest extends TestCase
     {
         wp_reset_mocks();
         $GLOBALS['_wp_rest_routes'] = [];
+        $GLOBALS['_wp_roles'] = [];
         // Load plugin (hooks register but don't run yet)
         require_once __DIR__ . '/../../wordpress/wp-content/plugins/kubikart-security/kubikart-security.php';
+        do_action('init');
         // Run rest_api_init to register REST routes
         do_action('rest_api_init');
+    }
+
+    public function test_frontend_integration_role_has_only_required_capabilities(): void
+    {
+        $role = get_role(KUBIKART_INTEGRATION_ROLE);
+
+        $this->assertInstanceOf(WP_Role::class, $role);
+        $this->assertSame([
+            'read' => true,
+            'edit_posts' => true,
+            'publish_posts' => true,
+            KUBIKART_INTEGRATION_CAPABILITY => true,
+        ], $role->capabilities);
+        $this->assertArrayNotHasKey('edit_others_posts', $role->capabilities);
+        $this->assertArrayNotHasKey('manage_woocommerce', $role->capabilities);
+        $this->assertArrayNotHasKey('manage_options', $role->capabilities);
+    }
+
+    public function test_application_passwords_are_available_only_for_admin_or_integration_user(): void
+    {
+        $admin = (object) ['allcaps' => ['manage_options' => true]];
+        $integration = (object) ['allcaps' => [KUBIKART_INTEGRATION_CAPABILITY => true]];
+        $subscriber = (object) ['allcaps' => ['read' => true]];
+
+        $this->assertTrue(apply_filters('wp_is_application_passwords_available_for_user', true, $admin));
+        $this->assertTrue(apply_filters('wp_is_application_passwords_available_for_user', true, $integration));
+        $this->assertFalse(apply_filters('wp_is_application_passwords_available_for_user', true, $subscriber));
+    }
+
+    public function test_mailtrap_owned_order_suppresses_only_processing_email(): void
+    {
+        $order = new WC_Order(['_kubikart_transactional_email_owner' => 'mailtrap']);
+        $this->assertFalse(apply_filters('woocommerce_email_enabled_customer_processing_order', true, $order));
+        $this->assertTrue(apply_filters('woocommerce_email_enabled_customer_refunded_order', true, $order));
+        $this->assertTrue(apply_filters('woocommerce_email_enabled_customer_failed_order', true, $order));
+    }
+
+    public function test_regular_woocommerce_order_keeps_processing_email(): void
+    {
+        $order = new WC_Order();
+        $this->assertTrue(apply_filters('woocommerce_email_enabled_customer_processing_order', true, $order));
     }
 
     // ── REST route registration ───────────────────────────────────────────────

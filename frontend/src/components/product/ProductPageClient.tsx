@@ -1,24 +1,48 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ProductBenefits } from "@/components/product/ProductBenefits";
 import { ProductFAQ } from "@/components/product/ProductFAQ";
 import { ProductLeadCTA } from "@/components/product/ProductLeadCTA";
-import { ProductSeoContent } from "@/components/product/ProductSeoContent";
+import { ProductHowItWorks } from "@/components/product/ProductHowItWorks";
 import { readCart, writeCart } from "@/lib/cart";
 import { formatProductPrice, type ProductPageProduct } from "@/lib/product-page";
+import {
+  buildProductCustomization,
+  countProductFieldCharacters,
+  createProductSubmissionLock,
+  getConfiguredUnitPrice,
+  getMeaningfulFieldHelperText,
+  getProductFieldPresentation,
+  isProductConfigurationPurchasable,
+  limitProductFieldValue,
+  shouldAppendOptionalMarker,
+  validateProductConfiguration,
+  type ProductConfigurationState,
+} from "@/lib/product-configuration";
 import type { WCReview } from "@/lib/woocommerce";
 import PayPalExpressButton from "@/components/checkout/PayPalExpressButton";
+import {
+  BusinessKitCustomisation,
+  BusinessKitDetails,
+  BusinessKitFinalCta,
+  BusinessKitProcess,
+  BusinessKitSupportStrip,
+  OtherBusinessKits,
+} from "@/components/business-kits/BusinessKitProductSections";
+import { isWooCommercePlaceholderImage } from "@/lib/business-kits";
+import type { WCProduct } from "@/lib/woocommerce";
 
 function getInitialSelections(product: ProductPageProduct) {
   const initialSelections: Record<string, string> = {};
 
   for (const option of product.personalizationOptions) {
-    const firstOption = option.options?.[0];
-    if (firstOption) {
-      initialSelections[option.id] = firstOption.value;
+    const initialValue = option.defaultValue || option.options?.[0]?.value;
+    if (initialValue) {
+      initialSelections[option.id] = initialValue;
     }
   }
 
@@ -41,10 +65,11 @@ function getSelectedVariation(product: ProductPageProduct, selectedOptions: Reco
 // ─── Star Rating ────────────────────────────────────────────────────────────────
 
 function StarRating({ rating, count }: { rating: number; count: number }) {
+  const t = useTranslations("productPage");
   if (count <= 0) return null;
 
   return (
-    <div className="flex items-center gap-2" aria-label={`Bewertung: ${rating.toFixed(1)} von 5 Sternen basierend auf ${count} Bewertungen`}>
+    <div className="flex items-center gap-2" aria-label={t("ratingLabel", { rating: rating.toFixed(1), count })}>
       <div className="flex gap-0.5">
         {Array.from({ length: 5 }).map((_, i) => (
           <svg key={i} className="h-4.5 w-4.5" viewBox="0 0 20 20" fill={i < Math.round(rating) ? "#f78801" : "#e5e7eb"} aria-hidden="true">
@@ -52,7 +77,7 @@ function StarRating({ rating, count }: { rating: number; count: number }) {
           </svg>
         ))}
       </div>
-      <span className="text-sm text-gray-500">({count} Bewertungen)</span>
+      <span className="text-sm text-gray-500">({count} {count === 1 ? t("reviewSingular") : t("reviewPlural")})</span>
     </div>
   );
 }
@@ -60,6 +85,7 @@ function StarRating({ rating, count }: { rating: number; count: number }) {
 // ─── Quantity Selector ──────────────────────────────────────────────────────────
 
 function QuantitySelector({ quantity, onChange }: { quantity: number; onChange: (q: number) => void }) {
+  const t = useTranslations("productPage");
   return (
     <div className="flex h-13 w-30.5 items-center rounded-[10px] border border-gray-200">
       <button
@@ -67,7 +93,7 @@ function QuantitySelector({ quantity, onChange }: { quantity: number; onChange: 
         onClick={() => onChange(Math.max(1, quantity - 1))}
         disabled={quantity <= 1}
         className="flex h-full w-10 items-center justify-center text-lg text-gray-700 transition-colors hover:text-navy-900 disabled:opacity-40"
-        aria-label="Menge verringern"
+        aria-label={t("quantityDecrease")}
       >
         −
       </button>
@@ -77,7 +103,7 @@ function QuantitySelector({ quantity, onChange }: { quantity: number; onChange: 
         onClick={() => onChange(Math.min(99, quantity + 1))}
         disabled={quantity >= 99}
         className="flex h-full w-10 items-center justify-center text-lg text-gray-700 transition-colors hover:text-navy-900 disabled:opacity-40"
-        aria-label="Menge erhöhen"
+        aria-label={t("quantityIncrease")}
       >
         +
       </button>
@@ -87,9 +113,21 @@ function QuantitySelector({ quantity, onChange }: { quantity: number; onChange: 
 
 // ─── Product Gallery ────────────────────────────────────────────────────────────
 
-function ProductGallery({ images, activeIndex, onSelect }: { images: { src: string; alt: string }[]; activeIndex: number; onSelect: (i: number) => void }) {
+function ProductGallery({
+  images,
+  activeIndex,
+  onSelect,
+  aspect = "portrait",
+}: {
+  images: { src: string; alt: string }[];
+  activeIndex: number;
+  onSelect: (i: number) => void;
+  aspect?: "portrait" | "landscape";
+}) {
+  const t = useTranslations("productPage");
   const active = images[activeIndex] || images[0];
   const [zoomed, setZoomed] = useState(false);
+  const aspectClass = aspect === "landscape" ? "aspect-[4/3]" : "aspect-[4/5]";
 
   useEffect(() => {
     if (!zoomed) return;
@@ -104,6 +142,16 @@ function ProductGallery({ images, activeIndex, onSelect }: { images: { src: stri
 
   return (
     <>
+      {!active ? (
+        <div className={`flex ${aspectClass} items-center justify-center rounded-kubikart-lg border border-border bg-surface text-center text-sm text-muted`}>
+          <div>
+            <svg className="mx-auto mb-3 h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m4 16 4.6-4.6a2 2 0 0 1 2.8 0L16 16m-2-2 1.6-1.6a2 2 0 0 1 2.8 0L20 14M6 20h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z" />
+            </svg>
+            {t("imageUnavailable")}
+          </div>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[96px_1fr] md:gap-6">
         {/* Thumbnails – vertical on desktop, horizontal on mobile */}
         <div className="order-2 flex gap-3 overflow-x-auto md:order-1 md:flex-col md:overflow-visible">
@@ -113,10 +161,10 @@ function ProductGallery({ images, activeIndex, onSelect }: { images: { src: stri
               type="button"
               onClick={() => onSelect(i)}
               className={`relative shrink-0 overflow-hidden rounded-xl transition-all ${
-                i === activeIndex ? "ring-2 ring-accent-600 border-2 border-accent-600" : "border border-gray-200 hover:border-gray-300"
+                i === activeIndex ? "border-2 border-accent ring-2 ring-accent/20" : "border border-border hover:border-border-strong"
               }`}
               style={{ width: 84, height: 112 }}
-              aria-label={`Bild ${i + 1} anzeigen`}
+              aria-label={t("galleryViewImage", { index: i + 1 })}
               aria-pressed={i === activeIndex}
             >
               <Image src={img.src} alt={img.alt} fill sizes="84px" className="object-cover" unoptimized />
@@ -125,13 +173,13 @@ function ProductGallery({ images, activeIndex, onSelect }: { images: { src: stri
         </div>
 
         {/* Main image */}
-        <div className="relative order-1 aspect-4/5 overflow-hidden rounded-2xl bg-cream-50 md:order-2">
+        <div className={`relative order-1 ${aspectClass} overflow-hidden rounded-kubikart-lg border border-border bg-surface md:order-2`}>
           <Image src={active.src} alt={active.alt} fill priority sizes="(min-width: 1024px) 52vw, 100vw" className="object-cover" unoptimized />
           <button
             type="button"
             onClick={() => setZoomed(true)}
             className="absolute bottom-4 right-4 flex h-10.5 w-10.5 items-center justify-center rounded-full bg-white shadow-md transition-shadow hover:shadow-lg"
-            aria-label="Bild vergrößern"
+            aria-label={t("galleryZoom")}
           >
             <svg className="h-5 w-5 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
               <circle cx="11" cy="11" r="6" />
@@ -141,6 +189,7 @@ function ProductGallery({ images, activeIndex, onSelect }: { images: { src: stri
           </button>
         </div>
       </div>
+      )}
 
       {/* Lightbox overlay */}
       {zoomed && (
@@ -148,13 +197,13 @@ function ProductGallery({ images, activeIndex, onSelect }: { images: { src: stri
           className="fixed inset-0 z-100 flex items-center justify-center bg-black/80 backdrop-blur-sm"
           onClick={() => setZoomed(false)}
           role="dialog"
-          aria-label="Bildvorschau"
+          aria-label={t("galleryPreview")}
         >
           <button
             type="button"
             onClick={() => setZoomed(false)}
             className="absolute top-5 right-5 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-            aria-label="Schließen"
+            aria-label={t("galleryClose")}
           >
             <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
               <path strokeLinecap="round" d="M18 6L6 18M6 6l12 12" />
@@ -172,7 +221,7 @@ function ProductGallery({ images, activeIndex, onSelect }: { images: { src: stri
                   onSelect((activeIndex - 1 + images.length) % images.length);
                 }}
                 className="absolute left-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-                aria-label="Vorheriges Bild"
+                aria-label={t("galleryPrevious")}
               >
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -185,7 +234,7 @@ function ProductGallery({ images, activeIndex, onSelect }: { images: { src: stri
                   onSelect((activeIndex + 1) % images.length);
                 }}
                 className="absolute right-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-                aria-label="Nächstes Bild"
+                aria-label={t("galleryNext")}
               >
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -199,164 +248,67 @@ function ProductGallery({ images, activeIndex, onSelect }: { images: { src: stri
   );
 }
 
-// ─── Trust Icons ────────────────────────────────────────────────────────────────
-
-function TrustIcons() {
-  const items = [
-    {
-      icon: (
-        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M12 21s-6.5-4.2-8.5-8.5C1.7 8.2 4.2 4.5 8 4.5c2 0 3.4 1 4 2.3.6-1.3 2-2.3 4-2.3 3.8 0 6.3 3.7 4.5 8C18.5 16.8 12 21 12 21z"
-          />
-        </svg>
-      ),
-      title: "Handgefertigt",
-      subtitle: "mit Liebe",
-    },
-    {
-      icon: (
-        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 8h14v9H3zM17 10h2.5l2.5 3v4h-5z" />
-          <circle cx="7" cy="18.5" r="1.5" />
-          <circle cx="19" cy="18.5" r="1.5" />
-        </svg>
-      ),
-      title: "Schneller Versand",
-      subtitle: "3–5 Werktage",
-    },
-    {
-      icon: (
-        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l6 3v5c0 4.5-3 8.5-6 10-3-1.5-6-5.5-6-10V6l6-3z" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4" />
-        </svg>
-      ),
-      title: "Sichere Zahlung",
-      subtitle: "SSL verschlüsselt",
-    },
-  ];
-
-  return (
-    <div className="mt-6 grid grid-cols-3 gap-4">
-      {items.map((item) => (
-        <div key={item.title} className="flex flex-col items-center text-center">
-          <span className="text-navy-900">{item.icon}</span>
-          <span className="mt-1.5 text-[13px] font-semibold text-gray-800">{item.title}</span>
-          <span className="text-[12px] text-gray-500">{item.subtitle}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ─── Trust Support Card ─────────────────────────────────────────────────────────
-
-function TrustSupportCard() {
-  const items = [
-    {
-      icon: (
-        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-          <path d="M12 3l6 3v5c0 4.5-3 8.5-6 10-3-1.5-6-5.5-6-10V6l6-3z" />
-        </svg>
-      ),
-      title: "Sicher bezahlen",
-      description: "Alle Zahlungen sind SSL verschlüsselt.",
-    },
-    {
-      icon: (
-        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-          <circle cx="12" cy="12" r="9" />
-          <path strokeLinecap="round" d="M9 12l2 2 4-4" />
-        </svg>
-      ),
-      title: "Zufriedenheitsgarantie",
-      description: "Nicht zufrieden? Wir finden eine Lösung.",
-    },
-    {
-      icon: (
-        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z" />
-        </svg>
-      ),
-      title: "Kundenservice",
-      description: "Wir sind gerne für dich da.",
-    },
-    {
-      icon: (
-        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-          <path strokeLinecap="round" d="M12 2l2 4 4.5.7-3.2 3.2.7 4.5L12 12.5 8 14.4l.7-4.5L5.5 6.7 10 6l2-4z" />
-        </svg>
-      ),
-      title: "Individuelle Anfertigung",
-      description: "Jedes Stück ist ein Unikat.",
-    },
-  ];
-
-  return (
-    <div className="mt-8 rounded-2xl border border-gray-200 bg-linear-to-br from-white to-cream-50 p-7">
-      <div className="space-y-5">
-        {items.map((item) => (
-          <div key={item.title} className="flex items-start gap-3.5">
-            <span className="mt-0.5 text-navy-900">{item.icon}</span>
-            <div>
-              <p className="text-[14px] font-bold text-navy-900">{item.title}</p>
-              <p className="text-[13px] text-gray-500">{item.description}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ─── Personalization Form ───────────────────────────────────────────────────────
 
 function PersonalizationForm({
   canAddToCart,
   product,
+  purchaseProductId,
+  variationId,
   quantity,
-  displayedPrice,
   shippingRate,
   selectedOptions,
   textInputs,
-  giftWrap,
+  checkboxValues,
+  customizations,
   validationErrors,
   addedToCart,
   setQuantity,
-  setGiftWrap,
+  setCheckboxValue,
   onOptionSelect,
   onTextInput,
   onAddToCart,
 }: {
   canAddToCart: boolean;
   product: ProductPageProduct;
+  purchaseProductId: number;
+  variationId?: number;
   quantity: number;
-  displayedPrice: number;
   shippingRate: { id: string; name: string; price: number };
   selectedOptions: Record<string, string>;
   textInputs: Record<string, string>;
-  giftWrap: boolean;
+  checkboxValues: Record<string, boolean>;
+  customizations: Record<string, string>;
   validationErrors: Record<string, string>;
   addedToCart: boolean;
   setQuantity: (q: number) => void;
-  setGiftWrap: (v: boolean) => void;
+  setCheckboxValue: (optionId: string, checked: boolean) => void;
   onOptionSelect: (optionId: string, value: string) => void;
   onTextInput: (optionId: string, value: string) => void;
   onAddToCart: () => void;
 }) {
+  const t = useTranslations("productPage");
+  const locale = useLocale();
   const options = product.personalizationOptions;
 
   return (
     <>
       <div className="mt-7 space-y-5">
         {options.map((option) => {
-          if (option.type === "color" || (option.type === "select" && option.options && option.options.length <= 5)) {
+          const presentation = getProductFieldPresentation(
+            option,
+            t("fieldOptional"),
+            locale === "de" ? "de" : "en",
+            product.price.currency,
+          );
+
+          if (option.type === "select" && option.options && option.options.length <= 5) {
             return (
               <div key={option.id}>
-                <label className="text-[14px] font-bold text-navy-900">{option.label}</label>
+                <label className="text-[14px] font-bold text-navy-900">
+                  {option.label}{" "}
+                  {shouldAppendOptionalMarker(option) ? <span className="font-normal text-gray-500">{t("fieldOptional")}</span> : null}
+                </label>
                 <div className="mt-2.5 flex flex-wrap gap-3">
                   {option.options?.map((choice) => (
                     <button
@@ -384,27 +336,34 @@ function PersonalizationForm({
             return (
               <div key={option.id}>
                 <label htmlFor={option.id} className="text-[14px] font-bold text-navy-900">
-                  {option.label} {!option.required && <span className="font-normal text-gray-500">(optional)</span>}
+                  {option.label}{" "}
+                  {shouldAppendOptionalMarker(option) ? <span className="font-normal text-gray-500">{t("fieldOptional")}</span> : null}
                 </label>
                 <div className="relative mt-2">
                   <input
                     id={option.id}
                     type="text"
                     value={value}
-                    onChange={(e) => onTextInput(option.id, option.maxLength ? e.target.value.slice(0, option.maxLength) : e.target.value)}
+                    onChange={(event) => onTextInput(option.id, limitProductFieldValue(event.target.value, option.maxLength))}
                     placeholder={option.placeholder}
                     maxLength={option.maxLength}
+                    aria-required={option.required}
+                    aria-invalid={Boolean(error)}
+                    aria-describedby={error ? `${option.id}-error` : undefined}
                     className={`h-12 w-full rounded-[10px] border px-3.5 pr-14 text-[14px] text-gray-800 outline-none transition-colors focus:ring-1 ${
                       error ? "border-red-400 focus:border-red-500 focus:ring-red-500" : "border-gray-300 focus:border-navy-900 focus:ring-navy-900"
                     }`}
                   />
                   {option.maxLength && (
                     <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[12px] text-gray-400">
-                      {value.length}/{option.maxLength}
+                      {countProductFieldCharacters(value)}/{option.maxLength}
                     </span>
                   )}
                 </div>
-                {error && <p className="mt-1.5 text-[12px] text-red-500">{error}</p>}
+                {getMeaningfulFieldHelperText(option.helperText) && !error ? (
+                  <p className="mt-1.5 text-[12px] text-gray-500">{getMeaningfulFieldHelperText(option.helperText)}</p>
+                ) : null}
+                {error && <p id={`${option.id}-error`} role="alert" className="mt-1.5 text-[12px] text-red-500">{error}</p>}
               </div>
             );
           }
@@ -415,20 +374,32 @@ function PersonalizationForm({
             return (
               <div key={option.id}>
                 <label htmlFor={option.id} className="text-[14px] font-bold text-navy-900">
-                  {option.label} {!option.required && <span className="font-normal text-gray-500">(optional)</span>}
+                  {option.label}{" "}
+                  {shouldAppendOptionalMarker(option) ? <span className="font-normal text-gray-500">{t("fieldOptional")}</span> : null}
                 </label>
                 <textarea
                   id={option.id}
                   value={value}
-                  onChange={(e) => onTextInput(option.id, option.maxLength ? e.target.value.slice(0, option.maxLength) : e.target.value)}
+                  onChange={(event) => onTextInput(option.id, limitProductFieldValue(event.target.value, option.maxLength))}
                   placeholder={option.placeholder}
                   maxLength={option.maxLength}
+                  aria-required={option.required}
+                  aria-invalid={Boolean(error)}
+                  aria-describedby={error ? `${option.id}-error` : undefined}
                   rows={3}
                   className={`mt-2 w-full rounded-[10px] border px-3.5 py-3 text-[14px] text-gray-800 outline-none transition-colors focus:ring-1 ${
                     error ? "border-red-400 focus:border-red-500 focus:ring-red-500" : "border-gray-300 focus:border-navy-900 focus:ring-navy-900"
                   }`}
                 />
-                {error && <p className="mt-1.5 text-[12px] text-red-500">{error}</p>}
+                {option.maxLength ? (
+                  <p className="mt-1.5 text-right text-[12px] text-gray-400">
+                    {countProductFieldCharacters(value)}/{option.maxLength}
+                  </p>
+                ) : null}
+                {getMeaningfulFieldHelperText(option.helperText) && !error ? (
+                  <p className="mt-1.5 text-[12px] text-gray-500">{getMeaningfulFieldHelperText(option.helperText)}</p>
+                ) : null}
+                {error && <p id={`${option.id}-error`} role="alert" className="mt-1.5 text-[12px] text-red-500">{error}</p>}
               </div>
             );
           }
@@ -437,7 +408,8 @@ function PersonalizationForm({
             return (
               <div key={option.id}>
                 <label htmlFor={option.id} className="text-[14px] font-bold text-navy-900">
-                  {option.label}
+                  {option.label}{" "}
+                  {shouldAppendOptionalMarker(option) ? <span className="font-normal text-gray-500">{t("fieldOptional")}</span> : null}
                 </label>
                 <select
                   id={option.id}
@@ -455,20 +427,35 @@ function PersonalizationForm({
             );
           }
 
+          if (option.type === "checkbox") {
+            return (
+              <div key={option.id}>
+                <label className="flex min-h-11 cursor-pointer items-center gap-2.5">
+                  <input
+                    type="checkbox"
+                    checked={checkboxValues[option.id] || false}
+                    onChange={(event) => setCheckboxValue(option.id, event.target.checked)}
+                    aria-required={option.required}
+                    aria-invalid={Boolean(validationErrors[option.id])}
+                    aria-describedby={validationErrors[option.id] ? `${option.id}-error` : undefined}
+                    className="h-4 w-4 rounded border-gray-300 text-navy-900 focus:ring-navy-900"
+                  />
+                  <span className="text-[13px] text-gray-600">
+                    {option.label}
+                    {presentation.extraPriceLabel ? ` ${presentation.extraPriceLabel}` : ""}
+                  </span>
+                </label>
+                {getMeaningfulFieldHelperText(option.helperText) ? (
+                  <p className="ml-6.5 text-[12px] text-gray-500">{getMeaningfulFieldHelperText(option.helperText)}</p>
+                ) : null}
+                {validationErrors[option.id] ? <p id={`${option.id}-error`} role="alert" className="ml-6.5 text-[12px] text-red-500">{validationErrors[option.id]}</p> : null}
+              </div>
+            );
+          }
+
           return null;
         })}
       </div>
-
-      {/* Gift packaging */}
-      <label className="mt-5 flex cursor-pointer items-center gap-2.5">
-        <input
-          type="checkbox"
-          checked={giftWrap}
-          onChange={(e) => setGiftWrap(e.target.checked)}
-          className="h-4 w-4 rounded border-gray-300 text-navy-900 focus:ring-navy-900"
-        />
-        <span className="text-[13px] text-gray-600">Geschenkverpackung hinzufügen (+€2,50)</span>
-      </label>
 
       {/* Quantity + Add to cart */}
       <div className="mt-6 flex items-center gap-3">
@@ -486,7 +473,7 @@ function PersonalizationForm({
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
-              Hinzugefügt!
+              {t("added")}
             </>
           ) : (
             <>
@@ -494,7 +481,7 @@ function PersonalizationForm({
                 <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18" />
                 <path d="M16 10a4 4 0 01-8 0" />
               </svg>
-              In den Warenkorb
+              {t("addToCart")}
             </>
           )}
         </button>
@@ -502,68 +489,28 @@ function PersonalizationForm({
 
       {/* PayPal Express Checkout */}
       <div className="mt-3.5">
-        <PayPalExpressButton
-          amount={displayedPrice * quantity}
-          shippingAmount={shippingRate.price}
-          itemName={product.name}
+        {canAddToCart ? (
+          <PayPalExpressButton
+          pendingOrderRequest={{
+            items: [{ productId: purchaseProductId, ...(variationId ? { variationId } : {}), quantity, customizations }],
+            country: "DE",
+            shippingMethodId: shippingRate.id,
+            payment_method: "paypal-express",
+            payment_method_title: "PayPal Express",
+          }}
           onSuccess={async (details) => {
-            // Create WooCommerce order with payer + shipping info from PayPal
-            try {
-              const billing = details.payer
-                ? {
-                    first_name: details.payer.firstName || "",
-                    last_name: details.payer.lastName || "",
-                    email: details.payer.email || "",
-                    address_1: details.shipping?.address?.line1 || "",
-                    city: details.shipping?.address?.city || "",
-                    postcode: details.shipping?.address?.postalCode || "",
-                    country: details.shipping?.address?.country || "",
-                  }
-                : undefined;
-
-              const shipping = details.shipping
-                ? {
-                    first_name: details.shipping.name?.split(" ")[0] || details.payer?.firstName || "",
-                    last_name: details.shipping.name?.split(" ").slice(1).join(" ") || details.payer?.lastName || "",
-                    address_1: details.shipping.address?.line1 || "",
-                    city: details.shipping.address?.city || "",
-                    postcode: details.shipping.address?.postalCode || "",
-                    country: details.shipping.address?.country || "",
-                  }
-                : undefined;
-
-              await fetch("/api/orders/create", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  items: [
-                    {
-                      name: product.name,
-                      product_id: product.id,
-                      quantity,
-                      price: String(displayedPrice),
-                      customizations: textInputs,
-                    },
-                  ],
-                  billing,
-                  shipping,
-                  shipping_lines:
-                    shippingRate.price > 0 ? [{ method_id: shippingRate.id, method_title: shippingRate.name, total: shippingRate.price.toFixed(2) }] : [],
-                  payment_method: "ppcp-gateway",
-                  payment_method_title: "PayPal",
-                  transaction_id: details.id,
-                  set_paid: true,
-                }),
-              });
-            } catch (err) {
-              console.error("Failed to create WC order:", err);
-            }
+            void details;
             window.location.href = "/checkout/success";
           }}
           onError={(msg) => {
             console.error("PayPal express error:", msg);
           }}
-        />
+          />
+        ) : (
+          <p className="rounded-[10px] border border-gray-200 bg-cream-50 px-4 py-3 text-[13px] text-gray-600">
+            {t("paypalConfigurationRequired")}
+          </p>
+        )}
       </div>
     </>
   );
@@ -572,40 +519,46 @@ function PersonalizationForm({
 // ─── Product Tabs ───────────────────────────────────────────────────────────────
 
 function ProductTabs({ product, reviews }: { product: ProductPageProduct; reviews: WCReview[] }) {
+  const t = useTranslations("productPage");
   const descSection = product.detailSections.find((s) => s.id === "beschreibung") || product.detailSections[0];
   const shippingSection = product.detailSections.find((s) => s.id === "versand-und-fertigung");
   const reviewCount = reviews.length || product.reviewCount || 0;
 
-  const tabList = ["Beschreibung", "Details", "Versand & Lieferung", `Bewertungen (${reviewCount})`];
-  const [activeTab, setActiveTab] = useState<string>("Beschreibung");
+  const tabList = [
+    { id: "description", label: t("detailDescription") },
+    { id: "details", label: t("detailsLabel") },
+    { id: "shipping", label: t("shippingTab") },
+    { id: "reviews", label: `${t("reviewsTitle")} (${reviewCount})` },
+  ];
+  const [activeTab, setActiveTab] = useState("description");
 
   return (
-    <section className="mx-auto mt-20 max-w-5xl px-5 sm:px-8 lg:px-0">
+    <section className="kk-container-full mt-20">
       {/* Tab headers */}
-      <div className="flex gap-0 border-b border-gray-200">
+      <div className="flex gap-0 overflow-x-auto border-b border-gray-200">
         {tabList.map((tab) => (
           <button
-            key={tab}
+            key={tab.id}
             type="button"
-            onClick={() => setActiveTab(tab)}
+            onClick={() => setActiveTab(tab.id)}
             className={`relative px-5 py-3.5 text-[14px] font-bold transition-colors ${
-              activeTab === tab ? "text-navy-900" : "text-gray-500 hover:text-gray-700"
+              activeTab === tab.id ? "text-navy-900" : "text-gray-500 hover:text-gray-700"
             }`}
-            aria-selected={activeTab === tab}
+            aria-selected={activeTab === tab.id}
             role="tab"
           >
-            {tab}
-            {activeTab === tab && <span className="absolute inset-x-0 bottom-0 h-0.5 bg-accent-600" />}
+            {tab.label}
+            {activeTab === tab.id && <span className="absolute inset-x-0 bottom-0 h-0.5 bg-accent-600" />}
           </button>
         ))}
       </div>
 
       {/* Tab content */}
       <div className="py-10" role="tabpanel">
-        {activeTab === "Beschreibung" && descSection && (
+        {activeTab === "description" && descSection && (
           <div>
             <h2 className="text-2xl font-extrabold text-navy-900">{product.name}</h2>
-            <div className="mt-4 max-w-2xl space-y-4 text-[15px] leading-7 text-gray-600">
+            <div className="mt-4 w-full space-y-4 text-[15px] leading-7 text-gray-600">
               {descSection.content.map((p) => (
                 <p key={p}>{p}</p>
               ))}
@@ -629,7 +582,7 @@ function ProductTabs({ product, reviews }: { product: ProductPageProduct; review
           </div>
         )}
 
-        {activeTab === "Details" && (
+        {activeTab === "details" && (
           <div className="space-y-4">
             {product.quickFacts.map((d) => (
               <div key={d.label} className="flex items-start gap-4 border-b border-gray-100 pb-4 last:border-0">
@@ -654,7 +607,7 @@ function ProductTabs({ product, reviews }: { product: ProductPageProduct; review
           </div>
         )}
 
-        {activeTab === "Versand & Lieferung" && (
+        {activeTab === "shipping" && (
           <ul className="space-y-3">
             <li className="flex items-center gap-3">
               <svg className="h-4 w-4 shrink-0 text-accent-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -691,7 +644,7 @@ function ProductTabs({ product, reviews }: { product: ProductPageProduct; review
           </ul>
         )}
 
-        {activeTab.startsWith("Bewertungen") &&
+        {activeTab === "reviews" &&
           (reviews.length > 0 ? (
             <div className="space-y-4">
               {reviews.map((review) => (
@@ -705,14 +658,14 @@ function ProductTabs({ product, reviews }: { product: ProductPageProduct; review
                       ))}
                     </div>
                     <span className="text-sm font-semibold text-navy-900">{review.reviewer}</span>
-                    {review.verified && <span className="text-xs text-green-600">✓ Verifiziert</span>}
+                    {review.verified && <span className="text-xs text-green-600">✓ {t("reviewVerified")}</span>}
                   </div>
                   <p className="mt-2 text-[14px] leading-relaxed text-gray-600" dangerouslySetInnerHTML={{ __html: review.review }} />
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-[15px] text-gray-500">Bewertungen werden hier angezeigt.</p>
+            <p className="text-[15px] text-gray-500">{t("reviewsEmpty")}</p>
           ))}
       </div>
     </section>
@@ -722,11 +675,12 @@ function ProductTabs({ product, reviews }: { product: ProductPageProduct; review
 // ─── Related Products ───────────────────────────────────────────────────────────
 
 function RelatedProductsSection({ products }: { products: ProductPageProduct[] }) {
+  const t = useTranslations("productPage");
   if (products.length === 0) return null;
 
   return (
     <section className="mx-auto mt-20 max-w-7xl px-5 sm:px-8 lg:px-8">
-      <h2 className="text-2xl font-extrabold text-navy-900 sm:text-3xl">Das könnte dir auch gefallen</h2>
+      <h2 className="text-2xl font-extrabold text-navy-900 sm:text-3xl">{t("relatedTitle")}</h2>
       <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {products.map((p) => (
           <Link
@@ -736,7 +690,7 @@ function RelatedProductsSection({ products }: { products: ProductPageProduct[] }
           >
             <div className="relative aspect-4/3 bg-cream-50">
               <Image
-                src={p.images[0]?.src || "/placeholders/product-detail-cream.svg"}
+                src={p.images[0]!.src}
                 alt={p.images[0]?.alt || p.name}
                 fill
                 sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
@@ -755,35 +709,87 @@ function RelatedProductsSection({ products }: { products: ProductPageProduct[] }
   );
 }
 
+function ProductHeading({
+  eyebrow,
+  name,
+  reviewRating,
+  reviewCount,
+}: {
+  eyebrow: string;
+  name: string;
+  reviewRating: number;
+  reviewCount: number;
+}) {
+  return (
+    <div>
+      <p className="text-xs font-semibold tracking-[0.08em] text-accent uppercase">{eyebrow}</p>
+      <h1 className="mt-3 font-heading text-[34px] leading-[1.1] font-bold tracking-[-0.035em] text-brand sm:text-[44px]">
+        {name}
+      </h1>
+      <div className="mt-3">
+        <StarRating rating={reviewRating} count={reviewCount} />
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page Component ────────────────────────────────────────────────────────
 
 type ProductPageClientProps = {
   product: ProductPageProduct;
   reviews: WCReview[];
   relatedProducts: ProductPageProduct[];
+  presentation?: "standard" | "business-kit";
+  otherBusinessKits?: WCProduct[];
 };
 
-function ProductPageClientContent({ product, reviews, relatedProducts }: ProductPageClientProps) {
+function ProductPageClientContent({
+  product,
+  reviews,
+  relatedProducts,
+  presentation = "standard",
+  otherBusinessKits = [],
+}: ProductPageClientProps) {
+  const t = useTranslations("productPage");
+  const kitT = useTranslations("businessKitProduct");
+  const isBusinessKit = presentation === "business-kit";
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(() => getInitialSelections(product));
   const [textInputs, setTextInputs] = useState<Record<string, string>>({});
-  const [giftWrap, setGiftWrap] = useState(false);
+  const [checkboxValues, setCheckboxValues] = useState<Record<string, boolean>>({});
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [addedToCart, setAddedToCart] = useState(false);
+  const addToCartLock = useRef(createProductSubmissionLock());
 
-  const images = product.images.length ? product.images : [{ src: "/placeholders/product-detail-cream.svg", alt: `${product.name} von Kubikart` }];
   const selectedVariation = getSelectedVariation(product, selectedOptions);
+  const baseImages = product.images;
+  const images = selectedVariation?.image
+    ? [selectedVariation.image, ...baseImages.filter((image) => image.src !== selectedVariation.image?.src)]
+    : baseImages;
+  const visibleImages = isBusinessKit
+    ? images.filter((image) => !isWooCommercePlaceholderImage(image))
+    : images;
   const displayedPrice = selectedVariation?.price || product.price;
   const isOutOfStock = (selectedVariation?.availability || product.availability) === "out_of_stock";
-
-  // Check if all required fields are satisfied
-  const requiredTextFields = product.personalizationOptions.filter((o) => o.required && (o.type === "text" || o.type === "textarea"));
-  const requiredSelectFields = product.personalizationOptions.filter((o) => o.required && o.type === "select" && !o.options?.length);
-  const allRequiredFilled =
-    requiredTextFields.every((o) => (textInputs[o.id] || "").trim().length > 0) &&
-    requiredSelectFields.every((o) => (selectedOptions[o.id] || "").trim().length > 0);
-  const canAddToCart = !isOutOfStock && allRequiredFilled;
+  const configurationState: ProductConfigurationState = { selectedOptions, textInputs, checkboxValues };
+  const currentValidationErrors = validateProductConfiguration(
+    product.personalizationOptions,
+    configurationState,
+    (label) => t("fieldRequired", { label }),
+    (label, maxLength) => t("fieldTooLong", { label, maxLength }),
+  );
+  const hasCompleteVariation = !product.variations?.length || Boolean(selectedVariation);
+  const canAddToCart = isProductConfigurationPurchasable({
+    isOutOfStock,
+    hasCompleteVariation,
+    validationErrors: currentValidationErrors,
+  });
+  const totalUnitPrice = getConfiguredUnitPrice(displayedPrice.amount, product.personalizationOptions, configurationState);
+  const { customizations, customizationSummary } = useMemo(
+    () => buildProductCustomization(product.personalizationOptions, { selectedOptions, textInputs, checkboxValues }, t("selectedYes")),
+    [product.personalizationOptions, selectedOptions, textInputs, checkboxValues, t],
+  );
 
   // Fetch shipping cost for express checkout
   const [expressShippingRate, setExpressShippingRate] = useState<{ id: string; name: string; price: number }>({
@@ -796,7 +802,7 @@ function ProductPageClientContent({ product, reviews, relatedProducts }: Product
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        items: [{ product_id: product.id, quantity, price: String(displayedPrice.amount) }],
+        items: [{ productId: product.id, ...(selectedVariation ? { variationId: selectedVariation.id } : {}), quantity, customizations }],
         country: "DE",
       }),
     })
@@ -810,49 +816,15 @@ function ProductPageClientContent({ product, reviews, relatedProducts }: Product
       .catch(() => {
         // keep default
       });
-  }, [product.id, quantity, displayedPrice.amount]);
+  }, [product.id, quantity, selectedVariation, customizations]);
 
   function handleAddToCart() {
-    // Validate required text/textarea fields
-    const errors: Record<string, string> = {};
-    for (const option of product.personalizationOptions) {
-      if (option.required && (option.type === "text" || option.type === "textarea")) {
-        if (!(textInputs[option.id] || "").trim()) {
-          errors[option.id] = `${option.label} ist ein Pflichtfeld.`;
-        }
-      }
-    }
-    if (Object.keys(errors).length > 0) {
-      setValidationErrors(errors);
+    if (Object.keys(currentValidationErrors).length > 0) {
+      setValidationErrors(currentValidationErrors);
       return;
     }
+    if (!addToCartLock.current.acquire()) return;
     setValidationErrors({});
-
-    // Build customization summary for cart display
-    const customizations: Record<string, string> = {};
-    const customizationSummary: string[] = [];
-
-    for (const option of product.personalizationOptions) {
-      if (option.type === "select" || option.type === "color") {
-        const value = selectedOptions[option.id];
-        if (value) {
-          const label = option.options?.find((o) => o.value === value)?.label || value;
-          customizations[option.id] = value;
-          customizationSummary.push(`${option.label}: ${label}`);
-        }
-      } else {
-        const value = textInputs[option.id];
-        if (value?.trim()) {
-          customizations[option.id] = value.trim();
-          customizationSummary.push(`${option.label}: ${value.trim()}`);
-        }
-      }
-    }
-
-    if (giftWrap) {
-      customizations["_gift_wrap"] = "true";
-      customizationSummary.push("Geschenkverpackung: Ja");
-    }
 
     const lineId = `${product.id}-${JSON.stringify(customizations)}`;
     const cart = readCart();
@@ -864,8 +836,10 @@ function ProductPageClientContent({ product, reviews, relatedProducts }: Product
       cart.push({
         lineId,
         id: selectedVariation?.id || product.id,
+        productId: product.id,
+        ...(selectedVariation ? { variationId: selectedVariation.id } : {}),
         name: product.name,
-        price: `${(displayedPrice.amount + (giftWrap ? 2.5 : 0)).toFixed(2)} €`,
+        price: `${totalUnitPrice.toFixed(2)} €`,
         image: product.images[0]?.src || "",
         quantity,
         slug: product.slug,
@@ -876,20 +850,23 @@ function ProductPageClientContent({ product, reviews, relatedProducts }: Product
 
     writeCart(cart);
     setAddedToCart(true);
-    setTimeout(() => setAddedToCart(false), 3000);
+    setTimeout(() => {
+      addToCartLock.current.release();
+      setAddedToCart(false);
+    }, 3000);
   }
 
   const reviewCount = reviews.length || product.reviewCount || 0;
   const reviewRating = reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : product.averageRating || 0;
 
   return (
-    <div className="bg-white">
+    <div className="bg-page text-foreground">
       {/* Breadcrumb */}
-      <nav aria-label="Breadcrumb" className="mx-auto max-w-7xl px-5 pt-7 pb-7 sm:px-8 lg:px-8">
-        <ol className="flex flex-wrap items-center gap-1.5 text-[13px] text-gray-500">
+      <nav aria-label="Breadcrumb" className="kk-container-full pt-7 pb-7">
+        <ol className="flex flex-wrap items-center gap-1.5 text-[13px] text-muted">
           <li>
             <Link href="/" className="hover:text-navy-900 transition-colors">
-              Startseite
+              {t("breadcrumbHome")}
             </Link>
           </li>
           <li aria-hidden="true">
@@ -898,95 +875,125 @@ function ProductPageClientContent({ product, reviews, relatedProducts }: Product
             </svg>
           </li>
           <li>
-            <Link href="/shop" className="hover:text-navy-900 transition-colors">
-              Shop
+            <Link href={isBusinessKit ? "/services/brand-kit" : "/shop"} className="hover:text-brand transition-colors">
+              {isBusinessKit ? kitT("breadcrumbBusinessKits") : t("breadcrumbShop")}
             </Link>
           </li>
+          {!isBusinessKit ? (
+            <>
+              <li aria-hidden="true">
+                <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 2l4 4-4 4" />
+                </svg>
+              </li>
+              <li>
+                <Link href={product.category.id ? `/shop?category=${product.category.id}` : "/shop"} className="transition-colors hover:text-brand">
+                  {product.category.name}
+                </Link>
+              </li>
+            </>
+          ) : null}
           <li aria-hidden="true">
             <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M4 2l4 4-4 4" />
             </svg>
           </li>
-          <li>
-            <Link href="/shop" className="hover:text-navy-900 transition-colors">
-              {product.category.name}
-            </Link>
-          </li>
-          <li aria-hidden="true">
-            <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M4 2l4 4-4 4" />
-            </svg>
-          </li>
-          <li className="font-medium text-gray-800" aria-current="page">
+          <li className="font-medium text-foreground" aria-current="page">
             {product.name}
           </li>
         </ol>
       </nav>
 
       {/* Main product section */}
-      <section className="mx-auto max-w-7xl px-5 pb-20 sm:px-8 lg:px-8">
-        <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[1.12fr_0.88fr] lg:gap-16">
+      <section className={`kk-container-full pb-16 lg:pb-20 ${isBusinessKit ? "lg:pb-24" : ""}`}>
+        <div className={`grid grid-cols-1 items-start gap-10 ${isBusinessKit ? "lg:grid-cols-[1.2fr_0.9fr] lg:gap-x-14 lg:gap-y-6" : "lg:grid-cols-[1.15fr_0.85fr] lg:gap-14"}`}>
+          {isBusinessKit ? (
+            <div className="order-1 lg:col-start-2 lg:row-start-1">
+              <ProductHeading
+                eyebrow={kitT("eyebrow")}
+                name={product.name}
+                reviewRating={reviewRating}
+                reviewCount={reviewCount}
+              />
+            </div>
+          ) : null}
+
           {/* Left – Gallery */}
-          <ProductGallery images={images} activeIndex={selectedImage} onSelect={setSelectedImage} />
+          <div className={isBusinessKit ? "order-2 lg:col-start-1 lg:row-start-1 lg:row-span-2" : ""}>
+            <ProductGallery
+              images={visibleImages}
+              activeIndex={selectedImage}
+              onSelect={setSelectedImage}
+              aspect={isBusinessKit ? "landscape" : "portrait"}
+            />
+          </div>
 
           {/* Right – Product Info & Purchase */}
-          <div>
-            {/* Badge */}
-            {product.badges[0] && (
-              <span className="inline-block rounded-md border border-accent-600 bg-accent-100 px-2.5 py-1 text-[12px] font-bold text-accent-600">
-                {product.badges[0]}
-              </span>
-            )}
-
-            {/* Title */}
-            <h1 className="mt-4 text-[31px] font-extrabold leading-[1.08] tracking-[-0.035em] text-navy-900 sm:text-[42px]">{product.name}</h1>
-
-            {/* Rating */}
-            <div className="mt-3">
-              <StarRating rating={reviewRating} count={reviewCount} />
-            </div>
+          <div className={isBusinessKit ? "order-3 lg:col-start-2 lg:row-start-2" : ""}>
+            {!isBusinessKit ? (
+              <ProductHeading
+                eyebrow={product.category.name}
+                name={product.name}
+                reviewRating={reviewRating}
+                reviewCount={reviewCount}
+              />
+            ) : null}
 
             {/* Price */}
-            <div className="mt-5">
-              <p className="text-[30px] font-extrabold tracking-[-0.03em] text-navy-900 sm:text-[34px]">{formatProductPrice(displayedPrice)}</p>
-              <p className="mt-1 text-[13px] text-gray-500">{product.priceNote}</p>
+            <div className={isBusinessKit ? "" : "mt-5"}>
+              <p className="font-heading text-[30px] font-bold tracking-[-0.03em] text-accent sm:text-[34px]">
+                {formatProductPrice({ ...displayedPrice, amount: totalUnitPrice })}
+              </p>
+              <p className="mt-1 text-[13px] text-muted">{isBusinessKit ? kitT("priceNote") : product.priceNote}</p>
+              {isBusinessKit ? (
+                <p className={`mt-2 text-sm font-semibold ${isOutOfStock ? "text-danger" : "text-brand"}`} role="status">
+                  {isOutOfStock ? t("availabilityOutOfStock") : t("availabilityInStock")}
+                </p>
+              ) : null}
               <p className="mt-1.5 text-[12px] leading-relaxed text-gray-500">
-                Preis gem.{" "}
+                {t("taxNoticePrefix")}{" "}
                 <Link href="/legal/agb" className="underline hover:text-gray-700">
                   § 19 UStG
                 </Link>{" "}
                 ohne Ausweis der MwSt.
                 {" · "}
                 <Link href="/legal/versand" className="underline hover:text-gray-700">
-                  zzgl. Versandkosten
+                  {t("shippingCosts")}
                 </Link>
               </p>
-              <p className="mt-1 text-[12px] text-gray-500">Lieferzeit: 3–5 Werktage</p>
             </div>
 
             {/* Short description */}
-            <p className="mt-6 max-w-130 text-[15px] leading-7 text-gray-600">{product.shortDescription}</p>
+            {product.shortDescription ? <p className="mt-6 max-w-130 text-[15px] leading-7 text-muted">{product.shortDescription}</p> : null}
 
             {/* Personalization */}
             <PersonalizationForm
               canAddToCart={canAddToCart}
               product={product}
+              purchaseProductId={product.id}
+              variationId={selectedVariation?.id}
               quantity={quantity}
-              displayedPrice={displayedPrice.amount + (giftWrap ? 2.5 : 0)}
               shippingRate={expressShippingRate}
               selectedOptions={selectedOptions}
               textInputs={textInputs}
-              giftWrap={giftWrap}
+              checkboxValues={checkboxValues}
+              customizations={customizations}
               validationErrors={validationErrors}
               addedToCart={addedToCart}
               setQuantity={setQuantity}
-              setGiftWrap={setGiftWrap}
-              onOptionSelect={(optionId, value) =>
+              setCheckboxValue={(optionId, checked) =>
+                setCheckboxValues((current) => ({
+                  ...current,
+                  [optionId]: checked,
+                }))
+              }
+              onOptionSelect={(optionId, value) => {
+                setSelectedImage(0);
                 setSelectedOptions((currentSelections) => ({
                   ...currentSelections,
                   [optionId]: value,
-                }))
-              }
+                }));
+              }}
               onTextInput={(optionId, value) => {
                 setTextInputs((current) => ({
                   ...current,
@@ -1003,28 +1010,46 @@ function ProductPageClientContent({ product, reviews, relatedProducts }: Product
               onAddToCart={handleAddToCart}
             />
 
-            {/* Trust icons */}
-            <TrustIcons />
-
-            {/* Trust/support card */}
-            <TrustSupportCard />
           </div>
         </div>
       </section>
 
-      {/* Product tabs */}
-      <ProductTabs product={product} reviews={reviews} />
+      {isBusinessKit ? <BusinessKitSupportStrip /> : (
+      <section aria-label={t("supportTitle")} className="border-y border-border bg-brand text-white">
+        <div className="kk-container-full grid gap-3 py-5 sm:grid-cols-2 lg:grid-cols-4">
+          {[t("supportCustomisable"), t("supportSecurePayment"), t("supportEnquiry"), t("supportLocal")].map((item) => (
+            <p key={item} className="flex min-h-11 items-center gap-3 text-sm font-semibold">
+              <span className="text-accent" aria-hidden="true">✓</span>{item}
+            </p>
+          ))}
+        </div>
+      </section>
+      )}
 
-      {/* Additional product sections */}
-      <div className="mx-auto max-w-7xl space-y-20 px-5 py-16 sm:px-8 lg:px-8 lg:space-y-24 lg:py-20">
-        <ProductBenefits benefits={product.benefits} />
-        <ProductLeadCTA product={product} />
-        <ProductFAQ faqs={product.faqs} />
-        <ProductSeoContent content={product.seoContent} />
-      </div>
+      {isBusinessKit ? (
+        <>
+          <BusinessKitDetails product={product} reviews={reviews} />
+          <BusinessKitCustomisation product={product} />
+          <BusinessKitProcess />
+          <OtherBusinessKits products={otherBusinessKits} />
+          <BusinessKitFinalCta />
+        </>
+      ) : (
+        <>
+          <ProductTabs product={product} reviews={reviews} />
 
-      {/* Related products */}
-      <RelatedProductsSection products={relatedProducts} />
+          {/* Additional product sections */}
+          <div className="kk-container-full space-y-16 py-16 lg:space-y-20 lg:py-20">
+            <ProductHowItWorks />
+            {product.benefits.length ? <ProductBenefits benefits={product.benefits} /> : null}
+            <ProductLeadCTA product={product} />
+            {product.faqs.length ? <ProductFAQ faqs={product.faqs} /> : null}
+          </div>
+
+          {/* Related products */}
+          <RelatedProductsSection products={relatedProducts} />
+        </>
+      )}
 
       {/* Bottom spacing */}
       <div className="h-24" />
@@ -1032,6 +1057,6 @@ function ProductPageClientContent({ product, reviews, relatedProducts }: Product
   );
 }
 
-export function ProductPageClient({ product, reviews, relatedProducts }: ProductPageClientProps) {
-  return <ProductPageClientContent key={product.id} product={product} reviews={reviews} relatedProducts={relatedProducts} />;
+export function ProductPageClient(props: ProductPageClientProps) {
+  return <ProductPageClientContent key={props.product.id} {...props} />;
 }

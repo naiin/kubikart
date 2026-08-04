@@ -10,6 +10,61 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+const KUBIKART_INTEGRATION_ROLE = 'kubikart_frontend_integration';
+const KUBIKART_INTEGRATION_CAPABILITY = 'kubikart_frontend_integration';
+
+/**
+ * Register the least-privileged role used by the Next.js server.
+ *
+ * edit_posts and publish_posts are required because the existing contact,
+ * newsletter and withdrawal endpoints store records as private posts.
+ * Without publish_posts WordPress rejects a REST request with status=private.
+ * The role deliberately has no edit_others_posts, WooCommerce, user,
+ * settings, plugin, theme or file capabilities.
+ */
+function kubikart_register_frontend_integration_role(): void
+{
+    $capabilities = [
+        'read' => true,
+        'edit_posts' => true,
+        'publish_posts' => true,
+        KUBIKART_INTEGRATION_CAPABILITY => true,
+    ];
+
+    $role = get_role(KUBIKART_INTEGRATION_ROLE);
+    if (!$role) {
+        add_role(
+            KUBIKART_INTEGRATION_ROLE,
+            __('Kubikart Frontend Integration', 'kubikart'),
+            $capabilities
+        );
+        return;
+    }
+
+    foreach ($capabilities as $capability => $grant) {
+        if ($grant) {
+            $role->add_cap($capability);
+        }
+    }
+}
+add_action('init', 'kubikart_register_frontend_integration_role');
+
+/**
+ * Next.js/Mailtrap owns payment-status customer mail for orders carrying this
+ * explicit marker. WooCommerce continues to own all other order mail.
+ */
+function kubikart_mailtrap_owns_payment_email($enabled, $order): bool
+{
+    if (!$order instanceof WC_Order) {
+        return (bool) $enabled;
+    }
+
+    return $order->get_meta('_kubikart_transactional_email_owner') === 'mailtrap'
+        ? false
+        : (bool) $enabled;
+}
+add_filter('woocommerce_email_enabled_customer_processing_order', 'kubikart_mailtrap_owns_payment_email', 10, 2);
+
 // ============================================================
 // 1. Disable XML-RPC completely (prevents brute force & DDoS)
 // ============================================================
@@ -141,10 +196,10 @@ add_filter('rest_authentication_errors', function ($result) {
 });
 
 // ============================================================
-// 8. Disable application passwords discovery for non-admins
+// 8. Restrict application passwords to administrators and the integration role
 // ============================================================
 add_filter('wp_is_application_passwords_available_for_user', function ($available, $user) {
-    return user_can($user, 'manage_options');
+    return user_can($user, 'manage_options') || user_can($user, KUBIKART_INTEGRATION_CAPABILITY);
 }, 10, 2);
 
 // ============================================================

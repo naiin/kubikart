@@ -1,7 +1,11 @@
 // Global environment setup for all tests
+import { vi } from "vitest";
+
+vi.mock("server-only", () => ({}));
 
 // Set required env vars before any module is imported
 process.env.NEXT_PUBLIC_WORDPRESS_URL = "https://test-wp.local";
+process.env.WORDPRESS_API_URL = "https://test-wp.local/wp-json/wp/v2";
 process.env.NEXT_PUBLIC_SITE_URL = "http://localhost:3000";
 process.env.WP_APP_USER = "test-user";
 process.env.WP_APP_PASSWORD = "test-password";
@@ -9,6 +13,7 @@ process.env.WC_API_URL = "https://test-wp.local/wp-json/wc/v3";
 process.env.WC_CONSUMER_KEY = "ck_test";
 process.env.WC_CONSUMER_SECRET = "cs_test";
 process.env.REVALIDATE_SECRET = "ci-test-secret";
+process.env.AUTH_SESSION_SECRET = "ci-test-session-secret-with-at-least-32-characters";
 process.env.STRIPE_SECRET_KEY = "sk_test_ci";
 process.env.STRIPE_WEBHOOK_SECRET = "whsec_ci";
 process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = "pk_test_ci";

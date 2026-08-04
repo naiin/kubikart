@@ -46,7 +46,10 @@ describe("GET /api/newsletter/confirm", () => {
     expect(html).toContain("Newsletter-Anmeldung ist bestätigt");
 
     const [couponUrl] = fetchMock.mock.calls[1];
-    expect(String(couponUrl)).toContain("/coupons?");
+    expect(String(couponUrl)).toContain("/coupons");
+    expect((fetchMock.mock.calls[1][1] as RequestInit).headers).toMatchObject({
+      Authorization: expect.stringMatching(/^Basic /),
+    });
 
     const [, updateOptions] = fetchMock.mock.calls[2];
     const updateBody = JSON.parse((updateOptions as RequestInit).body as string);

@@ -1,22 +1,26 @@
 /**
  * Script to create dummy categories and products in WooCommerce.
- * Uses query-string auth over HTTPS.
+ * Reads server credentials from the environment and uses HTTPS Basic auth.
  *
  * Run: node scripts/seed-products.mjs
  */
 
-const WC_URL = "https://kubikart-backend.lndo.site:444/wp-json/wc/v3";
-const CONSUMER_KEY = "ck_f545e33b18fe34ffa271bd73d525b9f305f2ceab";
-const CONSUMER_SECRET = "cs_e2396ccd68bb0c1fbc4380c53d01cfd023e00892";
+const WC_URL = process.env.WC_API_URL || "https://kubikart-backend.lndo.site/wp-json/wc/v3";
+const CONSUMER_KEY = process.env.WC_CONSUMER_KEY;
+const CONSUMER_SECRET = process.env.WC_CONSUMER_SECRET;
+
+if (!CONSUMER_KEY || !CONSUMER_SECRET) {
+  throw new Error("WC_CONSUMER_KEY and WC_CONSUMER_SECRET are required");
+}
 
 async function wcRequest(endpoint, method = "GET", body = null) {
   const url = new URL(`${WC_URL}/${endpoint}`);
-  url.searchParams.set("consumer_key", CONSUMER_KEY);
-  url.searchParams.set("consumer_secret", CONSUMER_SECRET);
-
   const options = {
     method,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Basic ${Buffer.from(`${CONSUMER_KEY}:${CONSUMER_SECRET}`).toString("base64")}`,
+    },
   };
 
   if (body && method !== "GET") {

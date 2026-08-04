@@ -1,0 +1,113 @@
+.kubikart-fields-table-wrap {
+  margin: 14px 0;
+}
+
+.kubikart-fields-table,
+.kubikart-fields-table tbody {
+  display: block;
+  width: 100%;
+}
+
+.kubikart-fields-table thead {
+  display: none;
+}
+
+.kubikart-field-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px 16px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid #dcdcde;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
+}
+
+.kubikart-fields-table .kubikart-field-row td {
+  display: block;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  text-align: left;
+  vertical-align: top;
+}
+
+.kubikart-fields-table .kubikart-field-row td::before {
+  content: attr(data-column);
+  display: block;
+  margin-bottom: 5px;
+  color: #3c434a;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.kubikart-field-row input:not([type="checkbox"]),
+.kubikart-field-row select,
+.kubikart-field-row textarea {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+}
+
+.kubikart-fields-table .kubikart-price-field {
+  padding: 10px;
+  border: 1px solid #72aee6;
+  border-radius: 4px;
+  background: #f0f6fc;
+}
+
+.kubikart-field-row input[type="checkbox"] {
+  margin-top: 7px;
+}
+
+.kubikart-field-row textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+
+.kubikart-fields-table .kubikart-field-row [data-column="Label"],
+.kubikart-fields-table .kubikart-field-row [data-column="Optionen"],
+.kubikart-fields-table .kubikart-field-row [data-column="Hilfetext"] {
+  grid-column: span 2;
+}
+
+.kubikart-fields-table .kubikart-field-row [data-column="Aktion"] {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+}
+
+.kubikart-field-row [data-field-control].is-inactive {
+  display: none;
+}
+
+.kubikart-field-row[data-requires-review="true"] {
+  border-left: 4px solid #dba617;
+}
+
+.kubikart-add-field {
+  margin-top: 2px;
+}
+
+@media screen and (max-width: 1280px) {
+  .kubikart-field-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media screen and (max-width: 782px) {
+  .kubikart-field-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .kubikart-fields-table .kubikart-field-row [data-column="Label"],
+  .kubikart-fields-table .kubikart-field-row [data-column="Optionen"],
+  .kubikart-fields-table .kubikart-field-row [data-column="Hilfetext"] {
+    grid-column: auto;
+  }
+}

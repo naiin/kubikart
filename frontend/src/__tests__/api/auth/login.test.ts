@@ -46,7 +46,7 @@ describe("POST /api/auth/login", () => {
     expect(res.status).toBe(401);
   });
 
-  it("returns 200 with user and token on valid credentials", async () => {
+  it("returns 200 with user and a secure session cookie on valid credentials", async () => {
     vi.stubGlobal(
       "fetch",
       vi
@@ -60,8 +60,10 @@ describe("POST /api/auth/login", () => {
     const data = await res.json();
     expect(data.user.email).toBe("user@test.com");
     expect(data.user.id).toBe(5);
-    expect(typeof data.token).toBe("string");
-    expect(data.token.length).toBeGreaterThan(0);
+    expect(data.token).toBeUndefined();
+    expect(res.headers.get("set-cookie")).toContain("kubikart_session=");
+    expect(res.headers.get("set-cookie")).toContain("HttpOnly");
+    expect(res.headers.get("set-cookie")).toContain("SameSite=lax");
   });
 
   it("returns 500 on network error", async () => {

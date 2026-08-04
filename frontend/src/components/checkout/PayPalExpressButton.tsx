@@ -1,11 +1,10 @@
 "use client";
 
+import { useRef } from "react";
 import { PayPalScriptProvider, PayPalButtons, FUNDING } from "@paypal/react-paypal-js";
 
 interface PayPalExpressButtonProps {
-  amount: number; // product subtotal e.g. 29.99
-  shippingAmount?: number; // shipping cost e.g. 5.49
-  itemName: string;
+  pendingOrderRequest: Record<string, unknown>;
   onSuccess: (details: {
     id: string;
     payer?: { email?: string; firstName?: string; lastName?: string };
@@ -14,81 +13,40 @@ interface PayPalExpressButtonProps {
   onError: (msg: string) => void;
 }
 
-export default function PayPalExpressButton({ amount, shippingAmount = 0, itemName, onSuccess, onError }: PayPalExpressButtonProps) {
+export default function PayPalExpressButton({ pendingOrderRequest, onSuccess, onError }: PayPalExpressButtonProps) {
+  const pendingOrder = useRef<{ id: number; orderKey: string } | null>(null);
   if (!process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID) return null;
-
-  const totalAmount = amount + shippingAmount;
-
   return (
-    <PayPalScriptProvider
-      options={{
-        clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID,
-        currency: "EUR",
-        intent: "capture",
-      }}
-    >
+    <PayPalScriptProvider options={{ clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID, currency: "EUR", intent: "capture" }}>
       <PayPalButtons
         fundingSource={FUNDING.PAYPAL}
-        style={{
-          layout: "horizontal",
-          shape: "rect",
-          label: "buynow",
-          height: 48,
-          tagline: false,
-        }}
-        createOrder={(_data, actions) => {
-          return actions.order.create({
-            intent: "CAPTURE",
-            purchase_units: [
-              {
-                amount: {
-                  currency_code: "EUR",
-                  value: totalAmount.toFixed(2),
-                  breakdown: {
-                    item_total: { currency_code: "EUR", value: amount.toFixed(2) },
-                    shipping: { currency_code: "EUR", value: shippingAmount.toFixed(2) },
-                  },
-                },
-                description: itemName.slice(0, 127),
-              },
-            ],
-          });
-        }}
-        onApprove={async (_data, actions) => {
-          const details = await actions.order!.capture();
-          if (details.status === "COMPLETED") {
-            const payer = details.payer;
-            const shippingInfo = details.purchase_units?.[0]?.shipping;
-            onSuccess({
-              id: details.id!,
-              payer: payer
-                ? {
-                    email: payer.email_address,
-                    firstName: payer.name?.given_name,
-                    lastName: payer.name?.surname,
-                  }
-                : undefined,
-              shipping: shippingInfo
-                ? {
-                    name: shippingInfo.name?.full_name,
-                    address: shippingInfo.address
-                      ? {
-                          line1: shippingInfo.address.address_line_1,
-                          city: shippingInfo.address.admin_area_2,
-                          postalCode: shippingInfo.address.postal_code,
-                          country: shippingInfo.address.country_code,
-                        }
-                      : undefined,
-                  }
-                : undefined,
+        style={{ layout: "horizontal", shape: "rect", label: "buynow", height: 48, tagline: false }}
+        createOrder={async () => {
+          if (!pendingOrder.current) {
+            const orderResponse = await fetch("/api/orders/create", {
+              method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(pendingOrderRequest),
             });
-          } else {
-            onError("PayPal payment was not completed");
+            const order = await orderResponse.json();
+            if (!orderResponse.ok || !order.id || !order.orderKey) throw new Error(order.error || "Failed to create pending order");
+            pendingOrder.current = { id: order.id, orderKey: order.orderKey };
           }
+          const response = await fetch("/api/paypal/create-order", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(pendingOrder.current),
+          });
+          const order = await response.json();
+          if (!response.ok || !order.id) throw new Error(order.error || "Failed to create PayPal order");
+          return order.id;
         }}
-        onError={(err) => {
-          onError(String(err));
+        onApprove={async (data) => {
+          const response = await fetch("/api/paypal/capture-order", {
+            method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderID: data.orderID }),
+          });
+          const details = await response.json();
+          if (!response.ok || details.status !== "COMPLETED") return onError(details.error || "PayPal payment was not completed");
+          onSuccess({ id: details.id, payer: details.payer ? { email: details.payer.email_address, firstName: details.payer.name?.given_name, lastName: details.payer.name?.surname } : undefined });
         }}
+        onError={(error) => onError(String(error))}
       />
     </PayPalScriptProvider>
   );

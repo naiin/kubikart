@@ -1,9 +1,14 @@
 import type { MetadataRoute } from "next";
-import { getPlaceholderProducts } from "@/lib/product-page";
 import { getProducts, type WCProduct } from "@/lib/woocommerce";
+import {
+  getBusinessIndustries,
+  WordPressUnavailableError,
+  type BusinessIndustry,
+} from "@/lib/wordpress";
 import {
   getAbsoluteUrl,
   getLocalizedPath,
+  isIndexableDeployment,
   SEO_ROUTE_SEGMENTS,
   type LocalizedRouteSegments,
   type SiteLocale,
@@ -22,14 +27,13 @@ type StaticSitemapRoute = {
 const STATIC_SITEMAP_ROUTES: StaticSitemapRoute[] = [
   { route: SEO_ROUTE_SEGMENTS.home, changeFrequency: "weekly", priority: 1 },
   { route: SEO_ROUTE_SEGMENTS.shop, changeFrequency: "daily", priority: 0.95 },
-  { route: SEO_ROUTE_SEGMENTS.personalizedGifts, changeFrequency: "weekly", priority: 0.8 },
   { route: SEO_ROUTE_SEGMENTS.services, changeFrequency: "weekly", priority: 0.85 },
   { route: SEO_ROUTE_SEGMENTS.laserService, changeFrequency: "weekly", priority: 0.8 },
   { route: SEO_ROUTE_SEGMENTS.laserCutting, changeFrequency: "weekly", priority: 0.75 },
   { route: SEO_ROUTE_SEGMENTS.printing3d, changeFrequency: "weekly", priority: 0.8 },
   { route: SEO_ROUTE_SEGMENTS.brandKit, changeFrequency: "monthly", priority: 0.7 },
+  { route: SEO_ROUTE_SEGMENTS.businesses, changeFrequency: "weekly", priority: 0.8 },
   { route: SEO_ROUTE_SEGMENTS.printingMenus, changeFrequency: "monthly", priority: 0.7 },
-  { route: SEO_ROUTE_SEGMENTS.customRequest, changeFrequency: "weekly", priority: 0.8 },
   { route: SEO_ROUTE_SEGMENTS.about, changeFrequency: "monthly", priority: 0.65 },
   { route: SEO_ROUTE_SEGMENTS.contact, changeFrequency: "monthly", priority: 0.7 },
   { route: SEO_ROUTE_SEGMENTS.faq, changeFrequency: "monthly", priority: 0.6 },
@@ -63,7 +67,7 @@ async function fetchPublishedProducts(locale: SiteLocale) {
       break;
     }
 
-    products.push(...batch);
+    products.push(...batch.filter((product) => product.catalog_visibility !== "hidden"));
 
     if (batch.length < PRODUCTS_PER_PAGE) {
       break;
@@ -74,14 +78,59 @@ async function fetchPublishedProducts(locale: SiteLocale) {
 }
 
 function buildAlternates(route: Partial<Record<SiteLocale, string>>) {
+  const languages = Object.fromEntries(
+    Object.entries(route).map(([locale, path]) => [locale, getAbsoluteUrl(path!)])
+  );
+  if (route.de) {
+    languages["x-default"] = getAbsoluteUrl(route.de);
+  }
+
   return {
-    languages: Object.fromEntries(
-      Object.entries(route).map(([locale, path]) => [locale, getAbsoluteUrl(path!)])
-    ),
+    languages,
   };
 }
 
+export function buildIndustrySitemapEntries(
+  industryEntries: Record<SiteLocale, BusinessIndustry[]>,
+  now: Date,
+): MetadataRoute.Sitemap {
+  const entries: MetadataRoute.Sitemap = [];
+  const industryById = new Map<number, BusinessIndustry>();
+  for (const locale of SITEMAP_LOCALES) {
+    for (const industry of industryEntries[locale]) {
+      industryById.set(industry.id, industry);
+    }
+  }
+
+  for (const locale of SITEMAP_LOCALES) {
+    for (const industry of industryEntries[locale]) {
+      const alternates: Partial<Record<SiteLocale, string>> = {
+        [locale]: `/${locale}/businesses/${industry.slug}`,
+      };
+      for (const alternateLocale of SITEMAP_LOCALES) {
+        const translatedId = industry.translations[alternateLocale];
+        const translated = translatedId ? industryById.get(translatedId) : undefined;
+        if (translated && translated.locale === alternateLocale) {
+          alternates[alternateLocale] = `/${alternateLocale}/businesses/${translated.slug}`;
+        }
+      }
+      entries.push({
+        url: getAbsoluteUrl(`/${locale}/businesses/${industry.slug}`),
+        lastModified: industry.modified || now,
+        changeFrequency: "monthly",
+        priority: 0.75,
+        alternates: buildAlternates(alternates),
+      });
+    }
+  }
+  return entries;
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  if (!isIndexableDeployment()) {
+    return [];
+  }
+
   const now = new Date();
   const entries: MetadataRoute.Sitemap = [];
 
@@ -101,7 +150,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
       entries.push({
         url: getAbsoluteUrl(getLocalizedPath(locale, segment)),
-        lastModified: now,
         changeFrequency,
         priority,
         alternates: buildAlternates(localizedRoute),
@@ -114,66 +162,61 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   );
   const productEntries = Object.fromEntries(localizedProducts) as Record<SiteLocale, WCProduct[]>;
 
-  if (!productEntries.de.length && !productEntries.en.length) {
-    for (const product of getPlaceholderProducts()) {
-      const alternates = {
-        de: `/de/shop/${product.slug}`,
-        en: `/en/shop/${product.slug}`,
-      } satisfies Record<SiteLocale, string>;
+  if (productEntries.de.length || productEntries.en.length) {
+    const slugById = new Map<number, Partial<Record<SiteLocale, string>>>();
+    const modifiedBySlug = new Map<string, string | undefined>();
 
-      for (const locale of SITEMAP_LOCALES) {
+    for (const locale of SITEMAP_LOCALES) {
+      for (const product of productEntries[locale]) {
+        const localizedSlugs = slugById.get(product.id) || {};
+        localizedSlugs[locale] = product.slug;
+        slugById.set(product.id, localizedSlugs);
+        modifiedBySlug.set(`${locale}:${product.slug}`, product.date_modified_gmt || product.date_modified);
+      }
+    }
+
+    for (const locale of SITEMAP_LOCALES) {
+      for (const product of productEntries[locale]) {
+        const alternates: Partial<Record<SiteLocale, string>> = {
+          [locale]: `/${locale}/shop/${product.slug}`,
+        };
+
+        for (const alternateLocale of SITEMAP_LOCALES) {
+          const translatedId = product.translations?.[alternateLocale];
+          if (!translatedId) {
+            continue;
+          }
+
+          const translatedSlug = slugById.get(translatedId)?.[alternateLocale];
+          if (translatedSlug) {
+            alternates[alternateLocale] = `/${alternateLocale}/shop/${translatedSlug}`;
+          }
+        }
+
         entries.push({
-          url: getAbsoluteUrl(alternates[locale]),
-          lastModified: now,
+          url: getAbsoluteUrl(`/${locale}/shop/${product.slug}`),
+          lastModified: modifiedBySlug.get(`${locale}:${product.slug}`) || now,
           changeFrequency: "weekly",
           priority: 0.9,
           alternates: buildAlternates(alternates),
         });
       }
     }
-
-    return entries;
   }
 
-  const slugById = new Map<number, Partial<Record<SiteLocale, string>>>();
-  const modifiedBySlug = new Map<string, string | undefined>();
-
-  for (const locale of SITEMAP_LOCALES) {
-    for (const product of productEntries[locale]) {
-      const localizedSlugs = slugById.get(product.id) || {};
-      localizedSlugs[locale] = product.slug;
-      slugById.set(product.id, localizedSlugs);
-      modifiedBySlug.set(`${locale}:${product.slug}`, product.date_modified_gmt || product.date_modified);
+  let industryEntries: Record<SiteLocale, BusinessIndustry[]> = { de: [], en: [] };
+  try {
+    const localizedIndustries = await Promise.all(
+      SITEMAP_LOCALES.map(async (locale) => [locale, await getBusinessIndustries(locale)] as const),
+    );
+    industryEntries = Object.fromEntries(localizedIndustries) as Record<SiteLocale, BusinessIndustry[]>;
+  } catch (error) {
+    if (!(error instanceof WordPressUnavailableError)) {
+      throw error;
     }
   }
 
-  for (const locale of SITEMAP_LOCALES) {
-    for (const product of productEntries[locale]) {
-      const alternates: Partial<Record<SiteLocale, string>> = {
-        [locale]: `/${locale}/shop/${product.slug}`,
-      };
-
-      for (const alternateLocale of SITEMAP_LOCALES) {
-        const translatedId = product.translations?.[alternateLocale];
-        if (!translatedId) {
-          continue;
-        }
-
-        const translatedSlug = slugById.get(translatedId)?.[alternateLocale];
-        if (translatedSlug) {
-          alternates[alternateLocale] = `/${alternateLocale}/shop/${translatedSlug}`;
-        }
-      }
-
-      entries.push({
-        url: getAbsoluteUrl(`/${locale}/shop/${product.slug}`),
-        lastModified: modifiedBySlug.get(`${locale}:${product.slug}`) || now,
-        changeFrequency: "weekly",
-        priority: 0.9,
-        alternates: buildAlternates(alternates),
-      });
-    }
-  }
+  entries.push(...buildIndustrySitemapEntries(industryEntries, now));
 
   return entries;
 }

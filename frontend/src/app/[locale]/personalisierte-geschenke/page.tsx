@@ -21,7 +21,9 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
   return buildPageMetadata({
     locale,
-    routeSegments: SEO_ROUTE_SEGMENTS.personalizedGifts,
+    // This route currently renders the complete shop unchanged. Consolidate
+    // its search signals until it has a genuinely distinct curated landing page.
+    routeSegments: SEO_ROUTE_SEGMENTS.shop,
     title: content.title,
     description: content.description,
   });

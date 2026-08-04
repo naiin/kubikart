@@ -75,33 +75,43 @@ function kubikart_dhl_meta_box_content($post_or_order) {
     echo '<div id="kubikart-dhl-status" style="margin-top:10px;"></div>';
     echo '</div>';
 
-    // Inline JS for AJAX label creation
-    $frontend_url = defined('KUBIKART_FRONTEND_URL') ? KUBIKART_FRONTEND_URL : 'http://localhost:3000';
+    // The browser calls authenticated WordPress AJAX. WordPress then supplies
+    // the DHL label secret in the server-to-server frontend request.
+    $nonce = wp_create_nonce('kubikart_dhl_label');
     ?>
     <script>
     (function() {
-        var frontendUrl = <?php echo json_encode($frontend_url); ?>;
+        var ajaxUrl = <?php echo wp_json_encode(admin_url('admin-ajax.php')); ?>;
+        var nonce = <?php echo wp_json_encode($nonce); ?>;
 
         function createLabel(orderId, type) {
             var statusEl = document.getElementById('kubikart-dhl-status');
             statusEl.innerHTML = '<em>Label wird erstellt...</em>';
 
-            fetch(frontendUrl + '/api/shipping/label', {
+            var requestBody = new URLSearchParams({
+                action: 'kubikart_create_dhl_label',
+                nonce: nonce,
+                orderId: String(parseInt(orderId, 10)),
+                type: type
+            });
+            fetch(ajaxUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderId: parseInt(orderId), type: type })
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                credentials: 'same-origin',
+                body: requestBody.toString()
             })
             .then(function(r) { return r.json(); })
             .then(function(data) {
+                if (data && data.success === false && data.data) data = data.data;
                 if (data.error) {
-                    statusEl.innerHTML = '<span style="color:red;">Fehler: ' + data.error + '</span>';
+                    statusEl.textContent = 'Fehler: ' + data.error;
                 } else {
-                    statusEl.innerHTML = '<span style="color:green;">✓ Label erstellt! Sendungsnr: ' + data.shipmentNo + '</span>';
+                    statusEl.textContent = '✓ Label erstellt! Sendungsnr: ' + data.shipmentNo;
                     setTimeout(function() { location.reload(); }, 1500);
                 }
             })
             .catch(function(err) {
-                statusEl.innerHTML = '<span style="color:red;">Fehler: ' + err.message + '</span>';
+                statusEl.textContent = 'Fehler: ' + err.message;
             });
         }
 
@@ -122,6 +132,50 @@ function kubikart_dhl_meta_box_content($post_or_order) {
     </script>
     <?php
 }
+
+/**
+ * Authenticated WordPress admin proxy for frontend DHL label creation.
+ * KUBIKART_DHL_LABEL_SECRET must equal frontend DHL_LABEL_SECRET.
+ */
+add_action('wp_ajax_kubikart_create_dhl_label', function () {
+    if (!current_user_can('manage_woocommerce')) {
+        wp_send_json_error(['error' => 'Nicht autorisiert.'], 403);
+    }
+    check_ajax_referer('kubikart_dhl_label', 'nonce');
+
+    if (!defined('KUBIKART_FRONTEND_URL') || !defined('KUBIKART_DHL_LABEL_SECRET') || !KUBIKART_DHL_LABEL_SECRET) {
+        wp_send_json_error(['error' => 'DHL-Integration ist nicht konfiguriert.'], 503);
+    }
+
+    $order_id = isset($_POST['orderId']) ? absint(wp_unslash($_POST['orderId'])) : 0;
+    $type = isset($_POST['type']) ? sanitize_key(wp_unslash($_POST['type'])) : 'shipment';
+    if (!$order_id || !in_array($type, ['shipment', 'return'], true)) {
+        wp_send_json_error(['error' => 'Ungültige Anfrage.'], 400);
+    }
+
+    $response = wp_remote_post(trailingslashit(KUBIKART_FRONTEND_URL) . 'api/shipping/label', [
+        'timeout' => 45,
+        'headers' => [
+            'Authorization' => 'Bearer ' . KUBIKART_DHL_LABEL_SECRET,
+            'Content-Type' => 'application/json',
+        ],
+        'body' => wp_json_encode(['orderId' => $order_id, 'type' => $type]),
+    ]);
+
+    if (is_wp_error($response)) {
+        error_log('Kubikart DHL label request failed: ' . $response->get_error_code());
+        wp_send_json_error(['error' => 'DHL-Anfrage fehlgeschlagen.'], 502);
+    }
+
+    $status = wp_remote_retrieve_response_code($response);
+    $data = json_decode(wp_remote_retrieve_body($response), true);
+    if ($status < 200 || $status >= 300 || !is_array($data)) {
+        error_log('Kubikart DHL label endpoint returned HTTP ' . absint($status));
+        wp_send_json_error(['error' => 'DHL-Label konnte nicht erstellt werden.'], 502);
+    }
+
+    wp_send_json($data);
+});
 
 /**
  * Add tracking number column to orders list

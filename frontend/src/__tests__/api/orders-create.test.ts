@@ -22,10 +22,12 @@ describe("POST /api/orders/create", () => {
   });
 
   it("creates a WooCommerce order with mapped line items and metadata", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ id: 321, status: "processing", total: "24.98" }),
-    });
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({
+        id: 15, name: "Laser Keychain", type: "simple", status: "publish", price: "9.99",
+        stock_status: "instock", meta_data: [], weight: "0.2", dimensions: { length: "10", width: "5", height: "2" },
+      }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 321, order_key: "wc_order_test", status: "pending", total: "23.97" }) });
     vi.stubGlobal("fetch", fetchMock);
 
     const { POST } = await import("@/app/api/orders/create/route");
@@ -33,44 +35,44 @@ describe("POST /api/orders/create", () => {
       makeRequest({
         items: [
           {
-            name: "Laser Keychain",
-            product_id: 15,
+            productId: 15,
             quantity: 2,
-            price: "9.99",
-            customizations: { engraving: "Max", material: "Oak" },
           },
         ],
         billing: { first_name: "Max", last_name: "Mustermann", email: "max@test.de" },
-        shipping_lines: [{ method_id: "dhl_paket", method_title: "DHL Paket", total: "4.99" }],
+        shippingMethodId: "dhl_kleinpaket",
         payment_method: "stripe",
         payment_method_title: "Kreditkarte",
-        transaction_id: "pi_123",
-        set_paid: true,
       }) as never,
     );
 
     expect(res.status).toBe(200);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await expect(res.clone().json()).resolves.toMatchObject({ id: 321, orderKey: "wc_order_test", status: "pending" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
 
-    const [url, options] = fetchMock.mock.calls[0];
-    expect(String(url)).toContain("/orders?");
+    const [url, options] = fetchMock.mock.calls[1];
+    expect(String(url)).toContain("/orders");
+    expect((options as RequestInit).headers).toMatchObject({
+      Authorization: expect.stringMatching(/^Basic /),
+    });
 
     const body = JSON.parse((options as RequestInit).body as string);
-    expect(body.status).toBe("processing");
-    expect(body.transaction_id).toBe("pi_123");
+    expect(body.meta_data).toEqual(expect.arrayContaining([
+      { key: "_kubikart_transactional_email_owner", value: "mailtrap" },
+      { key: "_kubikart_payment_email_status", value: "pending" },
+    ]));
+    expect(body.status).toBe("pending");
+    expect(body.set_paid).toBe(false);
+    expect(body.transaction_id).toBeUndefined();
     expect(body.line_items).toEqual([
       {
-        name: "Laser Keychain",
         product_id: 15,
         quantity: 2,
+        subtotal: "19.98",
         total: "19.98",
-        meta_data: [
-          { key: "engraving", value: "Max" },
-          { key: "material", value: "Oak" },
-        ],
       },
     ]);
-    expect(body.shipping_lines).toEqual([{ method_id: "dhl_paket", method_title: "DHL Paket", total: "4.99" }]);
+    expect(body.shipping_lines).toEqual([{ method_id: "dhl_kleinpaket", method_title: "DHL Kleinpaket", total: "3.99" }]);
   });
 
   it("returns 500 when WooCommerce order creation fails", async () => {
@@ -78,7 +80,7 @@ describe("POST /api/orders/create", () => {
     const { POST } = await import("@/app/api/orders/create/route");
     const res = await POST(
       makeRequest({
-        items: [{ name: "Acrylic Sign", quantity: 1, price: "12.00" }],
+        items: [{ productId: 12, quantity: 1 }],
         billing: { email: "test@example.com" },
         payment_method: "paypal",
         payment_method_title: "PayPal",
