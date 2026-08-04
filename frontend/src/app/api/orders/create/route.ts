@@ -77,7 +77,14 @@ export async function POST(request: NextRequest) {
       payment_method_title: body.payment_method_title,
       set_paid: false,
       line_items: lineItems,
-      meta_data: [{ key: "locale", value: locale }],
+      meta_data: [
+        { key: "locale", value: locale },
+        { key: "_kubikart_transactional_email_owner", value: "mailtrap" },
+        { key: "_kubikart_payment_email_status", value: "pending" },
+        { key: "_kubikart_payment_email_attempted_at", value: "" },
+        { key: "_kubikart_payment_email_sent_at", value: "" },
+        { key: "_kubikart_payment_email_last_error", value: "" },
+      ],
     };
 
     if (session) {

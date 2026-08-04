@@ -226,8 +226,7 @@ function resolveStatusTemplateUuid(statusVariant: "pending" | "processing" | "sh
  */
 export async function sendEmail({ to, templateUuid, variables = {}, attachments = [] }: EmailParams): Promise<void> {
   if (!process.env.MAILTRAP_TOKEN) {
-    console.error("MAILTRAP_TOKEN not configured");
-    return;
+    throw new Error("MAILTRAP_TOKEN is not configured");
   }
 
   if (!templateUuid) {

@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { markWooOrderPaid, PaymentTransitionError } from "@/lib/payment-transition";
-import { sendWooOrderStatusEmail } from "@/lib/order-status-email";
+import { deliverWooOrderPaidEmail } from "@/lib/order-status-email";
+import { requireRuntimeEnvPair } from "@/lib/runtime-config";
 
 const PAYPAL_BASE = process.env.PAYPAL_MODE === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
 
-const PAYPAL_CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID!;
-const PAYPAL_SECRET = process.env.PAYPAL_SECRET || "";
-
 async function getAccessToken(): Promise<string> {
+  const [clientId, secret] = requireRuntimeEnvPair("NEXT_PUBLIC_PAYPAL_CLIENT_ID", "PAYPAL_SECRET");
   const res = await fetch(`${PAYPAL_BASE}/v1/oauth2/token`, {
     method: "POST",
     headers: {
-      Authorization: `Basic ${Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_SECRET}`).toString("base64")}`,
+      Authorization: `Basic ${Buffer.from(`${clientId}:${secret}`).toString("base64")}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: "grant_type=client_credentials",
@@ -55,7 +54,7 @@ export async function POST(request: NextRequest) {
     if (data.status === "COMPLETED" && Number.isInteger(wcOrderId) && wcOrderId > 0) {
       const capture = purchaseUnit?.payments?.captures?.find((entry: { status?: string }) => entry.status === "COMPLETED");
       const paidAmount = capture?.amount || purchaseUnit?.amount;
-      const transition = await markWooOrderPaid({
+      await markWooOrderPaid({
         orderId: wcOrderId,
         transactionId: data.id,
         amountCents: Math.round(Number(paidAmount?.value) * 100),
@@ -82,7 +81,7 @@ export async function POST(request: NextRequest) {
           } : {}),
         },
       });
-      if (transition.changed) await sendWooOrderStatusEmail(wcOrderId);
+      await deliverWooOrderPaidEmail(wcOrderId);
     }
     return NextResponse.json({
       status: data.status,

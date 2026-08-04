@@ -45,7 +45,7 @@ export default function CartPage() {
             {cart.map((item) => (
               <div
                 key={getCartLineId(item)}
-                className="grid min-w-0 grid-cols-[4rem_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-3 py-4 sm:grid-cols-[5rem_minmax(0,1fr)_auto_5rem_2.75rem] sm:items-center sm:gap-4"
+                className="grid min-w-0 grid-cols-[4rem_minmax(0,1fr)_2.75rem] items-start gap-x-3 gap-y-3 py-4 sm:grid-cols-[5rem_minmax(0,1fr)_auto_5rem_2.75rem] sm:items-center sm:gap-4"
               >
                 {/* Image */}
                 <div className="row-span-2 h-16 w-16 overflow-hidden rounded-lg bg-gray-100 sm:row-span-1 sm:h-20 sm:w-20">
@@ -57,7 +57,7 @@ export default function CartPage() {
                 </div>
 
                 {/* Details */}
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 break-words [overflow-wrap:anywhere]">
                   <Link href={item.slug ? `/shop/${item.slug}` : "/shop"} className="text-sm font-medium text-gray-900 hover:text-navy-900">
                     {item.name}
                   </Link>
@@ -91,7 +91,7 @@ export default function CartPage() {
                 </div>
 
                 {/* Line Total */}
-                <div className="col-start-3 row-start-2 justify-self-end text-right sm:col-start-4 sm:row-start-1 sm:w-20">
+                <div className="col-start-2 row-start-3 justify-self-start text-right sm:col-start-4 sm:row-start-1 sm:w-20 sm:justify-self-end">
                   <span className="text-sm font-semibold text-gray-900">€{(parseFloat(item.price) * item.quantity).toFixed(2)}</span>
                 </div>
 

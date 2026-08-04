@@ -2,7 +2,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { CACHE_TAGS } from "@/lib/woocommerce";
 import { WORDPRESS_CACHE_TAGS } from "@/lib/wordpress";
-import { createHmac } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
 
 const EXPIRE_IMMEDIATELY = { expire: 0 };
 
@@ -27,7 +27,9 @@ async function verifyWooCommerceSignature(request: NextRequest, body: string): P
 
   const expectedSignature = createHmac("sha256", secret).update(body).digest("base64");
 
-  return signature === expectedSignature;
+  const supplied = Buffer.from(signature);
+  const expected = Buffer.from(expectedSignature);
+  return supplied.length === expected.length && timingSafeEqual(supplied, expected);
 }
 
 export async function POST(request: NextRequest) {

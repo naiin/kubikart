@@ -47,4 +47,28 @@ describe("verified payment transitions", () => {
     await expect(markWooOrderPaid({ ...payment, amountCents: 100 })).rejects.toMatchObject({ status: 409 });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+
+  it("rejects a verified provider payment with a mismatched currency", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 321, status: "pending", total: "57.50", currency: "EUR" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { markWooOrderPaid } = await import("@/lib/payment-transition");
+    await expect(markWooOrderPaid({ ...payment, currency: "USD" })).rejects.toMatchObject({ status: 409 });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not update an unknown WooCommerce order", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      statusText: "Not Found",
+      text: async () => "not found",
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { markWooOrderPaid } = await import("@/lib/payment-transition");
+    await expect(markWooOrderPaid(payment)).rejects.toThrow("WooCommerce API error: 404 Not Found");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 });

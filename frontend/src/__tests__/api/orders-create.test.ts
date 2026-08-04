@@ -57,6 +57,10 @@ describe("POST /api/orders/create", () => {
     });
 
     const body = JSON.parse((options as RequestInit).body as string);
+    expect(body.meta_data).toEqual(expect.arrayContaining([
+      { key: "_kubikart_transactional_email_owner", value: "mailtrap" },
+      { key: "_kubikart_payment_email_status", value: "pending" },
+    ]));
     expect(body.status).toBe("pending");
     expect(body.set_paid).toBe(false);
     expect(body.transaction_id).toBeUndefined();

@@ -116,6 +116,11 @@ class WP_REST_Request {
     }
 }
 
+class WC_Order {
+    public function __construct(private array $meta = []) {}
+    public function get_meta(string $key): mixed { return $this->meta[$key] ?? ''; }
+}
+
 // ---------------------------------------------------------------------------
 // Mockable WP functions
 // Swap implementations via $GLOBALS['_wp_mock_{name}'] in tests.

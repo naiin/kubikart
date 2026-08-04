@@ -1,19 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { wcApi } from "@/lib/woocommerce";
-import { sendOrderStatusUpdate } from "@/lib/email";
 import { markWooOrderPaid } from "@/lib/payment-transition";
-import { sendWooOrderStatusEmail } from "@/lib/order-status-email";
+import { deliverWooOrderPaidEmail } from "@/lib/order-status-email";
+import { requireRuntimeEnv, requireRuntimeEnvPair } from "@/lib/runtime-config";
 
 const PAYPAL_BASE = process.env.PAYPAL_MODE === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
-const PAYPAL_CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID!;
-const PAYPAL_SECRET = process.env.PAYPAL_SECRET || "";
-const PAYPAL_WEBHOOK_ID = process.env.PAYPAL_WEBHOOK_ID || "";
-
 async function getPayPalAccessToken(): Promise<string> {
+  const [clientId, secret] = requireRuntimeEnvPair("NEXT_PUBLIC_PAYPAL_CLIENT_ID", "PAYPAL_SECRET");
   const res = await fetch(`${PAYPAL_BASE}/v1/oauth2/token`, {
     method: "POST",
     headers: {
-      Authorization: `Basic ${Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_SECRET}`).toString("base64")}`,
+      Authorization: `Basic ${Buffer.from(`${clientId}:${secret}`).toString("base64")}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: "grant_type=client_credentials",
@@ -24,7 +21,10 @@ async function getPayPalAccessToken(): Promise<string> {
 }
 
 async function verifyPayPalWebhook(request: NextRequest, rawBody: string): Promise<boolean> {
-  if (!PAYPAL_WEBHOOK_ID) {
+  let webhookId: string;
+  try {
+    webhookId = requireRuntimeEnv("PAYPAL_WEBHOOK_ID");
+  } catch {
     console.error("[PayPal] PAYPAL_WEBHOOK_ID is not configured");
     return false;
   }
@@ -54,7 +54,7 @@ async function verifyPayPalWebhook(request: NextRequest, rawBody: string): Promi
         transmission_id: transmissionId,
         transmission_sig: transmissionSig,
         transmission_time: transmissionTime,
-        webhook_id: PAYPAL_WEBHOOK_ID,
+        webhook_id: webhookId,
         webhook_event: JSON.parse(rawBody),
       }),
     });
@@ -66,40 +66,6 @@ async function verifyPayPalWebhook(request: NextRequest, rawBody: string): Promi
     console.error("[PayPal] Webhook verification failed:", err);
     return false;
   }
-}
-
-function extractTrackingUrl(metaData?: Array<{ key: string; value: unknown }>): string | undefined {
-  if (!metaData || metaData.length === 0) {
-    return undefined;
-  }
-
-  for (const item of metaData) {
-    const key = item.key.toLowerCase();
-    const value = item.value;
-
-    if (typeof value === "string") {
-      if (value.startsWith("http") && key.includes("tracking")) {
-        return value;
-      }
-
-      if (key.includes("tracking_url") && value.startsWith("http")) {
-        return value;
-      }
-    }
-
-    if (Array.isArray(value)) {
-      for (const entry of value) {
-        if (entry && typeof entry === "object") {
-          const trackingLink = (entry as Record<string, unknown>).tracking_link;
-          if (typeof trackingLink === "string" && trackingLink.startsWith("http")) {
-            return trackingLink;
-          }
-        }
-      }
-    }
-  }
-
-  return undefined;
 }
 
 export async function POST(request: NextRequest) {
@@ -121,20 +87,24 @@ export async function POST(request: NextRequest) {
         const orderId = event.resource.supplementary_data?.related_ids?.order_id;
         const wcOrderId = Number(event.resource.custom_id);
         if (orderId && wcOrderId) {
-          const transition = await markWooOrderPaid({
+          await markWooOrderPaid({
             orderId: wcOrderId, transactionId: orderId,
             amountCents: Math.round(Number(event.resource.amount?.value) * 100),
             currency: String(event.resource.amount?.currency_code || ""),
             paymentMethod: "ppcp-gateway", paymentMethodTitle: "PayPal",
           });
-          if (transition.changed) await sendWooOrderStatusEmail(wcOrderId);
+          await deliverWooOrderPaidEmail(wcOrderId);
         }
         break;
       }
       case "PAYMENT.CAPTURE.REFUNDED": {
         const orderId = event.resource.supplementary_data?.related_ids?.order_id;
         if (orderId) {
-          await updateOrderByTransaction(orderId, "refunded");
+          await handleRefundByTransaction(
+            orderId,
+            Number(event.resource.amount?.value),
+            String(event.resource.amount?.currency_code || ""),
+          );
         }
         break;
       }
@@ -162,6 +132,32 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ received: true });
 }
 
+async function handleRefundByTransaction(transactionId: string, refundedAmount: number, currency: string) {
+  const order = (await wcApi<Array<{ id: number; status: string; total: string; currency: string }>>("orders", {
+    params: { search: transactionId, per_page: 1 },
+    revalidate: 0,
+  }))[0];
+  if (!order) {
+    console.warn(`No WC order found for refunded PayPal transaction: ${transactionId}`);
+    return;
+  }
+
+  const orderCents = Math.round(Number(order.total) * 100);
+  const refundCents = Math.round(refundedAmount * 100);
+  if (Number.isSafeInteger(refundCents) && refundCents > 0 && refundCents === orderCents && currency.toUpperCase() === order.currency) {
+    await updateOrderByTransaction(transactionId, "refunded", undefined, order.id);
+    return;
+  }
+
+  await wcApi(`orders/${order.id}/notes`, {
+    method: "POST",
+    body: {
+      note: "PayPal reported a partial or currency-mismatched refund. Reconcile the refund manually in WooCommerce and PayPal.",
+      customer_note: false,
+    },
+  });
+}
+
 async function updateOrderByTransaction(transactionId: string, status: string, note?: string, boundOrderId?: number) {
   const order = Number.isInteger(boundOrderId) && Number(boundOrderId) > 0
     ? await wcApi<{ id: number; status: string }>(`orders/${boundOrderId}`, { revalidate: 0 })
@@ -187,36 +183,4 @@ async function updateOrderByTransaction(transactionId: string, status: string, n
     });
   }
 
-  try {
-    const fullOrder = await wcApi<{
-      id: number;
-      status: string;
-      billing?: { email?: string; first_name?: string; last_name?: string };
-      meta_data?: Array<{ key: string; value: unknown }>;
-    }>(`orders/${order.id}`);
-
-    const email = fullOrder.billing?.email;
-    if (!email) {
-      return;
-    }
-
-    const localeMeta = fullOrder.meta_data?.find((m) => m.key === "locale")?.value;
-    const locale = String(localeMeta || "de").startsWith("en") ? "en" : "de";
-    const customerName = `${fullOrder.billing?.first_name || ""} ${fullOrder.billing?.last_name || ""}`.trim() || "Kunde";
-    const trackingUrl = extractTrackingUrl(fullOrder.meta_data);
-
-    await sendOrderStatusUpdate(
-      email,
-      {
-        orderId: fullOrder.id,
-        orderNumber: `#${fullOrder.id}`,
-        status: fullOrder.status,
-        customerName,
-        trackingUrl,
-      },
-      locale,
-    );
-  } catch (err) {
-    console.error("Failed to send PayPal status update email:", err);
-  }
 }

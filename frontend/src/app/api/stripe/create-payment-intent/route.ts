@@ -2,13 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { serverCartErrorResponse } from "@/lib/server-cart";
 import { verifyPendingPaymentOrder } from "@/lib/payment-order";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2026-05-27.dahlia",
-});
+import { requireRuntimeEnv } from "@/lib/runtime-config";
 
 export async function POST(request: NextRequest) {
   try {
+    const stripe = new Stripe(requireRuntimeEnv("STRIPE_SECRET_KEY"), { apiVersion: "2026-05-27.dahlia" });
     const body = await request.json();
     const order = await verifyPendingPaymentOrder(body);
     if (order.totalCents < 50) {

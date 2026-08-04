@@ -49,6 +49,22 @@ function kubikart_register_frontend_integration_role(): void
 }
 add_action('init', 'kubikart_register_frontend_integration_role');
 
+/**
+ * Next.js/Mailtrap owns payment-status customer mail for orders carrying this
+ * explicit marker. WooCommerce continues to own all other order mail.
+ */
+function kubikart_mailtrap_owns_payment_email($enabled, $order): bool
+{
+    if (!$order instanceof WC_Order) {
+        return (bool) $enabled;
+    }
+
+    return $order->get_meta('_kubikart_transactional_email_owner') === 'mailtrap'
+        ? false
+        : (bool) $enabled;
+}
+add_filter('woocommerce_email_enabled_customer_processing_order', 'kubikart_mailtrap_owns_payment_email', 10, 2);
+
 // ============================================================
 // 1. Disable XML-RPC completely (prevents brute force & DDoS)
 // ============================================================

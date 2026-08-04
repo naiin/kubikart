@@ -1,58 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { wcApi } from "@/lib/woocommerce";
-import { sendOrderStatusUpdate } from "@/lib/email";
 import { markWooOrderPaid } from "@/lib/payment-transition";
-import { sendWooOrderStatusEmail } from "@/lib/order-status-email";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
-
-function extractTrackingUrl(metaData?: Array<{ key: string; value: unknown }>): string | undefined {
-  if (!metaData || metaData.length === 0) {
-    return undefined;
-  }
-
-  for (const item of metaData) {
-    const key = item.key.toLowerCase();
-    const value = item.value;
-
-    if (typeof value === "string") {
-      if (value.startsWith("http") && key.includes("tracking")) {
-        return value;
-      }
-
-      if (key.includes("tracking_url") && value.startsWith("http")) {
-        return value;
-      }
-    }
-
-    if (Array.isArray(value)) {
-      for (const entry of value) {
-        if (entry && typeof entry === "object") {
-          const trackingLink = (entry as Record<string, unknown>).tracking_link;
-          if (typeof trackingLink === "string" && trackingLink.startsWith("http")) {
-            return trackingLink;
-          }
-        }
-      }
-    }
-  }
-
-  return undefined;
-}
+import { deliverWooOrderPaidEmail } from "@/lib/order-status-email";
+import { requireRuntimeEnv } from "@/lib/runtime-config";
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
   const sig = request.headers.get("stripe-signature");
+  let webhookSecret: string;
+  let stripe: Stripe;
 
-  if (!sig || !WEBHOOK_SECRET) {
+  try {
+    webhookSecret = requireRuntimeEnv("STRIPE_WEBHOOK_SECRET");
+    stripe = new Stripe(requireRuntimeEnv("STRIPE_SECRET_KEY"));
+  } catch {
+    return NextResponse.json({ error: "Webhook verification is not configured" }, { status: 503 });
+  }
+
+  if (!sig) {
     return NextResponse.json({ error: "Missing signature or secret" }, { status: 400 });
   }
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(body, sig, WEBHOOK_SECRET);
+    event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
   } catch (err) {
     console.error("Stripe webhook signature verification failed:", err);
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
@@ -62,12 +34,12 @@ export async function POST(request: NextRequest) {
     switch (event.type) {
       case "payment_intent.succeeded": {
         const pi = event.data.object as Stripe.PaymentIntent;
-        const transition = await markWooOrderPaid({
+        await markWooOrderPaid({
           orderId: Number(pi.metadata.wc_order_id), transactionId: pi.id,
           amountCents: pi.amount_received || pi.amount, currency: pi.currency.toUpperCase(),
           paymentMethod: "stripe", paymentMethodTitle: "Stripe",
         });
-        if (transition.changed) await sendWooOrderStatusEmail(Number(pi.metadata.wc_order_id));
+        await deliverWooOrderPaidEmail(Number(pi.metadata.wc_order_id));
         break;
       }
       case "payment_intent.payment_failed": {
@@ -127,36 +99,4 @@ async function updateOrderStatus(transactionId: string, status: string, note?: s
     });
   }
 
-  try {
-    const fullOrder = await wcApi<{
-      id: number;
-      status: string;
-      billing?: { email?: string; first_name?: string; last_name?: string };
-      meta_data?: Array<{ key: string; value: unknown }>;
-    }>(`orders/${order.id}`);
-
-    const email = fullOrder.billing?.email;
-    if (!email) {
-      return;
-    }
-
-    const localeMeta = fullOrder.meta_data?.find((m) => m.key === "locale")?.value;
-    const locale = String(localeMeta || "de").startsWith("en") ? "en" : "de";
-    const customerName = `${fullOrder.billing?.first_name || ""} ${fullOrder.billing?.last_name || ""}`.trim() || "Kunde";
-    const trackingUrl = extractTrackingUrl(fullOrder.meta_data);
-
-    await sendOrderStatusUpdate(
-      email,
-      {
-        orderId: fullOrder.id,
-        orderNumber: `#${fullOrder.id}`,
-        status: fullOrder.status,
-        customerName,
-        trackingUrl,
-      },
-      locale,
-    );
-  } catch (err) {
-    console.error("Failed to send Stripe status update email:", err);
-  }
 }

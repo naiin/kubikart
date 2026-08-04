@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { serverCartErrorResponse } from "@/lib/server-cart";
 import { verifyPendingPaymentOrder } from "@/lib/payment-order";
+import { requireRuntimeEnvPair } from "@/lib/runtime-config";
 
 const PAYPAL_BASE = process.env.PAYPAL_MODE === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
 
-const PAYPAL_CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID!;
-const PAYPAL_SECRET = process.env.PAYPAL_SECRET || "";
-
 async function getAccessToken(): Promise<string> {
+  const [clientId, secret] = requireRuntimeEnvPair("NEXT_PUBLIC_PAYPAL_CLIENT_ID", "PAYPAL_SECRET");
   const res = await fetch(`${PAYPAL_BASE}/v1/oauth2/token`, {
     method: "POST",
     headers: {
-      Authorization: `Basic ${Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_SECRET}`).toString("base64")}`,
+      Authorization: `Basic ${Buffer.from(`${clientId}:${secret}`).toString("base64")}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: "grant_type=client_credentials",

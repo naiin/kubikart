@@ -25,7 +25,12 @@ export function getApiRateLimitPolicy(pathname: string): RateLimitPolicy {
 export async function applyRateLimit(key: string, policy: RateLimitPolicy): Promise<RateLimitResult> {
   const restUrl = process.env.UPSTASH_REDIS_REST_URL;
   const restToken = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!restUrl || !restToken) return localRateLimit(key, policy);
+  if (!restUrl || !restToken) {
+    if (isProductionRuntime()) {
+      throw new Error("Distributed rate limiting is required in production");
+    }
+    return localRateLimit(key, policy);
+  }
 
   const script = "local c=redis.call('INCR',KEYS[1]); if c==1 then redis.call('PEXPIRE',KEYS[1],ARGV[1]) end; return {c,redis.call('PTTL',KEYS[1])}";
   try {
@@ -42,7 +47,11 @@ export async function applyRateLimit(key: string, policy: RateLimitPolicy): Prom
     if (!Number.isFinite(count) || !Number.isFinite(ttl)) throw new Error("Invalid rate-limit store response");
     return { allowed: count <= policy.limit, remaining: Math.max(0, policy.limit - count), retryAfterSeconds: Math.max(1, Math.ceil(ttl / 1000)) };
   } catch (error) {
-    console.error("Distributed rate limiting unavailable; using process-local fallback:", error);
+    if (isProductionRuntime()) {
+      console.error("Distributed rate limiting unavailable in production");
+      throw new Error("Distributed rate limiting unavailable", { cause: error });
+    }
+    console.error("Distributed rate limiting unavailable; using process-local development fallback");
     return localRateLimit(key, policy);
   }
 }
@@ -50,3 +59,4 @@ export async function applyRateLimit(key: string, policy: RateLimitPolicy): Prom
 export function resetLocalRateLimitsForTests() {
   localCounters.clear();
 }
+import { isProductionRuntime } from "@/lib/runtime-config";

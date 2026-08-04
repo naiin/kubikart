@@ -53,6 +53,20 @@ class KubikartSecurityTest extends TestCase
         $this->assertFalse(apply_filters('wp_is_application_passwords_available_for_user', true, $subscriber));
     }
 
+    public function test_mailtrap_owned_order_suppresses_only_processing_email(): void
+    {
+        $order = new WC_Order(['_kubikart_transactional_email_owner' => 'mailtrap']);
+        $this->assertFalse(apply_filters('woocommerce_email_enabled_customer_processing_order', true, $order));
+        $this->assertTrue(apply_filters('woocommerce_email_enabled_customer_refunded_order', true, $order));
+        $this->assertTrue(apply_filters('woocommerce_email_enabled_customer_failed_order', true, $order));
+    }
+
+    public function test_regular_woocommerce_order_keeps_processing_email(): void
+    {
+        $order = new WC_Order();
+        $this->assertTrue(apply_filters('woocommerce_email_enabled_customer_processing_order', true, $order));
+    }
+
     // ── REST route registration ───────────────────────────────────────────────
 
     public function test_forgot_password_route_is_registered(): void

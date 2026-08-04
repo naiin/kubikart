@@ -40,7 +40,7 @@ export function HomeHero() {
         <div className="relative min-w-0">
           <div className="relative min-h-[25rem] overflow-hidden rounded-kubikart-xl bg-brand sm:min-h-[32rem] lg:min-h-[36rem]">
             <Image
-              src="/images/home/kubikart-business-visibility-hero.webp"
+              src="/images/home/kubikart-business-visibility-hero.png"
               alt={t("imageAlt")}
               fill
               priority

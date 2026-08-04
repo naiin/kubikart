@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 import { wcApi } from "@/lib/woocommerce";
 import {
   createDHLShipment,
@@ -41,7 +42,11 @@ export async function POST(request: NextRequest) {
   try {
     const configuredSecret = process.env.DHL_LABEL_SECRET;
     const suppliedSecret = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-    if (!configuredSecret || suppliedSecret !== configuredSecret) {
+    const configuredBuffer = Buffer.from(configuredSecret || "");
+    const suppliedBuffer = Buffer.from(suppliedSecret || "");
+    const authorized = configuredBuffer.length > 0 && configuredBuffer.length === suppliedBuffer.length
+      && timingSafeEqual(configuredBuffer, suppliedBuffer);
+    if (!authorized) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

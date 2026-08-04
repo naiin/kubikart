@@ -58,6 +58,18 @@ describe("POST /api/shipping/label", () => {
     expect(wcApiMock).not.toHaveBeenCalled();
   });
 
+  it("rejects an incorrect internal label secret", async () => {
+    const { POST } = await import("@/app/api/shipping/label/route");
+    const request = new Request("http://localhost:3000/api/shipping/label", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer wrong-secret" },
+      body: JSON.stringify({ orderId: 55 }),
+    });
+    const res = await POST(request as never);
+    expect(res.status).toBe(401);
+    expect(wcApiMock).not.toHaveBeenCalled();
+  });
+
   it("returns 400 when orderId is missing", async () => {
     const { POST } = await import("@/app/api/shipping/label/route");
     const res = await POST(makeRequest({}) as never);
