@@ -13,23 +13,57 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate deployment configuration
+        env:
+          STRATO_SSH_PRIVATE_KEY: ${{ secrets.STRATO_SSH_PRIVATE_KEY }}
+          STRATO_SSH_HOST: ${{ secrets.STRATO_SSH_HOST }}
+          STRATO_SSH_USER: ${{ secrets.STRATO_SSH_USER }}
+          STRATO_REMOTE_APP_DIR: ${{ secrets.STRATO_REMOTE_APP_DIR }}
+          STRATO_DB_HOST: ${{ secrets.STRATO_DB_HOST }}
+          STRATO_DB_NAME: ${{ secrets.STRATO_DB_NAME }}
+          STRATO_DB_USER: ${{ secrets.STRATO_DB_USER }}
+          STRATO_DB_PASS: ${{ secrets.STRATO_DB_PASS }}
+          HAS_DB_MIGRATIONS: ${{ hashFiles('backend/db/migrations/*.sql') != '' }}
+        run: |
+          missing=0
+          for name in \
+            STRATO_SSH_PRIVATE_KEY \
+            STRATO_SSH_HOST \
+            STRATO_SSH_USER
+          do
+            if [ -z "${!name:-}" ]; then
+              echo "Missing required GitHub Actions secret: $name" >&2
+              missing=1
+            fi
+          done
+          if [ "$HAS_DB_MIGRATIONS" = "true" ]; then
+            for name in STRATO_DB_HOST STRATO_DB_NAME STRATO_DB_USER STRATO_DB_PASS
+            do
+              if [ -z "${!name:-}" ]; then
+                echo "Missing required GitHub Actions secret: $name" >&2
+                missing=1
+              fi
+            done
+          fi
+          exit "$missing"
+
       - name: Prepare SSH key
         env:
           SSH_PRIVATE_KEY: ${{ secrets.STRATO_SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.STRATO_SSH_HOST }}
         run: |
-          if [ -z "$SSH_PRIVATE_KEY" ]; then
-            echo "Missing secret STRATO_SSH_PRIVATE_KEY" >&2
-            exit 1
-          fi
           mkdir -p ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H "${{ secrets.STRATO_SSH_HOST }}" >> ~/.ssh/known_hosts
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
 
       - name: Deploy backend files
         env:
