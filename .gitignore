@@ -63,6 +63,7 @@ backend/wordpress/wp-content/languages/
 
 # WordPress config with secrets
 backend/wordpress/wp-config.php
+backend/.env.deploy.local
 
 # ============================================================
 # Backend — PHP dependencies

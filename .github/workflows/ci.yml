@@ -45,6 +45,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Validate local backend deployment tool
+        run: python3 -m py_compile backend/deploy-backend.py
+
       - uses: pnpm/action-setup@v4
         with:
           version: 11.5.0
