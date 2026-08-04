@@ -10,9 +10,8 @@ database credentials or a production `wp-config.php`. The tracked
 1. Copy `.env.deploy.local.example` to `.env.deploy.local`.
 2. Configure the SSH target, exact WordPress path, database host/name/user,
    WordPress URL, and frontend URL.
-3. Normally leave `REMOTE_DB_PASSWORD` empty. The script reads the existing
-   value from the remote `wp-config.php` over authenticated SSH before replacing
-   anything. A local value is only an optional override.
+3. Set `REMOTE_DB_PASSWORD` in the ignored `.env.deploy.local` file. It is used
+   only in owner-readable temporary MySQL configuration files.
 4. Restrict the file:
 
    ```bash
@@ -26,10 +25,11 @@ The server must contain the public half of a local SSH key in
 machine. Set `DEPLOY_SSH_KEY` only when the default SSH agent/key selection is
 not correct.
 
-Strato database connections are executed by its command-line MySQL client over
-the same SSH session. The deployer uploads an owner-readable temporary client
-configuration, streams backups and imports through SSH, and removes that file
-when the run finishes. Direct external access to port 3306 is not required.
+Strato database commands are executed by its command-line MySQL client over the
+SSH session. The deployer uploads an owner-readable temporary client config and
+SQL archive, restores that archive on the host, and removes both temporary files
+when the run finishes. Direct external access to port 3306 is neither used nor
+required.
 
 ## Preflight and backup
 
@@ -50,7 +50,7 @@ backend/backups/production-deployments/<timestamp>/
 The directory contains:
 
 - the remote database before deployment (`.sql.gz`)
-- the complete remote WordPress files before deployment (`.tar.gz`)
+- the complete remote `wp-content` before deployment (`.tar.gz`)
 - the local database selected for deployment (`.sql.gz`)
 - SHA-256 checksums
 
@@ -69,19 +69,21 @@ confirmation sentence is typed exactly.
 
 The deployment then:
 
-1. replaces the remote WordPress files from `backend/wordpress`
-2. deletes remote-only files so the remote tree matches the local source,
-   preserving only the separately generated production `wp-config.php`
-3. installs a generated production `wp-config.php`
-4. drops the target database objects and imports the local Lando database
-5. automatically restores the database backup when import fails
-6. performs a serialized-safe URL replacement through remote WP-CLI
-7. verifies the database, site URL, WooCommerce, products, users, and REST API
+1. synchronizes `backend/wordpress/wp-content/` to remote `wp-content/` over SSH
+2. generates ignored local `wp-config-remote.php` without modifying local `wp-config.php`
+3. uploads it and atomically renames it to remote `wp-config.php`
+4. uploads the exported local `.sql.gz` archive to Strato
+5. drops the target database objects and restores the uploaded archive using
+   Strato's MySQL client
+6. automatically uploads and restores the pre-deployment backup if import fails
+7. removes remote temporary SQL and MySQL credential files
+8. performs serialized-safe URL replacement through remote WP-CLI
+9. verifies the database, site URL, WooCommerce, products, users, and REST API
 
-The tracked `backend/wordpress/wp-config.php` continues to point exclusively to
-the local Lando database and uses development-only salts. Production connection
-values are generated only into the remote config during deployment; they are
-never committed or copied from the local file.
+The tracked `backend/wordpress/wp-config.php` remains unchanged and points to
+the local Lando database. The generated `backend/wordpress/wp-config-remote.php`
+is ignored by Git, contains production connection values, is uploaded and
+renamed on Strato, and is deleted locally when the script exits.
 
 ## Recovery
 

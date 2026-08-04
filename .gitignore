@@ -39,6 +39,8 @@ frontend/.env.staging
 backend/wordpress/*
 !backend/wordpress/.htaccess
 !backend/wordpress/wp-config.php
+backend/wordpress/wp-config-remote.php
+backend/wordpress/wp-config-remot.php
 
 # ... but keep our custom content directories
 !backend/wordpress/wp-content

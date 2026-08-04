@@ -21,7 +21,7 @@ import sys
 import tempfile
 import urllib.error
 import urllib.request
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -29,6 +29,8 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent
 LOCAL_WORDPRESS_DIR = SCRIPT_DIR / "wordpress"
+LOCAL_WP_CONTENT_DIR = LOCAL_WORDPRESS_DIR / "wp-content"
+REMOTE_CONFIG_FILE = LOCAL_WORDPRESS_DIR / "wp-config-remote.php"
 LOCAL_ENV_FILE = SCRIPT_DIR / ".env.deploy.local"
 BACKUP_ROOT = SCRIPT_DIR / "backups" / "production-deployments"
 EXPECTED_REMOTE_ROOT = "/home/www/STRATO-apps/wordpress_01/"
@@ -99,7 +101,7 @@ def read_config() -> Config:
         db_host=required_env("REMOTE_DB_HOST"),
         db_name=required_env("REMOTE_DB_NAME"),
         db_user=required_env("REMOTE_DB_USER"),
-        db_password=os.environ.get("REMOTE_DB_PASSWORD", ""),
+        db_password=required_env("REMOTE_DB_PASSWORD"),
         wordpress_url=required_env("PRODUCTION_WORDPRESS_URL").rstrip("/"),
         frontend_url=required_env("PRODUCTION_FRONTEND_URL").rstrip("/"),
         local_wp_container=os.environ.get("LOCAL_WP_CONTAINER", "kubikartbackend_appserver_1"),
@@ -145,19 +147,6 @@ def scp_base(config: Config) -> list[str]:
 
 def ssh(config: Config, remote_command: str, *, capture: bool = False) -> subprocess.CompletedProcess[bytes]:
     return run([*ssh_base(config), remote_command], capture=capture)
-
-
-def resolve_database_password(config: Config) -> Config:
-    """Use an explicit local override or read the current remote WP config over SSH."""
-    if config.db_password:
-        return config
-    wp = f"wp --allow-root --path={shlex.quote(config.remote_app_dir)}"
-    result = ssh(config, f"{wp} config get DB_PASSWORD", capture=True)
-    password = result.stdout.decode().rstrip("\r\n")
-    if not password:
-        raise DeployError("Could not obtain DB_PASSWORD from the existing remote wp-config.php")
-    log("Using the existing remote WordPress database credential over authenticated SSH")
-    return replace(config, db_password=password)
 
 
 def mysql_option_value(value: str) -> str:
@@ -215,10 +204,9 @@ def backup_remote_database(config: Config, remote_mysql_config: str, destination
 
 
 def backup_remote_files(config: Config, destination: Path) -> None:
-    log("Backing up the current remote WordPress files locally")
-    parent = str(Path(config.remote_app_dir).parent)
-    name = Path(config.remote_app_dir).name
-    command = f"test -d {shlex.quote(config.remote_app_dir)} && tar -C {shlex.quote(parent)} -czf - {shlex.quote(name)}"
+    log("Backing up the current remote wp-content locally")
+    content_dir = f"{config.remote_app_dir}/wp-content"
+    command = f"test -d {shlex.quote(content_dir)} && tar -C {shlex.quote(config.remote_app_dir)} -czf - wp-content"
     with destination.open("wb") as output:
         subprocess.run([*ssh_base(config), command], stdout=output, check=True)
     if destination.stat().st_size < 1024:
@@ -261,9 +249,8 @@ def replace_php_define(content: str, name: str, value: str) -> str:
 
 
 def prepare_remote_config(config: Config, destination: Path) -> None:
-    log("Downloading and preparing the production wp-config.php")
-    run([*scp_base(config), f"{config.ssh_target}:{config.remote_app_dir}/wp-config.php", str(destination)])
-    content = destination.read_text(encoding="utf-8")
+    log("Generating wp-config-remote.php without changing local wp-config.php")
+    content = LOCAL_WORDPRESS_DIR.joinpath("wp-config.php").read_text(encoding="utf-8")
     for name, value in (
         ("DB_NAME", config.db_name),
         ("DB_USER", config.db_user),
@@ -296,19 +283,22 @@ def remote_mysql_query(
     return run([*ssh_base(config), command], input_data=sql, capture=capture)
 
 
-def replace_remote_files(config: Config, prepared_config: Path, run_id: str) -> None:
-    log("Replacing remote WordPress files from the local source")
+def replace_remote_content(config: Config) -> None:
+    log("Synchronizing local wp-content to Strato over SSH")
     remote_shell = "ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new"
     if config.ssh_key:
         remote_shell += f" -i {shlex.quote(config.ssh_key)}"
     run([
         "rsync", "-az", "--delete", "--delay-updates",
-        "--exclude", "wp-config.php",
         "-e", remote_shell,
-        f"{LOCAL_WORDPRESS_DIR}/",
-        f"{config.ssh_target}:{config.remote_app_dir}/",
+        f"{LOCAL_WP_CONTENT_DIR}/",
+        f"{config.ssh_target}:{config.remote_app_dir}/wp-content/",
     ])
-    staged_config = f"{config.remote_app_dir}/.wp-config.{run_id}"
+
+
+def install_remote_config(config: Config, prepared_config: Path) -> None:
+    staged_config = f"{config.remote_app_dir}/wp-config-remote.php"
+    log("Uploading wp-config-remote.php and renaming it to wp-config.php")
     run([*scp_base(config), str(prepared_config), f"{config.ssh_target}:{staged_config}"])
     ssh(
         config,
@@ -335,24 +325,25 @@ def drop_remote_database(remote_mysql_config: str, config: Config) -> None:
         remote_mysql_query(config, remote_mysql_config, f"SET FOREIGN_KEY_CHECKS=0;\n{statements}\nSET FOREIGN_KEY_CHECKS=1;\n".encode())
 
 
-def import_database(remote_mysql_config: str, config: Config, dump: Path) -> None:
-    log("Importing the local WordPress database into the remote database")
-    with gzip.open(dump, "rb") as source:
-        command = " ".join(shlex.quote(part) for part in [
-            "mysql", f"--defaults-extra-file={remote_mysql_config}", config.db_name,
-        ])
-        process = subprocess.Popen([*ssh_base(config), command], stdin=subprocess.PIPE)
-        assert process.stdin is not None
-        shutil.copyfileobj(source, process.stdin)
-        process.stdin.close()
-        if process.wait() != 0:
-            raise DeployError("Remote database import failed")
+def upload_database_dump(config: Config, dump: Path, remote_dump: str) -> None:
+    log("Uploading the local SQL archive to Strato")
+    run([*scp_base(config), str(dump), f"{config.ssh_target}:{remote_dump}"])
 
 
-def restore_database(remote_mysql_config: str, config: Config, backup: Path) -> None:
+def import_database(remote_mysql_config: str, config: Config, remote_dump: str) -> None:
+    log("Restoring the uploaded SQL archive through Strato's MySQL client")
+    mysql = " ".join(shlex.quote(part) for part in [
+        "mysql", f"--defaults-extra-file={remote_mysql_config}", config.db_name,
+    ])
+    pipeline = f"gzip -dc -- {shlex.quote(remote_dump)} | {mysql}"
+    ssh(config, f"bash -o pipefail -c {shlex.quote(pipeline)}")
+
+
+def restore_database(remote_mysql_config: str, config: Config, backup: Path, remote_dump: str) -> None:
     log("Import failed; restoring the pre-deployment remote database backup")
+    upload_database_dump(config, backup, remote_dump)
     drop_remote_database(remote_mysql_config, config)
-    import_database(remote_mysql_config, config, backup)
+    import_database(remote_mysql_config, config, remote_dump)
 
 
 def normalize_and_verify(config: Config, local_site_url: str) -> None:
@@ -394,23 +385,23 @@ def main() -> int:
     parser.add_argument("--preflight", action="store_true", help="Create and verify backups, but do not change remote files or database")
     args = parser.parse_args()
     os.umask(0o077)
-    require_commands("docker", "gzip", "mysql", "mysqldump", "rsync", "scp", "ssh", "tar")
-    if not LOCAL_WORDPRESS_DIR.joinpath("wp-settings.php").exists():
-        raise DeployError(f"Local WordPress source is incomplete: {LOCAL_WORDPRESS_DIR}")
+    require_commands("docker", "gzip", "rsync", "scp", "ssh")
+    if not LOCAL_WORDPRESS_DIR.joinpath("wp-config.php").exists() or not LOCAL_WP_CONTENT_DIR.is_dir():
+        raise DeployError(f"Local WordPress config or wp-content is incomplete: {LOCAL_WORDPRESS_DIR}")
     config = read_config()
     run_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     run_dir = BACKUP_ROOT / run_id
     run_dir.mkdir(parents=True, exist_ok=False)
     mysql_config: Path | None = None
     remote_mysql_config = f"{EXPECTED_REMOTE_ROOT}.kubikart-mysql-{run_id}.cnf"
+    remote_database_dump = f"{EXPECTED_REMOTE_ROOT}.kubikart-database-{run_id}.sql.gz"
     remote_db_backup = run_dir / f"remote-before-{run_id}.sql.gz"
     remote_files_backup = run_dir / f"remote-wordpress-before-{run_id}.tar.gz"
     local_db_dump = run_dir / f"local-wordpress-{run_id}.sql.gz"
-    prepared_config = run_dir / "wp-config.production.php"
+    prepared_config = REMOTE_CONFIG_FILE
     try:
         log("Validating SSH target and exact remote application directory")
         ssh(config, f"test -d {shlex.quote(config.remote_app_dir)} && test -f {shlex.quote(config.remote_app_dir + '/wp-config.php')}")
-        config = resolve_database_password(config)
         mysql_config = create_mysql_config(config, run_dir)
         run([*scp_base(config), str(mysql_config), f"{config.ssh_target}:{remote_mysql_config}"])
         ssh(config, f"chmod 600 {shlex.quote(remote_mysql_config)}")
@@ -437,12 +428,14 @@ def main() -> int:
         confirmation = input(f"Type exactly '{expected}' to continue: ")
         if confirmation != expected:
             raise DeployError("Confirmation did not match; no destructive operation was performed")
-        replace_remote_files(config, prepared_config, run_id)
+        replace_remote_content(config)
+        install_remote_config(config, prepared_config)
+        upload_database_dump(config, local_db_dump, remote_database_dump)
         try:
             drop_remote_database(remote_mysql_config, config)
-            import_database(remote_mysql_config, config, local_db_dump)
+            import_database(remote_mysql_config, config, remote_database_dump)
         except Exception:
-            restore_database(remote_mysql_config, config, remote_db_backup)
+            restore_database(remote_mysql_config, config, remote_db_backup, remote_database_dump)
             raise
         normalize_and_verify(config, local_site_url)
         verify_http(config)
@@ -451,7 +444,7 @@ def main() -> int:
         return 0
     finally:
         try:
-            ssh(config, f"rm -f -- {shlex.quote(remote_mysql_config)}")
+            ssh(config, f"rm -f -- {shlex.quote(remote_mysql_config)} {shlex.quote(remote_database_dump)}")
         except (DeployError, subprocess.CalledProcessError):
             log(f"WARNING: could not remove temporary remote MySQL config: {remote_mysql_config}")
         if mysql_config is not None:
