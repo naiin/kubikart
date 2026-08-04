@@ -143,6 +143,36 @@ function current_user_can(string $cap, mixed ...$args): bool {
     return (bool) ($GLOBALS['_wp_mock_user_can'] ?? true);
 }
 
+class WP_Role {
+    public array $capabilities;
+
+    public function __construct(array $capabilities = []) {
+        $this->capabilities = $capabilities;
+    }
+
+    public function add_cap(string $capability, bool $grant = true): void {
+        $this->capabilities[$capability] = $grant;
+    }
+}
+
+function add_role(string $role, string $display_name, array $capabilities = []): WP_Role {
+    $registered = new WP_Role($capabilities);
+    $GLOBALS['_wp_roles'][$role] = ['display_name' => $display_name, 'role' => $registered];
+    return $registered;
+}
+
+function get_role(string $role): ?WP_Role {
+    return $GLOBALS['_wp_roles'][$role]['role'] ?? null;
+}
+
+function user_can(object $user, string $capability): bool {
+    if (isset($GLOBALS['_wp_mock_user_can_callback']) && is_callable($GLOBALS['_wp_mock_user_can_callback'])) {
+        return (bool) ($GLOBALS['_wp_mock_user_can_callback'])($user, $capability);
+    }
+
+    return !empty($user->allcaps[$capability]);
+}
+
 function get_user_by(string $field, mixed $value): mixed {
     return wp_mock_fn('get_user_by', [$field, $value]);
 }

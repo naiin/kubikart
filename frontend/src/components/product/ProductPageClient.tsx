@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ProductBenefits } from "@/components/product/ProductBenefits";
@@ -254,8 +254,8 @@ function PersonalizationForm({
   canAddToCart,
   product,
   purchaseProductId,
+  variationId,
   quantity,
-  displayedPrice,
   shippingRate,
   selectedOptions,
   textInputs,
@@ -272,8 +272,8 @@ function PersonalizationForm({
   canAddToCart: boolean;
   product: ProductPageProduct;
   purchaseProductId: number;
+  variationId?: number;
   quantity: number;
-  displayedPrice: number;
   shippingRate: { id: string; name: string; price: number };
   selectedOptions: Record<string, string>;
   textInputs: Record<string, string>;
@@ -491,61 +491,15 @@ function PersonalizationForm({
       <div className="mt-3.5">
         {canAddToCart ? (
           <PayPalExpressButton
-          amount={displayedPrice * quantity}
-          shippingAmount={shippingRate.price}
-          itemName={product.name}
+          pendingOrderRequest={{
+            items: [{ productId: purchaseProductId, ...(variationId ? { variationId } : {}), quantity, customizations }],
+            country: "DE",
+            shippingMethodId: shippingRate.id,
+            payment_method: "paypal-express",
+            payment_method_title: "PayPal Express",
+          }}
           onSuccess={async (details) => {
-            // Create WooCommerce order with payer + shipping info from PayPal
-            try {
-              const billing = details.payer
-                ? {
-                    first_name: details.payer.firstName || "",
-                    last_name: details.payer.lastName || "",
-                    email: details.payer.email || "",
-                    address_1: details.shipping?.address?.line1 || "",
-                    city: details.shipping?.address?.city || "",
-                    postcode: details.shipping?.address?.postalCode || "",
-                    country: details.shipping?.address?.country || "",
-                  }
-                : undefined;
-
-              const shipping = details.shipping
-                ? {
-                    first_name: details.shipping.name?.split(" ")[0] || details.payer?.firstName || "",
-                    last_name: details.shipping.name?.split(" ").slice(1).join(" ") || details.payer?.lastName || "",
-                    address_1: details.shipping.address?.line1 || "",
-                    city: details.shipping.address?.city || "",
-                    postcode: details.shipping.address?.postalCode || "",
-                    country: details.shipping.address?.country || "",
-                  }
-                : undefined;
-
-              await fetch("/api/orders/create", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  items: [
-                    {
-                      name: product.name,
-                      product_id: purchaseProductId,
-                      quantity,
-                      price: String(displayedPrice),
-                      customizations,
-                    },
-                  ],
-                  billing,
-                  shipping,
-                  shipping_lines:
-                    shippingRate.price > 0 ? [{ method_id: shippingRate.id, method_title: shippingRate.name, total: shippingRate.price.toFixed(2) }] : [],
-                  payment_method: "ppcp-gateway",
-                  payment_method_title: "PayPal",
-                  transaction_id: details.id,
-                  set_paid: true,
-                }),
-              });
-            } catch (err) {
-              console.error("Failed to create WC order:", err);
-            }
+            void details;
             window.location.href = "/checkout/success";
           }}
           onError={(msg) => {
@@ -831,11 +785,10 @@ function ProductPageClientContent({
     hasCompleteVariation,
     validationErrors: currentValidationErrors,
   });
-  const totalUnitPrice = getConfiguredUnitPrice(displayedPrice.amount, product.personalizationOptions, checkboxValues);
-  const { customizations, customizationSummary } = buildProductCustomization(
-    product.personalizationOptions,
-    configurationState,
-    t("selectedYes"),
+  const totalUnitPrice = getConfiguredUnitPrice(displayedPrice.amount, product.personalizationOptions, configurationState);
+  const { customizations, customizationSummary } = useMemo(
+    () => buildProductCustomization(product.personalizationOptions, { selectedOptions, textInputs, checkboxValues }, t("selectedYes")),
+    [product.personalizationOptions, selectedOptions, textInputs, checkboxValues, t],
   );
 
   // Fetch shipping cost for express checkout
@@ -849,7 +802,7 @@ function ProductPageClientContent({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        items: [{ product_id: selectedVariation?.id || product.id, quantity, price: String(totalUnitPrice) }],
+        items: [{ productId: product.id, ...(selectedVariation ? { variationId: selectedVariation.id } : {}), quantity, customizations }],
         country: "DE",
       }),
     })
@@ -863,7 +816,7 @@ function ProductPageClientContent({
       .catch(() => {
         // keep default
       });
-  }, [product.id, quantity, selectedVariation?.id, totalUnitPrice]);
+  }, [product.id, quantity, selectedVariation, customizations]);
 
   function handleAddToCart() {
     if (Object.keys(currentValidationErrors).length > 0) {
@@ -883,6 +836,8 @@ function ProductPageClientContent({
       cart.push({
         lineId,
         id: selectedVariation?.id || product.id,
+        productId: product.id,
+        ...(selectedVariation ? { variationId: selectedVariation.id } : {}),
         name: product.name,
         price: `${totalUnitPrice.toFixed(2)} €`,
         image: product.images[0]?.src || "",
@@ -1015,9 +970,9 @@ function ProductPageClientContent({
             <PersonalizationForm
               canAddToCart={canAddToCart}
               product={product}
-              purchaseProductId={selectedVariation?.id || product.id}
+              purchaseProductId={product.id}
+              variationId={selectedVariation?.id}
               quantity={quantity}
-              displayedPrice={totalUnitPrice}
               shippingRate={expressShippingRate}
               selectedOptions={selectedOptions}
               textInputs={textInputs}

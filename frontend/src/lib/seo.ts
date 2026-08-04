@@ -15,6 +15,18 @@ export const NO_INDEX_ROBOTS: NonNullable<Metadata["robots"]> = {
   },
 };
 
+export const INDEX_ROBOTS: NonNullable<Metadata["robots"]> = {
+  index: true,
+  follow: true,
+  googleBot: {
+    index: true,
+    follow: true,
+    "max-image-preview": "large",
+    "max-snippet": -1,
+    "max-video-preview": -1,
+  },
+};
+
 export const SEO_ROUTE_SEGMENTS = {
   home: { de: "/", en: "/" },
   shop: { de: "/shop", en: "/shop" },
@@ -49,8 +61,37 @@ export function getSiteUrl() {
   return (process.env.NEXT_PUBLIC_SITE_URL || DEFAULT_SITE_URL).replace(/\/$/, "");
 }
 
+/**
+ * Only the public Kubikart deployment may be indexed. This prevents a Vercel
+ * preview, Lando hostname, localhost build, or accidentally configured staging
+ * domain from advertising itself as the canonical production site.
+ */
+export function isIndexableDeployment() {
+  if (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "production") {
+    return false;
+  }
+
+  try {
+    const siteUrl = new URL(getSiteUrl());
+    return (
+      siteUrl.protocol === "https:" &&
+      (siteUrl.hostname === "kubikart.de" || siteUrl.hostname === "www.kubikart.de")
+    );
+  } catch {
+    return false;
+  }
+}
+
+export function getRobotsMetadata(index = true) {
+  return index && isIndexableDeployment() ? INDEX_ROBOTS : NO_INDEX_ROBOTS;
+}
+
 export function getAbsoluteUrl(path: string) {
   return new URL(path, `${getSiteUrl()}/`).toString();
+}
+
+export function serializeJsonLd(value: unknown) {
+  return JSON.stringify(value).replace(/</g, "\\u003c");
 }
 
 function normalizeSegment(segment: string) {
@@ -118,7 +159,7 @@ export function buildPageMetadata({
       canonical: canonicalUrl,
       languages: getLanguageAlternates(routeSegments),
     },
-    robots: index ? undefined : NO_INDEX_ROBOTS,
+    robots: getRobotsMetadata(index),
     openGraph: {
       title,
       description,
@@ -126,6 +167,11 @@ export function buildPageMetadata({
       siteName: "Kubikart",
       locale: canonicalLocale === "de" ? "de_DE" : "en_US",
       type: "website",
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
     },
   };
 }

@@ -12,6 +12,7 @@ import { resolveIndustryProducts } from "@/lib/business-industries";
 import { formatProductPrice } from "@/lib/product-page";
 import {
   getAbsoluteUrl,
+  getRobotsMetadata,
   normalizeLocale,
   NO_INDEX_ROBOTS,
 } from "@/lib/seo";
@@ -73,6 +74,7 @@ export async function generateMetadata({ params }: IndustryDetailPageProps): Pro
     title: t("detail.metadataTitle", { title: industry.title }),
     description: industry.excerptText || t("detail.metadataFallback", { title: industry.title }),
     alternates: { canonical, languages },
+    robots: getRobotsMetadata(),
     openGraph: {
       title: industry.title,
       description: industry.excerptText,
@@ -83,6 +85,12 @@ export async function generateMetadata({ params }: IndustryDetailPageProps): Pro
       images: industry.featuredMedia?.source_url
         ? [{ url: industry.featuredMedia.source_url, alt: industry.featuredMedia.alt_text || industry.title }]
         : undefined,
+    },
+    twitter: {
+      card: industry.featuredMedia?.source_url ? "summary_large_image" : "summary",
+      title: industry.title,
+      description: industry.excerptText || t("detail.metadataFallback", { title: industry.title }),
+      images: industry.featuredMedia?.source_url ? [industry.featuredMedia.source_url] : undefined,
     },
   };
 }

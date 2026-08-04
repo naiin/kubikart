@@ -43,9 +43,12 @@ export default function CartPage() {
           {/* Cart Items */}
           <div className="divide-y divide-gray-200 border-y border-gray-200">
             {cart.map((item) => (
-              <div key={getCartLineId(item)} className="flex items-center gap-4 py-4">
+              <div
+                key={getCartLineId(item)}
+                className="grid min-w-0 grid-cols-[4rem_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-3 py-4 sm:grid-cols-[5rem_minmax(0,1fr)_auto_5rem_2.75rem] sm:items-center sm:gap-4"
+              >
                 {/* Image */}
-                <div className="h-20 w-20 flex-shrink-0 rounded-lg bg-gray-100 overflow-hidden">
+                <div className="row-span-2 h-16 w-16 overflow-hidden rounded-lg bg-gray-100 sm:row-span-1 sm:h-20 sm:w-20">
                   {item.image ? (
                     <Image src={item.image} alt={item.name} width={80} height={80} unoptimized className="h-full w-full object-cover" />
                   ) : (
@@ -71,7 +74,7 @@ export default function CartPage() {
                 </div>
 
                 {/* Quantity */}
-                <div className="flex items-center gap-2">
+                <div className="col-start-2 row-start-2 flex items-center gap-2 sm:col-start-3 sm:row-start-1">
                   <button
                     onClick={() => updateQuantity(getCartLineId(item), -1)}
                     className="h-8 w-8 rounded-md border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100"
@@ -88,12 +91,17 @@ export default function CartPage() {
                 </div>
 
                 {/* Line Total */}
-                <div className="w-20 text-right">
+                <div className="col-start-3 row-start-2 justify-self-end text-right sm:col-start-4 sm:row-start-1 sm:w-20">
                   <span className="text-sm font-semibold text-gray-900">€{(parseFloat(item.price) * item.quantity).toFixed(2)}</span>
                 </div>
 
                 {/* Remove */}
-                <button onClick={() => removeItem(getCartLineId(item))} className="text-gray-400 hover:text-red-500 transition-colors" title={t("remove")}>
+                <button
+                  onClick={() => removeItem(getCartLineId(item))}
+                  className="col-start-3 row-start-1 inline-flex h-11 w-11 items-center justify-center justify-self-end text-gray-400 transition-colors hover:text-red-500 sm:col-start-5"
+                  title={t("remove")}
+                  aria-label={t("remove")}
+                >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>

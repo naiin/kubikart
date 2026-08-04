@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { wcApi } from "@/lib/woocommerce";
 import { sendOrderStatusUpdate } from "@/lib/email";
+import { markWooOrderPaid } from "@/lib/payment-transition";
+import { sendWooOrderStatusEmail } from "@/lib/order-status-email";
 
 const PAYPAL_BASE = process.env.PAYPAL_MODE === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
 const PAYPAL_CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID!;
@@ -23,8 +25,8 @@ async function getPayPalAccessToken(): Promise<string> {
 
 async function verifyPayPalWebhook(request: NextRequest, rawBody: string): Promise<boolean> {
   if (!PAYPAL_WEBHOOK_ID) {
-    console.warn("[PayPal] PAYPAL_WEBHOOK_ID not set — skipping signature verification");
-    return true;
+    console.error("[PayPal] PAYPAL_WEBHOOK_ID is not configured");
+    return false;
   }
 
   const transmissionId = request.headers.get("paypal-transmission-id");
@@ -117,8 +119,15 @@ export async function POST(request: NextRequest) {
     switch (event.event_type) {
       case "PAYMENT.CAPTURE.COMPLETED": {
         const orderId = event.resource.supplementary_data?.related_ids?.order_id;
-        if (orderId) {
-          await updateOrderByTransaction(orderId, "processing");
+        const wcOrderId = Number(event.resource.custom_id);
+        if (orderId && wcOrderId) {
+          const transition = await markWooOrderPaid({
+            orderId: wcOrderId, transactionId: orderId,
+            amountCents: Math.round(Number(event.resource.amount?.value) * 100),
+            currency: String(event.resource.amount?.currency_code || ""),
+            paymentMethod: "ppcp-gateway", paymentMethodTitle: "PayPal",
+          });
+          if (transition.changed) await sendWooOrderStatusEmail(wcOrderId);
         }
         break;
       }
@@ -147,26 +156,28 @@ export async function POST(request: NextRequest) {
     }
   } catch (err) {
     console.error("PayPal webhook processing error:", err);
+    return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });
 }
 
-async function updateOrderByTransaction(transactionId: string, status: string, note?: string) {
-  const orders = await wcApi<Array<{ id: number; status: string }>>("orders", {
-    params: { search: transactionId, per_page: 1 },
-  });
-
-  if (!orders.length) {
-    console.warn(`No WC order found for transaction: ${transactionId}`);
-    return;
-  }
-
-  const order = orders[0];
+async function updateOrderByTransaction(transactionId: string, status: string, note?: string, boundOrderId?: number) {
+  const order = Number.isInteger(boundOrderId) && Number(boundOrderId) > 0
+    ? await wcApi<{ id: number; status: string }>(`orders/${boundOrderId}`, { revalidate: 0 })
+    : (await wcApi<Array<{ id: number; status: string }>>("orders", { params: { search: transactionId, per_page: 1 } }))[0];
+  if (!order) return console.warn(`No WC order found for transaction: ${transactionId}`);
   const previousStatus = order.status;
+  if (previousStatus === status) return;
   await wcApi(`orders/${order.id}`, {
     method: "PUT",
-    body: { status },
+    body: {
+      status,
+      transaction_id: transactionId,
+      payment_method: "ppcp-gateway",
+      payment_method_title: "PayPal",
+      ...(status === "processing" ? { set_paid: true } : {}),
+    },
   });
 
   if (note) {
@@ -174,10 +185,6 @@ async function updateOrderByTransaction(transactionId: string, status: string, n
       method: "POST",
       body: { note, customer_note: false },
     });
-  }
-
-  if (previousStatus === status) {
-    return;
   }
 
   try {

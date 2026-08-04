@@ -1,6 +1,6 @@
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { HeroBusinessVisual } from "./BusinessPrototypeVisuals";
 
 export function HomeHero() {
   const t = useTranslations("homeRedesign.hero");
@@ -38,7 +38,16 @@ export function HomeHero() {
         </div>
 
         <div className="relative min-w-0">
-          <HeroBusinessVisual />
+          <div className="relative min-h-[25rem] overflow-hidden rounded-kubikart-xl bg-brand sm:min-h-[32rem] lg:min-h-[36rem]">
+            <Image
+              src="/images/home/kubikart-business-visibility-hero.webp"
+              alt={t("imageAlt")}
+              fill
+              priority
+              sizes="(min-width: 1280px) 55vw, (min-width: 768px) 100vw, calc(100vw - 40px)"
+              className="object-cover"
+            />
+          </div>
           <div className="absolute -bottom-4 left-4 max-w-[15rem] rounded-kubikart-md border border-border bg-surface-white px-4 py-3 shadow-kubikart-sm sm:left-8">
             <p className="text-xs font-semibold tracking-[0.08em] text-accent uppercase">{t("visualLabel")}</p>
             <p className="mt-1 text-sm font-semibold text-brand">{t("visualText")}</p>

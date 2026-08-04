@@ -3,10 +3,16 @@
 import Image from "next/image";
 import { useEffect, useRef, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { routing } from "@/i18n/routing";
 import { useHasMounted } from "@/lib/cart";
-import { getActiveNavigationItem, headerNavigation, mobileUtilityNavigation } from "@/lib/header-navigation";
+import {
+  getActiveNavigationItem,
+  getNavigationHref,
+  headerNavigation,
+  mobileUtilityNavigation,
+} from "@/lib/header-navigation";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
 export function MobileMenu({
@@ -21,6 +27,7 @@ export function MobileMenu({
   onClose: () => void;
 }) {
   const t = useTranslations("header");
+  const locale = useLocale() as (typeof routing.locales)[number];
   const mounted = useHasMounted();
   const dialogRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -118,7 +125,7 @@ export function MobileMenu({
                 return (
                   <li key={item.labelKey}>
                     <Link
-                      href={item.href}
+                      href={getNavigationHref(item, locale)}
                       onClick={onClose}
                       aria-current={active ? "page" : undefined}
                       className={`flex min-h-12 items-center rounded-kubikart-sm border-l-2 px-4 py-3 text-base font-semibold transition-colors ${

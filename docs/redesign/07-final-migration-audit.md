@@ -127,11 +127,13 @@ different slugs. Resolution uses Polylang relationships rather than assuming
 equal IDs or slugs. Route metadata emits locale-specific canonical URLs,
 German/English hreflang alternates, and German as `x-default`.
 
-Product and Industry URLs that do not resolve call Next.js `notFound()` and
-emit `noindex`. With streamed App Router rendering, verified invalid dynamic
-URLs currently return an HTTP 200 response containing the not-found UI and
-`noindex` rather than an HTTP 404. This is a known framework/runtime
-limitation that should be rechecked after Next.js upgrades.
+Product and Industry URLs are checked in the routing proxy before streamed
+App Router rendering. When WordPress/WooCommerce confirms that a slug does
+not exist, the request is rewritten to the not-found route with HTTP 404.
+Backend connectivity failures deliberately fall through to the existing
+unavailable state instead of incorrectly classifying a temporary outage as a
+permanent 404. The page-level `notFound()` and `noindex` handling remain as a
+second line of defence.
 
 There are no product-category landing routes. Shop category filtering remains
 numeric: `/[locale]/shop?category={id}`.
@@ -255,11 +257,12 @@ price, cart, and PayPal behavior remain in the shared product system.
 There is no Business Kit custom post type, duplicate checkout, fictional
 Basic/Standard/Premium tier model, or static fallback catalogue.
 
-Five German and five English Kit records were published and purchasable at
-verification. All ten lacked a product image. Their titles, included-item
-descriptions, prices, stock behavior, and direct-purchase versus enquiry
-strategy still require owner approval. German records also currently use
-English product titles and require commercial translation review.
+Five German and five English Kit records remain published. On 29 July 2026
+all ten were placed on a reversible commercial hold: no price, out-of-stock,
+and not purchasable. Their public copy identifies the combinations as
+proposed and enquiry-led. All ten still lack product imagery, shipping
+dimensions/weight, and final owner-approved fulfilment specifications. See
+[`08-production-readiness.md`](08-production-readiness.md).
 
 ## 9. Business Industries
 
@@ -336,9 +339,11 @@ translated. Each language must be reviewed and published independently.
 - Fonts are served locally; Google Fonts is not contacted.
 
 The current local WordPress Application Password belongs to an administrator.
-Before production, create a dedicated least-privileged integration account,
-rotate the credential, and update only the deployment secret store. Do not
-commit credentials.
+The security plugin now provides a dedicated least-privileged
+`kubikart_frontend_integration` role and permits Application Passwords for
+that role. Before production, create the integration account, rotate the
+credential, update only the deployment secret store, and revoke the
+administrator credential. Do not commit credentials.
 
 ## 12. Cache and revalidation
 
@@ -449,10 +454,11 @@ This summary is not a substitute for a final production-like order test.
 
 | Item | Classification |
 |---|---|
-| Populated full `/cart` page overflows about 22px at 320px | Recommended before launch |
+| Populated full `/cart` page overflow at 320px | Resolved 29 July 2026 |
 
-The 320px issue was not reproduced at 360px. It belongs to the full cart
-page and is distinct from the corrected closed CartDrawer overflow.
+The responsive cart-row correction was browser-verified at 320, 360, 768,
+and 1024px with no document overflow. It is distinct from the earlier
+CartDrawer correction.
 
 ### Technical warnings
 

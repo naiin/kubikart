@@ -33,7 +33,7 @@ class KubikartCustomProductFieldsTest extends TestCase
         $reloaded = kubikart_normalize_custom_fields_payload($result['payload']);
 
         $this->assertTrue($result['valid']);
-        $this->assertSame(2, $result['payload']['schema_version']);
+        $this->assertSame(3, $result['payload']['schema_version']);
         $this->assertSame(
             ['text', 'textarea', 'select', 'checkbox'],
             array_column($reloaded['fields'], 'type')
@@ -45,9 +45,10 @@ class KubikartCustomProductFieldsTest extends TestCase
         $this->assertSame('classic', $reloaded['fields'][2]['defaultValue']);
         $this->assertCount(3, $reloaded['fields'][2]['options']);
         $this->assertSame(2.5, $reloaded['fields'][3]['price']);
+        $this->assertSame(5.0, $reloaded['fields'][0]['price']);
     }
 
-    public function test_sanitization_removes_properties_irrelevant_to_selected_type(): void
+    public function test_sanitization_preserves_price_for_every_supported_type(): void
     {
         $submitted = $this->completeSubmittedFields();
         foreach ($submitted as &$field) {
@@ -61,10 +62,10 @@ class KubikartCustomProductFieldsTest extends TestCase
         $fields = kubikart_sanitize_custom_fields_payload($submitted)['payload']['fields'];
 
         $this->assertArrayNotHasKey('options', $fields[0]);
-        $this->assertArrayNotHasKey('price', $fields[0]);
+        $this->assertSame(5.0, $fields[0]['price']);
         $this->assertArrayNotHasKey('placeholder', $fields[2]);
         $this->assertArrayNotHasKey('maxLength', $fields[2]);
-        $this->assertArrayNotHasKey('price', $fields[2]);
+        $this->assertSame(9.99, $fields[2]['price']);
         $this->assertArrayNotHasKey('placeholder', $fields[3]);
         $this->assertArrayNotHasKey('maxLength', $fields[3]);
         $this->assertArrayNotHasKey('options', $fields[3]);
@@ -155,7 +156,7 @@ class KubikartCustomProductFieldsTest extends TestCase
         ));
 
         $this->assertCount(1, $entries);
-        $this->assertSame(2, $entries[0]['value']['schema_version']);
+        $this->assertSame(3, $entries[0]['value']['schema_version']);
         $this->assertSame($payload['fields'], $entries[0]['value']['fields']);
         $this->assertFalse($entries[0]['value']['requires_review']);
     }
@@ -170,6 +171,7 @@ class KubikartCustomProductFieldsTest extends TestCase
                 'required' => '1',
                 'placeholder' => 'e.g. M & T',
                 'maxLength' => '20',
+                'price' => '5.00',
                 'helperText' => '',
             ],
             [

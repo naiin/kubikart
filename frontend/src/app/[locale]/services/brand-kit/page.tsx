@@ -9,6 +9,7 @@ import {
   getLocalizedPath,
   normalizeLocale,
   SEO_ROUTE_SEGMENTS,
+  serializeJsonLd,
 } from "@/lib/seo";
 
 type BrandKitPageProps = {
@@ -179,8 +180,8 @@ export default async function BrandKitPage({ params }: BrandKitPageProps) {
 
       {!unavailable ? (
         <>
-          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }} />
-          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(collectionSchema) }} />
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }} />
         </>
       ) : null}
     </main>

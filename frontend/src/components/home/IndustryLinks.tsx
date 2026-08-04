@@ -4,6 +4,12 @@ import { Link } from "@/i18n/navigation";
 import { normalizeLocale } from "@/lib/seo";
 import { getBusinessIndustries, type BusinessIndustry } from "@/lib/wordpress";
 
+const fallbackImages = [
+  "/images/home/business-kit-qr-nfc.webp",
+  "/images/home/business-kit-menu-display.webp",
+  "/images/home/business-kit-storefront.webp",
+] as const;
+
 export async function IndustryLinks() {
   const [t, rawLocale] = await Promise.all([getTranslations("homeRedesign.industries"), getLocale()]);
   const locale = normalizeLocale(rawLocale);
@@ -27,12 +33,14 @@ export async function IndustryLinks() {
 
         {industries.length > 0 ? (
           <ul className="mt-10 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-            {industries.map((industry) => (
+            {industries.map((industry, index) => (
               <li key={industry.id} className="min-w-0">
                 <article className="flex h-full flex-col rounded-kubikart-lg border border-border bg-surface p-4 shadow-kubikart-sm">
                   <IndustryMedia
                     media={industry.featuredMedia}
                     title={industry.title}
+                    fallbackSrc={fallbackImages[index % fallbackImages.length]}
+                    fallbackAlt={t("fallbackImageAlt", { title: industry.title })}
                     sizes="(max-width: 639px) calc(100vw - 72px), (max-width: 1279px) 44vw, 29vw"
                   />
                   <div className="flex flex-1 flex-col px-1 pb-1 pt-5">

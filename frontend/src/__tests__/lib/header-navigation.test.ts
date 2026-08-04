@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   getActiveNavigationItem,
+  getNavigationHref,
   headerNavigation,
   normalizeNavigationPath,
 } from "@/lib/header-navigation";
@@ -31,11 +32,21 @@ describe("header navigation resolution", () => {
     expect(activeLabel("/en/businesses/driving-schools")).toBe("nav.services");
   });
 
-  it("keeps existing service routes in the Solutions active group", () => {
-    expect(activeLabel("/de/services")).toBe("nav.services");
-    expect(activeLabel("/de/services/custom-order")).toBe("nav.services");
-    expect(activeLabel("/de/dienstleistungen")).toBe("nav.services");
-    expect(activeLabel("/de/dienstleistungen/lasergravur")).toBe("nav.services");
+  it("keeps existing service routes in a distinct Services active group", () => {
+    expect(activeLabel("/de/services")).toBe("nav.productionServices");
+    expect(activeLabel("/de/services/custom-order")).toBe("nav.productionServices");
+    expect(activeLabel("/de/dienstleistungen")).toBe("nav.productionServices");
+    expect(activeLabel("/de/dienstleistungen/lasergravur")).toBe("nav.productionServices");
+  });
+
+  it("uses the localized service overview destination", () => {
+    const services = headerNavigation.find(
+      (item) => item.labelKey === "nav.productionServices",
+    );
+
+    expect(services).toBeDefined();
+    expect(getNavigationHref(services!, "de")).toBe("/dienstleistungen");
+    expect(getNavigationHref(services!, "en")).toBe("/services");
   });
 
   it("keeps shop descendants assigned to Shop", () => {

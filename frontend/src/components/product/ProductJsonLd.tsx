@@ -1,6 +1,7 @@
 import { useTranslations } from "next-intl";
 import { isWooCommercePlaceholderImage } from "@/lib/business-kits";
 import { getAvailabilitySchema, getProductAbsoluteUrl, getProductImageAbsoluteUrl, getSiteUrl, type ProductPageProduct } from "@/lib/product-page";
+import { serializeJsonLd } from "@/lib/seo";
 
 export function ProductJsonLd({
   product,
@@ -57,12 +58,18 @@ export function ProductJsonLd({
     "@type": "Product",
     name: product.name,
     description: product.description,
-    sku: product.sku,
     brand: {
       "@type": "Brand",
       name: "Kubikart",
     },
-    offers: {
+  };
+
+  if (product.sku) {
+    productSchema.sku = product.sku;
+  }
+
+  if (product.purchasable === true && product.price.amount > 0) {
+    productSchema.offers = {
       "@type": "Offer",
       url: productUrl,
       priceCurrency: product.price.currency,
@@ -73,8 +80,8 @@ export function ProductJsonLd({
         "@type": "Organization",
         name: "Kubikart",
       },
-    },
-  };
+    };
+  }
 
   if (schemaImages.length > 0) {
     productSchema.image = schemaImages;
@@ -90,8 +97,8 @@ export function ProductJsonLd({
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbList) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(productSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbList) }} />
     </>
   );
 }

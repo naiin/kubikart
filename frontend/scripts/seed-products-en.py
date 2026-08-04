@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 """Create English categories and products in WooCommerce."""
 import json
+import os
 import subprocess
 
-BASE = "https://kubikart-backend.lndo.site/wp-json/wc/v3"
-AUTH = "consumer_key=ck_f545e33b18fe34ffa271bd73d525b9f305f2ceab&consumer_secret=cs_e2396ccd68bb0c1fbc4380c53d01cfd023e00892"
+BASE = os.environ.get("WC_API_URL", "https://kubikart-backend.lndo.site/wp-json/wc/v3")
+WC_KEY = os.environ["WC_CONSUMER_KEY"]
+WC_SECRET = os.environ["WC_CONSUMER_SECRET"]
 
 def api_post(endpoint, data):
-    url = f"{BASE}/{endpoint}?{AUTH}"
+    url = f"{BASE}/{endpoint}"
     result = subprocess.run(
-        ["curl", "-sk", "-X", "POST", url, "-H", "Content-Type: application/json", "-d", json.dumps(data)],
+        ["curl", "-sk", "-u", f"{WC_KEY}:{WC_SECRET}", "-X", "POST", url, "-H", "Content-Type: application/json", "-d", json.dumps(data)],
         capture_output=True, text=True
     )
     return json.loads(result.stdout)

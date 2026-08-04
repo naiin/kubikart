@@ -282,11 +282,11 @@ Business Industry posts store product IDs only. Never type an Industry price
 as the authoritative product price. Changing the WooCommerce product updates
 all consuming pages after cache refresh.
 
-There is no frontend switch that turns a purchasable Kit into quote-only.
-Configure price, stock, purchasability, and custom fields to match the real
-commercial mode. If the desired enquiry mode is not supported by the current
-product settings, ask for a scoped implementation instead of inventing a
-price or disabling controls with content.
+There is no separate frontend switch that turns a purchasable Kit into
+quote-only. Kits under commercial review currently use the safe WooCommerce
+hold state: no price and out of stock, with truthful enquiry-led copy.
+Restore a price and in-stock status only after contents, fulfilment, shipping,
+and the purchase flow are approved.
 
 ## 11. Cart, checkout, and PayPal
 
@@ -423,7 +423,7 @@ necessarily invalidate server data.
 | Wrong navigation active item | Confirm the real localized path; ask a developer to test navigation resolver | Add per-page visual exceptions |
 | Font not loading | Confirm local emitted font asset request and deployed font files | Add Google Fonts/CDN CSS |
 | WordPress REST unavailable | Check WordPress health, integration account, Application Password, URL and server logs | Show backend errors publicly |
-| Full cart overflows at 320px | This is a known ~22px full-page issue; use 360px or wider until corrected | Add global overflow clipping |
+| Full cart overflows at 320px | This was corrected on 29 July 2026; if it returns, record the product metadata and viewport and request an isolated cart-row review | Add global overflow clipping |
 
 ## 17. Backups and safe changes
 
@@ -476,7 +476,7 @@ be configured by this repository.
 - [ ] Sitemap and robots checked on the production domain.
 - [ ] Canonical and hreflang checked.
 - [ ] Mobile and desktop routes checked.
-- [ ] Known 320px full-cart-page overflow corrected or accepted explicitly.
+- [x] Known 320px full-cart-page overflow corrected and browser-verified.
 - [ ] Payment-plugin PHP deprecations reviewed.
 
 ### Legal and privacy

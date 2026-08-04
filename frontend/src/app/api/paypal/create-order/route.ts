@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { serverCartErrorResponse } from "@/lib/server-cart";
+import { verifyPendingPaymentOrder } from "@/lib/payment-order";
 
 const PAYPAL_BASE = process.env.PAYPAL_MODE === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
 
@@ -25,11 +27,8 @@ async function getAccessToken(): Promise<string> {
 
 export async function POST(request: NextRequest) {
   try {
-    const { amount, currency = "EUR", items } = await request.json();
-
-    if (!amount || Number(amount) <= 0) {
-      return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
-    }
+    const body = await request.json();
+    const pendingOrder = await verifyPendingPaymentOrder(body);
 
     const accessToken = await getAccessToken();
 
@@ -37,16 +36,13 @@ export async function POST(request: NextRequest) {
       intent: "CAPTURE",
       purchase_units: [
         {
+          custom_id: String(pendingOrder.id),
+          invoice_id: `WC-${pendingOrder.id}`,
           amount: {
-            currency_code: currency,
-            value: Number(amount).toFixed(2),
+            currency_code: pendingOrder.currency,
+            value: (pendingOrder.totalCents / 100).toFixed(2),
           },
-          description: items
-            ? items
-                .map((i: { name: string }) => i.name)
-                .join(", ")
-                .slice(0, 127)
-            : "KubiKart Order",
+          description: `Kubikart order ${pendingOrder.id}`,
         },
       ],
     };
@@ -56,6 +52,7 @@ export async function POST(request: NextRequest) {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
+        "PayPal-Request-Id": `wc-order-${pendingOrder.id}`,
       },
       body: JSON.stringify(orderPayload),
     });
@@ -69,6 +66,8 @@ export async function POST(request: NextRequest) {
     const order = await res.json();
     return NextResponse.json({ id: order.id });
   } catch (error) {
+    const response = serverCartErrorResponse(error);
+    if (response.status !== 500) return NextResponse.json({ error: response.message }, { status: response.status });
     console.error("PayPal create order error:", error);
     return NextResponse.json({ error: "Failed to create PayPal order" }, { status: 500 });
   }

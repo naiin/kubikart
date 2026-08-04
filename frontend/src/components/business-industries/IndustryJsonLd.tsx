@@ -1,4 +1,4 @@
-import { getAbsoluteUrl } from "@/lib/seo";
+import { getAbsoluteUrl, serializeJsonLd } from "@/lib/seo";
 import type { BusinessIndustry } from "@/lib/wordpress";
 
 export function IndustryOverviewJsonLd({
@@ -39,7 +39,7 @@ export function IndustryOverviewJsonLd({
     },
   ];
   return schemas.map((schema, index) => (
-    <script key={index} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+    <script key={index} type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schema) }} />
   ));
 }
 
@@ -78,7 +78,6 @@ export function IndustryDetailJsonLd({
     },
   ];
   return schemas.map((schema, index) => (
-    <script key={index} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+    <script key={index} type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schema) }} />
   ));
 }
-

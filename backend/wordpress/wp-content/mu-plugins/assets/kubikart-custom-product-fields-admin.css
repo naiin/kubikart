@@ -51,6 +51,13 @@
   max-width: none;
 }
 
+.kubikart-fields-table .kubikart-price-field {
+  padding: 10px;
+  border: 1px solid #72aee6;
+  border-radius: 4px;
+  background: #f0f6fc;
+}
+
 .kubikart-field-row input[type="checkbox"] {
   margin-top: 7px;
 }

@@ -69,7 +69,43 @@
     "checkoutContact": "Contact information",
     "checkoutAddress": "Delivery address",
     "checkoutShippingMethod": "Shipping method",
-    "checkoutPaymentMethod": "Payment method"
+    "checkoutPaymentMethod": "Payment method",
+    "checkoutEmail": "Email address",
+    "checkoutCountry": "Country/region",
+    "checkoutStreet": "Street and house number",
+    "checkoutApartment": "Apartment, suite, etc. (optional)",
+    "checkoutPhoneOptional": "Phone (optional)",
+    "checkoutContactLabel": "Contact:",
+    "checkoutDeliveryTo": "Deliver to:",
+    "checkoutShippingLabel": "Shipping:",
+    "checkoutChange": "Change",
+    "checkoutBack": "Back",
+    "checkoutContinueShipping": "Continue to shipping",
+    "checkoutContinuePayment": "Continue to payment",
+    "checkoutCreatingOrder": "Creating order…",
+    "checkoutCalculatingShipping": "Calculating shipping…",
+    "checkoutCheckingPrices": "Checking prices and shipping…",
+    "checkoutFree": "Free",
+    "checkoutBusinessDays": "business days",
+    "checkoutTaxNotice": "No VAT is charged under § 19 UStG (German small-business regulation).",
+    "checkoutCountryDE": "Germany",
+    "checkoutCountryAT": "Austria",
+    "checkoutCountryCH": "Switzerland",
+    "checkoutCountryNL": "Netherlands",
+    "checkoutCountryFR": "France",
+    "checkoutCountryBE": "Belgium",
+    "paymentCard": "Credit card",
+    "paymentCardDescription": "Visa, Mastercard, American Express",
+    "paymentKlarnaDescription": "Pay now or in instalments",
+    "paymentPayPalDescription": "Pay with your PayPal account",
+    "paymentOr": "or",
+    "paymentLoadingWallets": "Load Apple Pay / Google Pay…",
+    "paymentInitializationFailed": "Payment could not be initialized.",
+    "paymentNetworkError": "Network error while initializing payment.",
+    "paymentFailed": "Payment failed.",
+    "paymentPayPalIncomplete": "The PayPal payment was not completed.",
+    "checkoutOrderCreationFailed": "The pending order could not be created.",
+    "checkoutQuoteFailed": "Prices and shipping could not be verified."
   },
   "header": {
     "mobileSummary": "Made in Germany · Fast Shipping",
@@ -84,6 +120,7 @@
       "shop": "Shop",
       "businessKits": "Business Kits",
       "services": "Solutions",
+      "productionServices": "Services",
       "personalize": "Personalize",
       "laserService": "Laser Service",
       "printing3d": "3D Printing",
@@ -839,6 +876,7 @@
   },
   "homeRedesign": {
     "hero": {
+      "imageAlt": "Coordinated navy QR and NFC stand, menu display and counter signs in a modern café",
       "eyebrow": "Local visibility studio & personalized products",
       "title": "Make your business easier to see, scan and trust.",
       "body": "Kubikart creates QR and NFC stands, stickers, menus and Business Visibility Kits for local businesses—plus selected personalized products made to order.",
@@ -860,12 +898,14 @@
       "body": "Temporary notices and isolated QR codes become a coordinated solution for counters, windows and menu areas.",
       "status": "Concept visualization",
       "before": {
+        "imageAlt": "Café counter before adding coordinated customer information and QR displays",
         "label": "Before",
         "title": "Temporary customer information",
         "text": "Paper notices, a single printed QR code and inconsistent menu information make a professional impression harder.",
         "imageAlt": "Prototype product selection during the planning phase"
       },
       "after": {
+        "imageAlt": "Café counter with coordinated navy QR stand, menu display and window graphics",
         "label": "After",
         "title": "Coordinated visibility",
         "text": "Opening hours, a review stand and a menu display work together across the brand and customer journey.",
@@ -938,6 +978,7 @@
       "unavailable": "Product data is currently unavailable. The current catalog will appear in the shop when the connection has been restored."
     },
     "industries": {
+      "fallbackImageAlt": "Example visibility products suitable for {title}",
       "eyebrow": "Solutions by business type",
       "title": "Products suited to the way your business works",
       "body": "Choose your type of business to discover relevant products and a suggested Business Kit.",
@@ -981,19 +1022,19 @@
         "title": "Digital counter touchpoint",
         "type": "Counter & customer contact",
         "deliverables": "Acrylic stand, NFC area and customizable presentation.",
-        "imageAlt": "Prototype NFC stand during design selection"
+        "imageAlt": "Navy QR and NFC stand with menu display on a café counter"
       },
       "production": {
         "title": "Personalized small batch",
         "type": "Production & personalization",
         "deliverables": "Opening hours, window lettering and coordinated brand elements.",
-        "imageAlt": "Laser production of a personalized wooden item beside an acrylic stand"
+        "imageAlt": "Navy QR stand and subtle window graphics at a modern salon station"
       },
       "presentation": {
         "title": "Coordinated hospitality touchpoint",
         "type": "Menu & guest contact",
         "deliverables": "Menu board, QR menu and a clear digital touchpoint.",
-        "imageAlt": "Prototype brand presentation with packaging, printed items and a stand"
+        "imageAlt": "Navy counter sign and QR stand at an independent retail checkout"
       }
     },
     "trust": {

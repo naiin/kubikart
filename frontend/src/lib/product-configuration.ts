@@ -6,6 +6,12 @@ export type ProductConfigurationState = {
   checkboxValues: Record<string, boolean>;
 };
 
+const NEUTRAL_SELECT_VALUES = new Set(["none", "no", "without", "kein", "keine", "kein-motiv", "no-motif"]);
+
+export function isChargeableSelectValue(value: string | undefined) {
+  return Boolean(value && !NEUTRAL_SELECT_VALUES.has(value.trim().toLowerCase()));
+}
+
 export function createProductSubmissionLock() {
   let locked = false;
 
@@ -60,7 +66,7 @@ export function getProductFieldPresentation(
   locale: "de" | "en",
   currency: string,
 ) {
-  const extraPrice = option.type === "checkbox" ? option.price || 0 : 0;
+  const extraPrice = option.price || 0;
   const formattedExtraPrice =
     extraPrice > 0
       ? new Intl.NumberFormat(locale === "de" ? "de-DE" : "en-GB", {
@@ -120,9 +126,14 @@ export function validateProductConfiguration(
   return errors;
 }
 
-export function getSelectedExtrasTotal(options: ProductPersonalizationOption[], checkboxValues: Record<string, boolean>) {
+export function getSelectedExtrasTotal(options: ProductPersonalizationOption[], state: ProductConfigurationState) {
   return options.reduce((total, option) => {
-    if (option.type !== "checkbox" || !checkboxValues[option.id]) {
+    const selected = option.type === "checkbox"
+      ? Boolean(state.checkboxValues[option.id])
+      : option.type === "select"
+        ? isChargeableSelectValue(state.selectedOptions[option.id])
+        : Boolean(state.textInputs[option.id]?.trim());
+    if (!selected) {
       return total;
     }
 
@@ -133,9 +144,17 @@ export function getSelectedExtrasTotal(options: ProductPersonalizationOption[], 
 export function getConfiguredUnitPrice(
   basePrice: number,
   options: ProductPersonalizationOption[],
-  checkboxValues: Record<string, boolean>,
+  state: ProductConfigurationState,
 ) {
-  return basePrice + getSelectedExtrasTotal(options, checkboxValues);
+  return basePrice + getSelectedExtrasTotal(options, state);
+}
+
+export function getCustomizationExtrasTotal(options: ProductPersonalizationOption[], customizations: Record<string, string>) {
+  return options.reduce((total, option) => {
+    const value = customizations[option.id]?.trim();
+    const selected = option.type === "checkbox" ? value === "true" : option.type === "select" ? isChargeableSelectValue(value) : Boolean(value);
+    return selected ? total + (option.price || 0) : total;
+  }, 0);
 }
 
 export function isProductConfigurationPurchasable({

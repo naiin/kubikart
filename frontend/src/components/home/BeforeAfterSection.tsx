@@ -1,5 +1,10 @@
+import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { BusinessTransformationVisual } from "./BusinessPrototypeVisuals";
+
+const images = {
+  before: "/images/home/business-visibility-before.webp",
+  after: "/images/home/business-visibility-after.webp",
+} as const;
 
 export function BeforeAfterSection() {
   const t = useTranslations("homeRedesign.beforeAfter");
@@ -16,7 +21,15 @@ export function BeforeAfterSection() {
         <div className="mt-12 grid overflow-hidden rounded-kubikart-xl border border-border bg-surface shadow-kubikart-sm md:grid-cols-2">
           {(["before", "after"] as const).map((key, index) => (
             <figure key={key} className={index === 1 ? "border-t border-border md:border-t-0 md:border-l" : ""}>
-              <BusinessTransformationVisual stage={key} />
+              <div className="relative aspect-[3/2] overflow-hidden bg-surface">
+                <Image
+                  src={images[key]}
+                  alt={t(`${key}.imageAlt`)}
+                  fill
+                  sizes="(min-width: 768px) 50vw, 100vw"
+                  className="object-cover"
+                />
+              </div>
               <figcaption className="p-5 sm:p-6">
                 <span className="kk-badge">{t("status")}</span>
                 <h3 className="kk-heading-3 mt-3">{t(`${key}.title`)}</h3>

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { wcApi } from "@/lib/woocommerce";
 import { sendOrderStatusUpdate } from "@/lib/email";
+import { markWooOrderPaid } from "@/lib/payment-transition";
+import { sendWooOrderStatusEmail } from "@/lib/order-status-email";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
@@ -60,12 +62,17 @@ export async function POST(request: NextRequest) {
     switch (event.type) {
       case "payment_intent.succeeded": {
         const pi = event.data.object as Stripe.PaymentIntent;
-        await updateOrderStatus(pi.id, "processing");
+        const transition = await markWooOrderPaid({
+          orderId: Number(pi.metadata.wc_order_id), transactionId: pi.id,
+          amountCents: pi.amount_received || pi.amount, currency: pi.currency.toUpperCase(),
+          paymentMethod: "stripe", paymentMethodTitle: "Stripe",
+        });
+        if (transition.changed) await sendWooOrderStatusEmail(Number(pi.metadata.wc_order_id));
         break;
       }
       case "payment_intent.payment_failed": {
         const pi = event.data.object as Stripe.PaymentIntent;
-        await updateOrderStatus(pi.id, "failed");
+        await updateOrderStatus(pi.id, "failed", undefined, Number(pi.metadata.wc_order_id));
         break;
       }
       case "charge.refunded": {
@@ -87,25 +94,26 @@ export async function POST(request: NextRequest) {
     }
   } catch (err) {
     console.error("Stripe webhook processing error:", err);
+    return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });
 }
 
-async function updateOrderStatus(transactionId: string, status: string, note?: string) {
-  // Search for order by transaction ID
-  const orders = await wcApi<Array<{ id: number; status: string }>>("orders", {
-    params: { search: transactionId, per_page: 1 },
-  });
-
-  if (!orders.length) {
-    console.warn(`No WC order found for transaction: ${transactionId}`);
-    return;
-  }
-
-  const order = orders[0];
+async function updateOrderStatus(transactionId: string, status: string, note?: string, boundOrderId?: number) {
+  const order = Number.isInteger(boundOrderId) && Number(boundOrderId) > 0
+    ? await wcApi<{ id: number; status: string }>(`orders/${boundOrderId}`, { revalidate: 0 })
+    : (await wcApi<Array<{ id: number; status: string }>>("orders", { params: { search: transactionId, per_page: 1 } }))[0];
+  if (!order) return console.warn(`No WC order found for transaction: ${transactionId}`);
   const previousStatus = order.status;
-  const updateData: Record<string, unknown> = { status };
+  if (previousStatus === status) return;
+  const updateData: Record<string, unknown> = {
+    status,
+    transaction_id: transactionId,
+    payment_method: "stripe",
+    payment_method_title: "Stripe",
+    ...(status === "processing" ? { set_paid: true } : {}),
+  };
 
   await wcApi(`orders/${order.id}`, {
     method: "PUT",
@@ -117,10 +125,6 @@ async function updateOrderStatus(transactionId: string, status: string, note?: s
       method: "POST",
       body: { note, customer_note: false },
     });
-  }
-
-  if (previousStatus === status) {
-    return;
   }
 
   try {

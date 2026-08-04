@@ -39,6 +39,12 @@ interface ProductData {
  */
 export async function POST(request: NextRequest) {
   try {
+    const configuredSecret = process.env.DHL_LABEL_SECRET;
+    const suppliedSecret = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+    if (!configuredSecret || suppliedSecret !== configuredSecret) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { orderId, type = "shipment" } = body as { orderId: number; type?: "shipment" | "return" };
 

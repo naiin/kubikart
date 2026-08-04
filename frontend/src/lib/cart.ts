@@ -3,6 +3,8 @@ import { useSyncExternalStore } from "react";
 export interface CartItem {
   lineId?: string;
   id: number;
+  productId?: number;
+  variationId?: number;
   name: string;
   price: string;
   image: string;
@@ -12,6 +14,15 @@ export interface CartItem {
   customizations?: Record<string, string>;
   weight?: number; // kg
   dimensions?: { length: number; width: number; height: number }; // cm
+}
+
+export function toServerCartItems(items: CartItem[]) {
+  return items.map((item) => ({
+    productId: item.productId ?? item.id,
+    ...(item.variationId ? { variationId: item.variationId } : {}),
+    quantity: item.quantity,
+    ...(item.customizations ? { customizations: item.customizations } : {}),
+  }));
 }
 
 const CART_STORAGE_KEY = "kubikart-cart";

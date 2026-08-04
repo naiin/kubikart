@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { getProduct, getProducts, getProductsByIds, getProductVariations, type WCProduct, type WCVariation } from "@/lib/woocommerce";
+import { getProduct, getProducts, getProductsByIds, getProductVariations, sanitizeWooCommerceHtml, type WCProduct, type WCVariation } from "@/lib/woocommerce";
 
 export type ProductAvailability = "in_stock" | "made_to_order" | "out_of_stock";
 
@@ -111,6 +111,7 @@ export interface ProductPageProduct {
   sku?: string;
   averageRating?: number;
   reviewCount?: number;
+  purchasable?: boolean;
   weight?: number; // kg
   dimensions?: { length: number; width: number; height: number }; // cm
 }
@@ -184,6 +185,10 @@ export function parseProductCustomFields(metaData: { key: string; value: unknown
         helperText: field.helperText ? String(field.helperText) : undefined,
       };
 
+      if (Number.isFinite(Number(field.price)) && Number(field.price) > 0) {
+        parsedField.price = Number(field.price);
+      }
+
       if (type === "text" || type === "textarea") {
         parsedField.placeholder = field.placeholder ? String(field.placeholder) : undefined;
         parsedField.maxLength =
@@ -202,13 +207,6 @@ export function parseProductCustomFields(metaData: { key: string; value: unknown
         parsedField.defaultValue = parsedField.options.some((option) => option.value === defaultValue)
           ? defaultValue
           : undefined;
-      }
-
-      if (type === "checkbox") {
-        parsedField.price =
-          Number.isFinite(Number(field.price)) && Number(field.price) >= 0
-            ? Number(field.price)
-            : 0;
       }
 
       return [parsedField];
@@ -416,7 +414,7 @@ function mapWooProductToProductPageProduct(
     subtitle: plainShortDescription,
     shortDescription: plainShortDescription,
     description: plainDescription,
-    descriptionHtml: product.description || product.short_description || "",
+    descriptionHtml: sanitizeWooCommerceHtml(product.description || product.short_description || ""),
     seoTitle: `${product.name} | Kubikart`,
     seoDescription: plainShortDescription || labels.genericSeoDescription(product.name),
     category: primaryCategory,
@@ -486,9 +484,10 @@ function mapWooProductToProductPageProduct(
     attributes: product.attributes.map((attribute) => ({ name: attribute.name, values: attribute.options })),
     customRequestHref: buildCustomRequestHref(product.name, product.slug),
     supportHref: buildSupportHref(product.name, product.slug),
-    sku: product.id ? `KB-${product.id}` : undefined,
+    sku: product.sku?.trim() || undefined,
     averageRating: Number.parseFloat(product.average_rating || "0") || 0,
     reviewCount: product.rating_count || 0,
+    purchasable: product.purchasable !== false && priceAmount > 0,
     weight: parseFloat(product.weight) || undefined,
     dimensions:
       product.dimensions?.length || product.dimensions?.width || product.dimensions?.height

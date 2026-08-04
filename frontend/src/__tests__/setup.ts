@@ -13,6 +13,7 @@ process.env.WC_API_URL = "https://test-wp.local/wp-json/wc/v3";
 process.env.WC_CONSUMER_KEY = "ck_test";
 process.env.WC_CONSUMER_SECRET = "cs_test";
 process.env.REVALIDATE_SECRET = "ci-test-secret";
+process.env.AUTH_SESSION_SECRET = "ci-test-session-secret-with-at-least-32-characters";
 process.env.STRIPE_SECRET_KEY = "sk_test_ci";
 process.env.STRIPE_WEBHOOK_SECRET = "whsec_ci";
 process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = "pk_test_ci";

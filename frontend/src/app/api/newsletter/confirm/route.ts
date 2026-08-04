@@ -82,9 +82,12 @@ export async function GET(request: NextRequest) {
     let couponCreated = false;
 
     try {
-      const couponRes = await fetch(`${WC_API_URL}/coupons?consumer_key=${WC_CONSUMER_KEY}&consumer_secret=${WC_CONSUMER_SECRET}`, {
+      const couponRes = await fetch(`${WC_API_URL}/coupons`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Basic ${Buffer.from(`${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`).toString("base64")}`,
+        },
         body: JSON.stringify({
           code: couponCode,
           discount_type: "percent",

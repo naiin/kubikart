@@ -2,9 +2,14 @@
 
 import Image from "next/image";
 import { useCallback, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
-import { getActiveNavigationItem, headerNavigation } from "@/lib/header-navigation";
+import {
+  getActiveNavigationItem,
+  getNavigationHref,
+  headerNavigation,
+} from "@/lib/header-navigation";
+import { routing } from "@/i18n/routing";
 import { CartDrawer } from "./CartDrawer";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { MobileMenu } from "./MobileMenu";
@@ -30,6 +35,7 @@ function UserIcon() {
 
 export function Header() {
   const pathname = usePathname();
+  const locale = useLocale() as (typeof routing.locales)[number];
   const activeNavigationItem = getActiveNavigationItem(pathname, headerNavigation);
   const t = useTranslations("header");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -52,7 +58,7 @@ export function Header() {
               return (
                 <Link
                   key={item.labelKey}
-                  href={item.href}
+                  href={getNavigationHref(item, locale)}
                   aria-current={active ? "page" : undefined}
                   className={`relative flex min-h-11 items-center px-3 text-sm font-semibold whitespace-nowrap transition-colors ${
                     active

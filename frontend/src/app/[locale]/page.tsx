@@ -9,6 +9,7 @@ import { HomepageTrustStrip } from "@/components/home/HomepageTrustStrip";
 import { IndustryLinks } from "@/components/home/IndustryLinks";
 import { KitContentsStrip } from "@/components/home/KitContentsStrip";
 import { PopularProducts } from "@/components/home/PopularProducts";
+import { SiteJsonLd } from "@/components/seo/SiteJsonLd";
 import { buildPageMetadata, normalizeLocale, SEO_ROUTE_SEGMENTS } from "@/lib/seo";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -38,17 +39,20 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
 export default function HomePage() {
   return (
-    <div className="overflow-clip bg-page">
-      <HomeHero />
-      <BeforeAfterSection />
-      <FeaturedKits />
-      <KitContentsStrip />
-      <PopularProducts />
-      <IndustryLinks />
-      <CustomOrderProcess />
-      <FeaturedPortfolio />
-      <HomepageTrustStrip />
-      <HomepageFinalCta />
-    </div>
+    <>
+      <SiteJsonLd />
+      <div className="overflow-clip bg-page">
+        <HomeHero />
+        <BeforeAfterSection />
+        <FeaturedKits />
+        <KitContentsStrip />
+        <PopularProducts />
+        <IndustryLinks />
+        <CustomOrderProcess />
+        <FeaturedPortfolio />
+        <HomepageTrustStrip />
+        <HomepageFinalCta />
+      </div>
+    </>
   );
 }

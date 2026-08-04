@@ -1,10 +1,10 @@
+import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { PortfolioTransformationVisual } from "./BusinessPrototypeVisuals";
 
 const projects = [
-  { key: "counter", visual: "counter" },
-  { key: "production", visual: "window" },
-  { key: "presentation", visual: "gastro" },
+  { key: "counter", image: "/images/home/business-setting-cafe.webp" },
+  { key: "production", image: "/images/home/business-setting-salon.webp" },
+  { key: "presentation", image: "/images/home/business-setting-retail.webp" },
 ] as const;
 
 export function FeaturedPortfolio() {
@@ -23,7 +23,15 @@ export function FeaturedPortfolio() {
           {projects.map((project) => (
             <article key={project.key}>
               <div className="relative">
-                <PortfolioTransformationVisual type={project.visual} />
+                <div className="relative aspect-square overflow-hidden rounded-kubikart-lg border border-border bg-surface">
+                  <Image
+                    src={project.image}
+                    alt={t(`${project.key}.imageAlt`)}
+                    fill
+                    sizes="(min-width: 768px) 33vw, 100vw"
+                    className="object-cover"
+                  />
+                </div>
                 <span className="absolute top-4 left-4 rounded-full bg-brand px-3 py-1.5 text-xs font-semibold text-white">{t("status")}</span>
               </div>
               <p className="mt-5 text-xs font-semibold tracking-[0.08em] text-muted uppercase">{t(`${project.key}.type`)}</p>

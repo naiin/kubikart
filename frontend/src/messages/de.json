@@ -69,7 +69,43 @@
     "checkoutContact": "Kontaktinformationen",
     "checkoutAddress": "Lieferadresse",
     "checkoutShippingMethod": "Versandart",
-    "checkoutPaymentMethod": "Zahlungsart"
+    "checkoutPaymentMethod": "Zahlungsart",
+    "checkoutEmail": "E-Mail-Adresse",
+    "checkoutCountry": "Land/Region",
+    "checkoutStreet": "Straße und Hausnummer",
+    "checkoutApartment": "Wohnung, Suite usw. (optional)",
+    "checkoutPhoneOptional": "Telefon (optional)",
+    "checkoutContactLabel": "Kontakt:",
+    "checkoutDeliveryTo": "Lieferung an:",
+    "checkoutShippingLabel": "Versand:",
+    "checkoutChange": "Ändern",
+    "checkoutBack": "Zurück",
+    "checkoutContinueShipping": "Weiter zum Versand",
+    "checkoutContinuePayment": "Weiter zur Zahlung",
+    "checkoutCreatingOrder": "Bestellung wird angelegt…",
+    "checkoutCalculatingShipping": "Versandkosten werden berechnet…",
+    "checkoutCheckingPrices": "Preise und Versand werden geprüft…",
+    "checkoutFree": "Kostenlos",
+    "checkoutBusinessDays": "Werktage",
+    "checkoutTaxNotice": "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmerregelung).",
+    "checkoutCountryDE": "Deutschland",
+    "checkoutCountryAT": "Österreich",
+    "checkoutCountryCH": "Schweiz",
+    "checkoutCountryNL": "Niederlande",
+    "checkoutCountryFR": "Frankreich",
+    "checkoutCountryBE": "Belgien",
+    "paymentCard": "Kreditkarte",
+    "paymentCardDescription": "Visa, Mastercard, American Express",
+    "paymentKlarnaDescription": "Sofort bezahlen oder in Raten",
+    "paymentPayPalDescription": "Mit PayPal-Konto bezahlen",
+    "paymentOr": "oder",
+    "paymentLoadingWallets": "Apple Pay / Google Pay laden…",
+    "paymentInitializationFailed": "Zahlung konnte nicht initialisiert werden.",
+    "paymentNetworkError": "Netzwerkfehler bei der Zahlungsinitialisierung.",
+    "paymentFailed": "Zahlung fehlgeschlagen.",
+    "paymentPayPalIncomplete": "Die PayPal-Zahlung wurde nicht abgeschlossen.",
+    "checkoutOrderCreationFailed": "Die ausstehende Bestellung konnte nicht erstellt werden.",
+    "checkoutQuoteFailed": "Preise und Versand konnten nicht geprüft werden."
   },
   "header": {
     "mobileSummary": "Made in Germany · Schneller Versand",
@@ -84,6 +120,7 @@
       "shop": "Shop",
       "businessKits": "Business Kits",
       "services": "Lösungen",
+      "productionServices": "Dienstleistungen",
       "personalize": "Personalisieren",
       "laserService": "Laser Service",
       "printing3d": "3D Druck",
@@ -839,6 +876,7 @@
   },
   "homeRedesign": {
     "hero": {
+      "imageAlt": "Abgestimmter dunkelblauer QR- und NFC-Aufsteller mit Menüdisplay und Thekenschildern in einem modernen Café",
       "eyebrow": "Studio für lokale Sichtbarkeit & personalisierte Produkte",
       "title": "Mach dein Unternehmen leichter sichtbar, scanbar und vertrauenswürdig.",
       "body": "Kubikart gestaltet QR- und NFC-Aufsteller, Aufkleber, Menüs und Business Visibility Kits für lokale Unternehmen – plus ausgewählte personalisierte Produkte auf Bestellung.",
@@ -860,12 +898,14 @@
       "body": "Provisorische Aushänge und einzelne QR-Codes werden zu einer abgestimmten Lösung für Theke, Fenster und Menübereich.",
       "status": "Konzeptdarstellung",
       "before": {
+        "imageAlt": "Cafétheke vor dem Einsatz abgestimmter Kundeninformationen und QR-Aufsteller",
         "label": "Vorher",
         "title": "Provisorische Kundeninformation",
         "text": "Papier-Aushänge, ein einzelner gedruckter QR-Code und uneinheitliche Menühinweise erschweren einen professionellen Eindruck.",
         "imageAlt": "Prototypische Produktauswahl während der Planungsphase"
       },
       "after": {
+        "imageAlt": "Cafétheke mit abgestimmtem dunkelblauem QR-Aufsteller, Menüdisplay und Fenstergrafik",
         "label": "Nachher",
         "title": "Abgestimmte Sichtbarkeit",
         "text": "Öffnungszeiten, Bewertungsaufsteller und Menüdisplay greifen Gestaltung und Kundenweg gemeinsam auf.",
@@ -938,6 +978,7 @@
       "unavailable": "Die Produktdaten sind momentan nicht verfügbar. Im Shop findest du den aktuellen Katalog, sobald die Verbindung wiederhergestellt ist."
     },
     "industries": {
+      "fallbackImageAlt": "Beispiel für Sichtbarkeitsprodukte passend für {title}",
       "eyebrow": "Lösungen nach Branche",
       "title": "Passende Produkte für Ihren Geschäftsalltag",
       "body": "Wählen Sie Ihren Geschäftstyp, um relevante Produkte und ein vorgeschlagenes Business Kit zu entdecken.",
@@ -981,19 +1022,19 @@
         "title": "Digitaler Kontaktpunkt für die Theke",
         "type": "Theke & Kundenkontakt",
         "deliverables": "Acrylaufsteller, NFC-Fläche und individualisierbare Gestaltung.",
-        "imageAlt": "Prototyp eines NFC-Aufstellers während der Designauswahl"
+        "imageAlt": "Dunkelblauer QR- und NFC-Aufsteller mit Menüdisplay auf einer Cafétheke"
       },
       "production": {
         "title": "Personalisierte Kleinserie",
         "type": "Produktion & Personalisierung",
         "deliverables": "Öffnungszeiten, Fensterbeschriftung und abgestimmte Markenelemente.",
-        "imageAlt": "Laserproduktion eines personalisierten Holzprodukts neben einem Acrylaufsteller"
+        "imageAlt": "Dunkelblauer QR-Aufsteller und dezente Fenstergrafik an einem modernen Salonplatz"
       },
       "presentation": {
         "title": "Koordinierter Gastro-Kontaktpunkt",
         "type": "Menü & Gästekontakt",
         "deliverables": "Menüboard, QR-Menü und klarer digitaler Kontaktpunkt.",
-        "imageAlt": "Prototypische Markenpräsentation mit Verpackung, Drucksachen und Aufsteller"
+        "imageAlt": "Dunkelblaues Thekenschild und QR-Aufsteller an der Kasse eines Einzelhandelsgeschäfts"
       }
     },
     "trust": {

@@ -73,6 +73,11 @@ describe("checkForSpam", () => {
       expect(result.reason).toBe("invalid_origin");
     });
 
+    it("flags a hostname-prefix origin spoof", () => {
+      const result = checkForSpam({ _t: Date.now() - 3000 }, makeRequest({ origin: "https://kubikart.de.evil.example" }));
+      expect(result).toEqual({ isSpam: true, reason: "invalid_origin" });
+    });
+
     it("falls back to referer when origin missing", () => {
       const result = checkForSpam({ _t: Date.now() - 3000 }, makeRequest({ referer: "https://kubikart.de/kontakt" }));
       expect(result.isSpam).toBe(false);

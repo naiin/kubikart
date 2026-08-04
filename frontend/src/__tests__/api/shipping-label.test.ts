@@ -31,12 +31,13 @@ vi.mock("@/lib/shipping", () => ({
 function makeRequest(body: object) {
   return new Request("http://localhost:3000/api/shipping/label", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Authorization: "Bearer test-label-secret" },
     body: JSON.stringify(body),
   });
 }
 
 beforeEach(() => {
+  process.env.DHL_LABEL_SECRET = "test-label-secret";
   vi.resetModules();
   wcApiMock.mockReset();
   createDHLShipmentMock.mockReset();
@@ -45,6 +46,18 @@ beforeEach(() => {
 });
 
 describe("POST /api/shipping/label", () => {
+  it("rejects requests without the internal label secret", async () => {
+    const { POST } = await import("@/app/api/shipping/label/route");
+    const request = new Request("http://localhost:3000/api/shipping/label", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId: 55 }),
+    });
+    const res = await POST(request as never);
+    expect(res.status).toBe(401);
+    expect(wcApiMock).not.toHaveBeenCalled();
+  });
+
   it("returns 400 when orderId is missing", async () => {
     const { POST } = await import("@/app/api/shipping/label/route");
     const res = await POST(makeRequest({}) as never);

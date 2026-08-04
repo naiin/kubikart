@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useState, useEffect, useEffectEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { getCartLineId, readCart, useCart, useHasMounted, writeCart } from "@/lib/cart";
+import { formatCartCurrency, getCartLineId, readCart, toServerCartItems, useCart, useHasMounted, writeCart } from "@/lib/cart";
 import { useAuth } from "@/lib/auth";
 import { Link } from "@/i18n/navigation";
 import CheckoutPayment from "@/components/checkout/CheckoutPayment";
@@ -19,6 +19,8 @@ export default function CheckoutPage() {
   const [step, setStep] = useState<Step>("information");
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [pendingOrder, setPendingOrder] = useState<{ id: number; orderKey: string } | null>(null);
+  const [creatingOrder, setCreatingOrder] = useState(false);
 
   // Form state
   const [form, setForm] = useState({
@@ -34,11 +36,13 @@ export default function CheckoutPage() {
     shippingMethod: "standard",
   });
 
-  const subtotal = cart.reduce((sum, item) => sum + parseFloat(item.price) * item.quantity, 0);
+  const displayedSubtotal = cart.reduce((sum, item) => sum + parseFloat(item.price) * item.quantity, 0);
+  const [subtotal, setSubtotal] = useState<number | null>(null);
 
   // Dynamic shipping rate calculation
   const [shippingRates, setShippingRates] = useState<{ id: string; name: string; price: number; estimatedDays: string }[]>([]);
   const [shippingLoading, setShippingLoading] = useState(true);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(90);
 
   const fetchShippingRates = useEffectEvent(async () => {
@@ -49,27 +53,32 @@ export default function CheckoutPage() {
     }
 
     setShippingLoading(true);
+    setQuoteError(null);
     try {
       const res = await fetch("/api/shipping/calculate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: cart.map((item) => ({ product_id: item.id, quantity: item.quantity, price: item.price })),
+          items: toServerCartItems(cart),
           country: form.country,
         }),
       });
+      const data = await res.json();
       if (res.ok) {
-        const data = await res.json();
         setShippingRates(data.rates || []);
+        setSubtotal(data.subtotal);
         if (data.freeShippingThreshold) setFreeShippingThreshold(data.freeShippingThreshold);
         // Auto-select first rate if current selection is invalid
         if (data.rates?.length && !data.rates.find((r: { id: string }) => r.id === form.shippingMethod)) {
           setForm((f) => ({ ...f, shippingMethod: data.rates[0].id }));
         }
+      } else {
+        throw new Error(t("checkoutQuoteFailed"));
       }
-    } catch {
-      // Fallback rates if API fails
-      setShippingRates([{ id: "dhl_paket", name: "DHL Paket", price: subtotal >= freeShippingThreshold ? 0 : 5.49, estimatedDays: "3–5" }]);
+    } catch (error) {
+      setShippingRates([]);
+      setSubtotal(null);
+      setQuoteError(error instanceof Error ? error.message : t("checkoutQuoteFailed"));
     } finally {
       setShippingLoading(false);
     }
@@ -79,11 +88,12 @@ export default function CheckoutPage() {
     // Shipping rates depend on client-only cart data and must be fetched after render.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchShippingRates();
-  }, [cart, form.country, subtotal]);
+  }, [cart, form.country]);
 
   const selectedRate = shippingRates.find((r) => r.id === form.shippingMethod) || shippingRates[0];
-  const shippingCost = selectedRate?.price ?? 5.49;
-  const total = subtotal + shippingCost;
+  const shippingCost = selectedRate?.price ?? 0;
+  const effectiveSubtotal = subtotal ?? displayedSubtotal;
+  const total = effectiveSubtotal + shippingCost;
 
   if (!hasMounted) return null;
 
@@ -121,67 +131,47 @@ export default function CheckoutPage() {
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+    setPendingOrder(null);
     setForm({ ...form, [e.target.name]: e.target.value });
   }
 
-  async function handlePaymentSuccess(details: { method: string; id: string }) {
-    // Create WooCommerce order
+  async function continueToPayment() {
+    if (!selectedRate || subtotal === null) return;
+    setCreatingOrder(true);
+    setPaymentError(null);
     try {
-      const orderHeaders: Record<string, string> = { "Content-Type": "application/json" };
-      if (user) {
-        const storedToken = localStorage.getItem("kubikart-token");
-        if (storedToken) {
-          orderHeaders["x-auth-token"] = storedToken;
-          orderHeaders["x-customer-id"] = String(user.id);
-        }
-      }
-      await fetch("/api/orders/create", {
+      const response = await fetch("/api/orders/create", {
         method: "POST",
-        headers: orderHeaders,
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: cart.map((item) => ({
-            name: item.name,
-            product_id: item.id,
-            quantity: item.quantity,
-            price: item.price,
-            customizations: item.customizations,
-          })),
+          items: toServerCartItems(cart),
+          shippingMethodId: selectedRate.id,
           billing: {
-            first_name: form.firstName,
-            last_name: form.lastName,
-            email: form.email,
-            phone: form.phone,
-            address_1: form.address,
-            city: form.city,
-            postcode: form.postalCode,
-            country: form.country,
+            first_name: form.firstName, last_name: form.lastName, email: form.email, phone: form.phone,
+            address_1: form.address, city: form.city, postcode: form.postalCode, country: form.country,
           },
           shipping: {
-            first_name: form.firstName,
-            last_name: form.lastName,
-            address_1: form.address,
-            city: form.city,
-            postcode: form.postalCode,
-            country: form.country,
+            first_name: form.firstName, last_name: form.lastName, address_1: form.address,
+            city: form.city, postcode: form.postalCode, country: form.country,
           },
-          shipping_lines: [
-            {
-              method_id: selectedRate?.id || "dhl_paket",
-              method_title: selectedRate?.name || "DHL Paket",
-              total: shippingCost.toFixed(2),
-            },
-          ],
-          payment_method: details.method === "paypal" ? "ppcp-gateway" : "stripe",
-          payment_method_title: details.method === "paypal" ? "PayPal" : details.method === "klarna" ? "Klarna" : "Kreditkarte",
-          transaction_id: details.id,
-          set_paid: true,
+          payment_method: "pending",
+          payment_method_title: "Awaiting payment selection",
         }),
       });
-    } catch (err) {
-      console.error("Failed to create WC order:", err);
+      const order = await response.json();
+      if (!response.ok || !order.id || !order.orderKey) throw new Error(t("checkoutOrderCreationFailed"));
+      setPendingOrder({ id: order.id, orderKey: order.orderKey });
+      setStep("payment");
+    } catch (error) {
+      setPaymentError(error instanceof Error ? error.message : t("checkoutOrderCreationFailed"));
+    } finally {
+      setCreatingOrder(false);
     }
+  }
 
-    // Clear cart and show success
+  async function handlePaymentSuccess(details: { method: string; id: string }) {
+    void details;
     writeCart([]);
     setOrderPlaced(true);
   }
@@ -249,7 +239,8 @@ export default function CheckoutPage() {
                       name="email"
                       value={form.email}
                       onChange={handleChange}
-                      placeholder="E-Mail-Adresse"
+                      placeholder={t("checkoutEmail")}
+                      aria-label={t("checkoutEmail")}
                       required
                       className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none"
                     />
@@ -260,17 +251,18 @@ export default function CheckoutPage() {
                     <h2 className="text-lg font-semibold text-gray-900 mb-3">{t("checkoutAddress")}</h2>
                     <div className="space-y-3">
                       <select
+                        aria-label={t("checkoutCountry")}
                         name="country"
                         value={form.country}
                         onChange={handleChange}
                         className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none bg-white"
                       >
-                        <option value="DE">Deutschland</option>
-                        <option value="AT">Österreich</option>
-                        <option value="CH">Schweiz</option>
-                        <option value="NL">Niederlande</option>
-                        <option value="FR">Frankreich</option>
-                        <option value="BE">Belgien</option>
+                        <option value="DE">{t("checkoutCountryDE")}</option>
+                        <option value="AT">{t("checkoutCountryAT")}</option>
+                        <option value="CH">{t("checkoutCountryCH")}</option>
+                        <option value="NL">{t("checkoutCountryNL")}</option>
+                        <option value="FR">{t("checkoutCountryFR")}</option>
+                        <option value="BE">{t("checkoutCountryBE")}</option>
                       </select>
 
                       <div className="grid grid-cols-2 gap-3">
@@ -280,6 +272,7 @@ export default function CheckoutPage() {
                           value={form.firstName}
                           onChange={handleChange}
                           placeholder={t("firstName")}
+                          aria-label={t("firstName")}
                           required
                           className="rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none"
                         />
@@ -289,6 +282,7 @@ export default function CheckoutPage() {
                           value={form.lastName}
                           onChange={handleChange}
                           placeholder={t("lastName")}
+                          aria-label={t("lastName")}
                           required
                           className="rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none"
                         />
@@ -299,7 +293,8 @@ export default function CheckoutPage() {
                         name="address"
                         value={form.address}
                         onChange={handleChange}
-                        placeholder="Straße und Hausnummer"
+                        placeholder={t("checkoutStreet")}
+                        aria-label={t("checkoutStreet")}
                         required
                         className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none"
                       />
@@ -309,7 +304,8 @@ export default function CheckoutPage() {
                         name="apartment"
                         value={form.apartment}
                         onChange={handleChange}
-                        placeholder="Wohnung, Suite, etc. (optional)"
+                        placeholder={t("checkoutApartment")}
+                        aria-label={t("checkoutApartment")}
                         className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none"
                       />
 
@@ -320,6 +316,7 @@ export default function CheckoutPage() {
                           value={form.postalCode}
                           onChange={handleChange}
                           placeholder={t("postalCode")}
+                          aria-label={t("postalCode")}
                           required
                           className="rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none"
                         />
@@ -329,6 +326,7 @@ export default function CheckoutPage() {
                           value={form.city}
                           onChange={handleChange}
                           placeholder={t("city")}
+                          aria-label={t("city")}
                           required
                           className="rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none"
                         />
@@ -339,7 +337,8 @@ export default function CheckoutPage() {
                         name="phone"
                         value={form.phone}
                         onChange={handleChange}
-                        placeholder={`${t("phone")} (optional)`}
+                        placeholder={t("checkoutPhoneOptional")}
+                        aria-label={t("checkoutPhoneOptional")}
                         className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none"
                       />
                     </div>
@@ -354,7 +353,7 @@ export default function CheckoutPage() {
                     disabled={!form.email || !form.firstName || !form.lastName || !form.address || !form.postalCode || !form.city}
                     className="w-full rounded-lg bg-accent-600 py-3.5 text-sm font-semibold text-white hover:bg-accent-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Weiter zum Versand →
+                    {t("checkoutContinueShipping")} →
                   </button>
                 </div>
               )}
@@ -366,31 +365,31 @@ export default function CheckoutPage() {
                   <div className="rounded-lg border border-gray-200 p-4 text-sm">
                     <div className="flex justify-between items-center">
                       <div>
-                        <span className="text-gray-500">Kontakt:</span> <span className="text-gray-900">{form.email}</span>
+                        <span className="text-gray-500">{t("checkoutContactLabel")}</span> <span className="text-gray-900">{form.email}</span>
                       </div>
                       <button type="button" onClick={() => setStep("information")} className="text-navy-900 text-xs hover:underline">
-                        Ändern
+                        {t("checkoutChange")}
                       </button>
                     </div>
                     <div className="mt-2 pt-2 border-t border-gray-100 flex justify-between items-center">
                       <div>
-                        <span className="text-gray-500">Lieferung an:</span>{" "}
+                        <span className="text-gray-500">{t("checkoutDeliveryTo")}</span>{" "}
                         <span className="text-gray-900">
                           {form.address}, {form.postalCode} {form.city}
                         </span>
                       </div>
                       <button type="button" onClick={() => setStep("information")} className="text-navy-900 text-xs hover:underline">
-                        Ändern
+                        {t("checkoutChange")}
                       </button>
                     </div>
                   </div>
 
                   {/* Shipping methods */}
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900 mb-3">{t("checkoutShippingMethod")}</h2>
-                    <div className="space-y-2">
+                    <h2 id="shipping-method-heading" className="text-lg font-semibold text-gray-900 mb-3">{t("checkoutShippingMethod")}</h2>
+                    <div role="radiogroup" aria-labelledby="shipping-method-heading" className="space-y-2">
                       {shippingLoading ? (
-                        <div className="rounded-lg border border-gray-200 p-4 text-sm text-gray-500 text-center">Versandkosten werden berechnet…</div>
+                        <div role="status" className="rounded-lg border border-gray-200 p-4 text-sm text-gray-500 text-center">{t("checkoutCalculatingShipping")}</div>
                       ) : (
                         shippingRates.map((rate) => (
                           <label
@@ -408,10 +407,10 @@ export default function CheckoutPage() {
                               />
                               <div>
                                 <p className="text-sm font-medium text-gray-900">{rate.name}</p>
-                                <p className="text-xs text-gray-500">{rate.estimatedDays} Werktage</p>
+                                <p className="text-xs text-gray-500">{rate.estimatedDays} {t("checkoutBusinessDays")}</p>
                               </div>
                             </div>
-                            <span className="text-sm font-medium text-gray-900">{rate.price === 0 ? "Kostenlos" : `€${rate.price.toFixed(2)}`}</span>
+                            <span className="text-sm font-medium text-gray-900">{rate.price === 0 ? t("checkoutFree") : formatCartCurrency(rate.price, locale)}</span>
                           </label>
                         ))
                       )}
@@ -424,14 +423,15 @@ export default function CheckoutPage() {
                       onClick={() => setStep("information")}
                       className="flex-1 rounded-lg border border-gray-300 py-3.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                     >
-                      ← Zurück
+                      ← {t("checkoutBack")}
                     </button>
                     <button
                       type="button"
-                      onClick={() => setStep("payment")}
+                      onClick={() => void continueToPayment()}
+                      disabled={creatingOrder || !selectedRate || subtotal === null}
                       className="flex-1 rounded-lg bg-accent-600 py-3.5 text-sm font-semibold text-white hover:bg-accent-500 transition-colors"
                     >
-                      Weiter zur Zahlung →
+                      {creatingOrder ? t("checkoutCreatingOrder") : `${t("checkoutContinuePayment")} →`}
                     </button>
                   </div>
                 </div>
@@ -444,32 +444,32 @@ export default function CheckoutPage() {
                   <div className="rounded-lg border border-gray-200 p-4 text-sm">
                     <div className="flex justify-between items-center">
                       <div>
-                        <span className="text-gray-500">Kontakt:</span> <span className="text-gray-900">{form.email}</span>
+                        <span className="text-gray-500">{t("checkoutContactLabel")}</span> <span className="text-gray-900">{form.email}</span>
                       </div>
                       <button type="button" onClick={() => setStep("information")} className="text-navy-900 text-xs hover:underline">
-                        Ändern
+                        {t("checkoutChange")}
                       </button>
                     </div>
                     <div className="mt-2 pt-2 border-t border-gray-100 flex justify-between items-center">
                       <div>
-                        <span className="text-gray-500">Lieferung an:</span>{" "}
+                        <span className="text-gray-500">{t("checkoutDeliveryTo")}</span>{" "}
                         <span className="text-gray-900">
                           {form.address}, {form.postalCode} {form.city}
                         </span>
                       </div>
                       <button type="button" onClick={() => setStep("information")} className="text-navy-900 text-xs hover:underline">
-                        Ändern
+                        {t("checkoutChange")}
                       </button>
                     </div>
                     <div className="mt-2 pt-2 border-t border-gray-100 flex justify-between items-center">
                       <div>
-                        <span className="text-gray-500">Versand:</span>{" "}
+                        <span className="text-gray-500">{t("checkoutShippingLabel")}</span>{" "}
                         <span className="text-gray-900">
-                          {selectedRate ? `${selectedRate.name} (${selectedRate.estimatedDays} Werktage)` : "Standard (3–5 Werktage)"}
+                          {selectedRate ? `${selectedRate.name} (${selectedRate.estimatedDays} ${t("checkoutBusinessDays")})` : "—"}
                         </span>
                       </div>
                       <button type="button" onClick={() => setStep("shipping")} className="text-navy-900 text-xs hover:underline">
-                        Ändern
+                        {t("checkoutChange")}
                       </button>
                     </div>
                   </div>
@@ -477,8 +477,19 @@ export default function CheckoutPage() {
                   {/* Payment methods */}
                   <div>
                     <h2 className="text-lg font-semibold text-gray-900 mb-3">{t("checkoutPaymentMethod")}</h2>
-                    {paymentError && <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">{paymentError}</div>}
-                    <CheckoutPayment total={total} onSuccess={handlePaymentSuccess} onError={(msg) => setPaymentError(msg)} />
+                    {paymentError && <div role="alert" aria-live="assertive" className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">{paymentError}</div>}
+                    {subtotal !== null && selectedRate && pendingOrder ? (
+                      <CheckoutPayment
+                        orderId={pendingOrder.id}
+                        orderKey={pendingOrder.orderKey}
+                        onSuccess={handlePaymentSuccess}
+                        onError={(msg) => setPaymentError(msg)}
+                      />
+                    ) : (
+                      <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                        {quoteError || t("checkoutCheckingPrices")}
+                      </p>
+                    )}
                   </div>
 
                   <button
@@ -486,7 +497,7 @@ export default function CheckoutPage() {
                     onClick={() => setStep("shipping")}
                     className="w-full rounded-lg border border-gray-300 py-3.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   >
-                    ← Zurück
+                    ← {t("checkoutBack")}
                   </button>
                 </div>
               )}
@@ -558,7 +569,7 @@ export default function CheckoutPage() {
                         </div>
                       ) : null}
                     </div>
-                    <span className="text-sm font-medium text-gray-900 shrink-0">€{(parseFloat(item.price) * item.quantity).toFixed(2)}</span>
+                    <span className="text-sm font-medium text-gray-900 shrink-0">{formatCartCurrency(parseFloat(item.price) * item.quantity, locale)}</span>
                   </div>
                 ))}
               </div>
@@ -567,7 +578,7 @@ export default function CheckoutPage() {
               <div className="mt-6 pt-6 border-t border-gray-300 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{t("subtotal")}</span>
-                  <span className="text-gray-900">€{subtotal.toFixed(2)}</span>
+                  <span className="text-gray-900">{formatCartCurrency(effectiveSubtotal, locale)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{t("shipping")}</span>
@@ -577,19 +588,19 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between text-lg font-bold pt-4 border-t border-gray-300">
                   <span>{t("total")}</span>
-                  <span>€{total.toFixed(2)}</span>
+                  <span>{formatCartCurrency(total, locale)}</span>
                 </div>
-                <p className="text-[11px] text-gray-500 pt-1">Gem. § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmerregelung).</p>
+                <p className="text-[11px] text-gray-500 pt-1">{t("checkoutTaxNotice")}</p>
               </div>
 
               {/* Free shipping notice */}
-              {subtotal < freeShippingThreshold && shippingCost > 0 && (
+              {effectiveSubtotal < freeShippingThreshold && shippingCost > 0 && (
                 <p className="mt-4 text-xs text-gray-500 text-center">
                   {t("freeShippingRemaining", {
                     amount: new Intl.NumberFormat(locale === "de" ? "de-DE" : "en-DE", {
                       style: "currency",
                       currency: "EUR",
-                    }).format(freeShippingThreshold - subtotal),
+                    }).format(freeShippingThreshold - effectiveSubtotal),
                   })}
                 </p>
               )}

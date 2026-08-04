@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { readCart, writeCart } from "@/lib/cart";
 import { formatProductPrice, type ProductPageProduct, type ProductPersonalizationOption } from "@/lib/product-page";
+import { getCustomizationExtrasTotal } from "@/lib/product-configuration";
 
 function getOptionLabel(option: ProductPersonalizationOption, value: string) {
   return option.options?.find((entry) => entry.value === value)?.label || value;
@@ -26,7 +27,7 @@ function buildCustomizationData(formData: FormData, options: ProductPersonalizat
     }
 
     customizationSummary.push(`${option.label}: ${label}`);
-    customizations[option.id] = label;
+    customizations[option.id] = value;
   }
 
   return { customizationSummary, customizations };
@@ -92,8 +93,9 @@ export function ProductPurchaseForm({
     cart.push({
       lineId: crypto.randomUUID(),
       id: product.id,
+      productId: product.id,
       name: product.name,
-      price: product.price.amount.toFixed(2),
+      price: (product.price.amount + getCustomizationExtrasTotal(product.personalizationOptions, customizations)).toFixed(2),
       image: product.images[0]?.src || "",
       quantity,
       slug: product.slug,

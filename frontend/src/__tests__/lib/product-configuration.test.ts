@@ -200,10 +200,39 @@ describe("paid extras and cart/order metadata", () => {
   });
 
   it("adds the configured surcharge once per unit and removes it when deselected", () => {
-    expect(getSelectedExtrasTotal(fields, {})).toBe(0);
-    expect(getConfiguredUnitPrice(12.9, fields, { _gift_wrap: true })).toBe(15.4);
-    expect(getConfiguredUnitPrice(12.9, fields, { _gift_wrap: false })).toBe(12.9);
-    expect(getConfiguredUnitPrice(12.9, fields, { _gift_wrap: true }) * 3).toBeCloseTo(46.2);
+    expect(getSelectedExtrasTotal(fields, createState())).toBe(0);
+    expect(getConfiguredUnitPrice(12.9, fields, createState({ checkboxValues: { _gift_wrap: true } }))).toBe(15.4);
+    expect(getConfiguredUnitPrice(12.9, fields, createState({ checkboxValues: { _gift_wrap: false } }))).toBe(12.9);
+    expect(getConfiguredUnitPrice(12.9, fields, createState({ checkboxValues: { _gift_wrap: true } })) * 3).toBeCloseTo(46.2);
+  });
+
+  it("adds surcharges for populated text and select fields together with checkbox extras", () => {
+    const pricedFields: ProductPersonalizationOption[] = [
+      { id: "motif_text", label: "Motif", type: "text", required: false, price: 5 },
+      { id: "material", label: "Material", type: "select", required: false, price: 3, options: [{ label: "Oak", value: "oak" }] },
+      { id: "packaging", label: "Packaging", type: "checkbox", required: false, price: 2.5 },
+    ];
+    const state = createState({
+      selectedOptions: { material: "oak" },
+      textInputs: { motif_text: "Mountain" },
+      checkboxValues: { packaging: true },
+    });
+    expect(getConfiguredUnitPrice(50, pricedFields, state)).toBe(60.5);
+    expect(getConfiguredUnitPrice(50, pricedFields.slice(0, 1).concat(pricedFields[2]), state)).toBe(57.5);
+  });
+
+  it("calculates the cutting-board engraving, font and motif example as EUR 74.90", () => {
+    const cuttingBoardFields: ProductPersonalizationOption[] = [
+      { id: "engraving_text", label: "Gravurtext", type: "text", required: true, price: 10 },
+      { id: "font", label: "Schriftart", type: "select", required: true, price: 10, options: [{ label: "Modern", value: "modern" }] },
+      { id: "motif", label: "Motiv", type: "select", required: true, price: 10, options: [{ label: "Stern", value: "star" }] },
+    ];
+    const state = createState({
+      selectedOptions: { font: "modern", motif: "star" },
+      textInputs: { engraving_text: "Raza" },
+    });
+    expect(getConfiguredUnitPrice(44.9, cuttingBoardFields, state)).toBeCloseTo(74.9);
+    expect(getConfiguredUnitPrice(44.9, cuttingBoardFields, { ...state, selectedOptions: { font: "modern", motif: "none" } })).toBeCloseTo(64.9);
   });
 
   it("serializes text, select, motif, optional requests and extras without dropping fields", () => {

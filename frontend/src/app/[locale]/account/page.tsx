@@ -35,7 +35,7 @@ export default function AccountPage() {
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-gray-900">{ta("title")}</h1>
-          <button onClick={logout} className="text-sm font-medium text-gray-500 hover:text-red-500 transition-colors">
+          <button onClick={() => void logout()} className="text-sm font-medium text-gray-500 hover:text-red-500 transition-colors">
             {t("logout")}
           </button>
         </div>

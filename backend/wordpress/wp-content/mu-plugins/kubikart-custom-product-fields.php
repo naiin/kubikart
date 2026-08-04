@@ -2,13 +2,13 @@
 /**
  * Plugin Name: Kubikart Custom Product Fields
  * Description: Adds data-driven personalization fields and paid extras to WooCommerce products.
- * Version: 1.3.2
+ * Version: 1.4.0
  * Author: Kubikart
  */
 
 if (!defined('ABSPATH')) exit;
 
-const KUBIKART_PRODUCT_FIELDS_SCHEMA_VERSION = 2;
+const KUBIKART_PRODUCT_FIELDS_SCHEMA_VERSION = 3;
 const KUBIKART_PRODUCT_FIELDS_META_KEY = '_kubikart_custom_fields';
 const KUBIKART_PRODUCT_FIELDS_BACKUP_META_KEY = '_kubikart_custom_fields_backup_v1';
 
@@ -130,9 +130,7 @@ function kubikart_sanitize_custom_fields_payload($raw_fields) {
             }
         }
 
-        if ($type === 'checkbox') {
-            $saved_field['price'] = max(0, (float) wc_format_decimal($field['price'] ?? 0));
-        }
+        $saved_field['price'] = max(0, (float) wc_format_decimal($field['price'] ?? 0));
 
         $fields[] = $saved_field;
     }
@@ -223,13 +221,13 @@ add_action('admin_enqueue_scripts', function () {
         'kubikart-custom-product-fields-admin',
         $base_url . 'assets/kubikart-custom-product-fields-admin.css',
         [],
-        '1.3.2'
+        '1.4.0'
     );
     wp_enqueue_script(
         'kubikart-custom-product-fields-admin',
         $base_url . 'assets/kubikart-custom-product-fields-admin.js',
         [],
-        '1.3.2',
+        '1.4.0',
         true
     );
 });
@@ -262,8 +260,8 @@ function kubikart_render_custom_field_row($index, $field = []) {
         <td data-column="Max" data-field-control="text"><input type="number" min="1" name="<?php echo esc_attr($name_prefix); ?>[maxLength]" value="<?php echo esc_attr($field['maxLength'] ?? ''); ?>" /></td>
         <td data-column="Optionen" data-field-control="select"><textarea name="<?php echo esc_attr($name_prefix); ?>[options]" placeholder="wert|Beschriftung&#10;modern|Modern"><?php echo esc_textarea(implode("\n", $option_lines)); ?></textarea></td>
         <td data-column="Standardwert" data-field-control="select"><input type="text" name="<?php echo esc_attr($name_prefix); ?>[defaultValue]" value="<?php echo esc_attr($field['defaultValue'] ?? ''); ?>" placeholder="z. B. classic" /></td>
-        <td data-column="Aufpreis (€)" data-field-control="checkbox"><input type="number" min="0" step="0.01" name="<?php echo esc_attr($name_prefix); ?>[price]" value="<?php echo esc_attr($field['price'] ?? ''); ?>" /></td>
-        <td data-column="Hilfetext"><input type="text" name="<?php echo esc_attr($name_prefix); ?>[helperText]" value="<?php echo esc_attr($field['helperText'] ?? ''); ?>" /></td>
+        <td data-column="Aufpreis (€)" class="kubikart-price-field"><input type="number" min="0" step="0.01" inputmode="decimal" name="<?php echo esc_attr($name_prefix); ?>[price]" value="<?php echo esc_attr($field['price'] ?? ''); ?>" placeholder="0,00" aria-label="Aufpreis in Euro für <?php echo esc_attr($field['label'] ?? 'dieses Feld'); ?>" /></td>
+        <td data-column="Hilfetext (keine Preisangabe)"><input type="text" name="<?php echo esc_attr($name_prefix); ?>[helperText]" value="<?php echo esc_attr($field['helperText'] ?? ''); ?>" placeholder="Optionale Erklärung für Kunden" /></td>
         <td data-column="Aktion"><button type="button" class="button kubikart-remove-field" data-remove-field aria-label="Feld entfernen">×</button></td>
     </tr>
     <?php

@@ -7,7 +7,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { CookieBanner } from "@/components/CookieBanner";
 import { AuthProvider } from "@/lib/auth";
-import { getSiteUrl } from "@/lib/seo";
+import { getRobotsMetadata, getSiteUrl } from "@/lib/seo";
 import "../globals.css";
 
 const inter = localFont({
@@ -28,8 +28,8 @@ const montserrat = localFont({
 
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
-  title: "KubikArt – 3D-Druck, Lasergravur & Kreative Lösungen",
-  description: "KubikArt bietet professionellen 3D-Druck, Lasergravur, Brand Kits und mehr. Ihr Partner für kreative Lösungen in Blaustein.",
+  title: "Kubikart | Sichtbarkeit für lokale Unternehmen",
+  description: "Kubikart gestaltet QR- und NFC-Aufsteller, Aufkleber, Menüs, Sichtbarkeits-Kits und ausgewählte personalisierte Produkte.",
   icons: {
     icon: [{ url: "/web-app-manifest-192x192.png", sizes: "192x192", type: "image/png" }],
     apple: [{ url: "/web-app-manifest-192x192.png", sizes: "192x192", type: "image/png" }],
@@ -39,6 +39,7 @@ export const metadata: Metadata = {
     siteName: "Kubikart",
     type: "website",
   },
+  robots: getRobotsMetadata(),
 };
 
 export default async function LocaleLayout({ children, params }: { children: React.ReactNode; params: Promise<{ locale: string }> }) {

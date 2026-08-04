@@ -1,3 +1,5 @@
+import sanitizeHtml from "sanitize-html";
+
 const WC_API_URL = process.env.WC_API_URL!;
 const WC_CONSUMER_KEY = process.env.WC_CONSUMER_KEY!;
 const WC_CONSUMER_SECRET = process.env.WC_CONSUMER_SECRET!;
@@ -21,8 +23,6 @@ export async function wcApi<T>(endpoint: string, options: WCRequestOptions = {})
   const { params = {}, method = "GET", body, revalidate = 300, tags } = options;
 
   const url = new URL(`${WC_API_URL}/${endpoint}`);
-  url.searchParams.set("consumer_key", WC_CONSUMER_KEY);
-  url.searchParams.set("consumer_secret", WC_CONSUMER_SECRET);
 
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.set(key, String(value));
@@ -30,7 +30,10 @@ export async function wcApi<T>(endpoint: string, options: WCRequestOptions = {})
 
   const fetchOptions: RequestInit & { next?: { revalidate?: number; tags?: string[] } } = {
     method,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Basic ${Buffer.from(`${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`).toString("base64")}`,
+    },
     next: { revalidate, ...(tags?.length ? { tags } : {}) },
   };
 
@@ -62,11 +65,13 @@ function decodeEntities(text: string): string {
 // Product types
 export interface WCProduct {
   id: number;
+  sku?: string;
   name: string;
   slug: string;
   permalink: string;
   type: string;
   status: string;
+  catalog_visibility?: "visible" | "catalog" | "search" | "hidden";
   date_modified?: string;
   date_modified_gmt?: string;
   description: string;
@@ -98,10 +103,13 @@ export interface WCProduct {
 
 export interface WCVariation {
   id: number;
+  purchasable?: boolean;
   price: string;
   regular_price: string;
   sale_price: string;
   stock_status: string;
+  weight?: string;
+  dimensions?: { length: string; width: string; height: string };
   image?: {
     id: number;
     src: string;
@@ -247,16 +255,33 @@ export interface WCReview {
   verified: boolean;
 }
 
-export async function getProductReviews(productId: number) {
-  return wcApi<WCReview[]>("products/reviews", {
-    params: { product: productId, per_page: 20, status: "approved" },
-    tags: [CACHE_TAGS.products],
+export function sanitizeWooCommerceHtml(value: string): string {
+  return sanitizeHtml(value, {
+    allowedTags: ["p", "br", "strong", "b", "em", "i", "ul", "ol", "li", "a", "span"],
+    allowedAttributes: { a: ["href", "title", "target", "rel"] },
+    allowedSchemes: ["http", "https", "mailto"],
+    transformTags: {
+      a: sanitizeHtml.simpleTransform("a", { rel: "noopener noreferrer nofollow" }, true),
+    },
   });
 }
 
+function sanitizeReviews(reviews: WCReview[]): WCReview[] {
+  return reviews.map((review) => ({ ...review, review: sanitizeWooCommerceHtml(review.review) }));
+}
+
+export async function getProductReviews(productId: number) {
+  const reviews = await wcApi<WCReview[]>("products/reviews", {
+    params: { product: productId, per_page: 20, status: "approved" },
+    tags: [CACHE_TAGS.products],
+  });
+  return sanitizeReviews(reviews);
+}
+
 export async function getAllReviews(perPage = 10) {
-  return wcApi<WCReview[]>("products/reviews", {
+  const reviews = await wcApi<WCReview[]>("products/reviews", {
     params: { per_page: perPage, status: "approved" },
     tags: [CACHE_TAGS.products],
   });
+  return sanitizeReviews(reviews);
 }

@@ -30,9 +30,7 @@ export default function OrdersPage() {
 
     let cancelled = false;
 
-    fetch("/api/orders", {
-      headers: { "x-customer-id": String(activeCustomerId) },
-    })
+    fetch("/api/orders", { credentials: "same-origin" })
       .then((res) => res.json())
       .then((data) => {
         if (!cancelled) {

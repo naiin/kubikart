@@ -8,6 +8,7 @@ import {
 import {
   getAbsoluteUrl,
   getLocalizedPath,
+  isIndexableDeployment,
   SEO_ROUTE_SEGMENTS,
   type LocalizedRouteSegments,
   type SiteLocale,
@@ -26,7 +27,6 @@ type StaticSitemapRoute = {
 const STATIC_SITEMAP_ROUTES: StaticSitemapRoute[] = [
   { route: SEO_ROUTE_SEGMENTS.home, changeFrequency: "weekly", priority: 1 },
   { route: SEO_ROUTE_SEGMENTS.shop, changeFrequency: "daily", priority: 0.95 },
-  { route: SEO_ROUTE_SEGMENTS.personalizedGifts, changeFrequency: "weekly", priority: 0.8 },
   { route: SEO_ROUTE_SEGMENTS.services, changeFrequency: "weekly", priority: 0.85 },
   { route: SEO_ROUTE_SEGMENTS.laserService, changeFrequency: "weekly", priority: 0.8 },
   { route: SEO_ROUTE_SEGMENTS.laserCutting, changeFrequency: "weekly", priority: 0.75 },
@@ -34,7 +34,6 @@ const STATIC_SITEMAP_ROUTES: StaticSitemapRoute[] = [
   { route: SEO_ROUTE_SEGMENTS.brandKit, changeFrequency: "monthly", priority: 0.7 },
   { route: SEO_ROUTE_SEGMENTS.businesses, changeFrequency: "weekly", priority: 0.8 },
   { route: SEO_ROUTE_SEGMENTS.printingMenus, changeFrequency: "monthly", priority: 0.7 },
-  { route: SEO_ROUTE_SEGMENTS.customRequest, changeFrequency: "weekly", priority: 0.8 },
   { route: SEO_ROUTE_SEGMENTS.about, changeFrequency: "monthly", priority: 0.65 },
   { route: SEO_ROUTE_SEGMENTS.contact, changeFrequency: "monthly", priority: 0.7 },
   { route: SEO_ROUTE_SEGMENTS.faq, changeFrequency: "monthly", priority: 0.6 },
@@ -68,7 +67,7 @@ async function fetchPublishedProducts(locale: SiteLocale) {
       break;
     }
 
-    products.push(...batch);
+    products.push(...batch.filter((product) => product.catalog_visibility !== "hidden"));
 
     if (batch.length < PRODUCTS_PER_PAGE) {
       break;
@@ -79,10 +78,15 @@ async function fetchPublishedProducts(locale: SiteLocale) {
 }
 
 function buildAlternates(route: Partial<Record<SiteLocale, string>>) {
+  const languages = Object.fromEntries(
+    Object.entries(route).map(([locale, path]) => [locale, getAbsoluteUrl(path!)])
+  );
+  if (route.de) {
+    languages["x-default"] = getAbsoluteUrl(route.de);
+  }
+
   return {
-    languages: Object.fromEntries(
-      Object.entries(route).map(([locale, path]) => [locale, getAbsoluteUrl(path!)])
-    ),
+    languages,
   };
 }
 
@@ -123,6 +127,10 @@ export function buildIndustrySitemapEntries(
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  if (!isIndexableDeployment()) {
+    return [];
+  }
+
   const now = new Date();
   const entries: MetadataRoute.Sitemap = [];
 
@@ -142,7 +150,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
       entries.push({
         url: getAbsoluteUrl(getLocalizedPath(locale, segment)),
-        lastModified: now,
         changeFrequency,
         priority,
         alternates: buildAlternates(localizedRoute),

@@ -11,7 +11,8 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 type PaymentMethod = "card" | "klarna" | "paypal";
 
 interface CheckoutPaymentProps {
-  total: number; // in EUR, e.g. 49.99
+  orderId: number;
+  orderKey: string;
   onSuccess: (details: { method: PaymentMethod; id: string }) => void;
   onError: (msg: string) => void;
   disabled?: boolean;
@@ -38,7 +39,7 @@ function StripeForm({ onSuccess, onError, method }: { onSuccess: (id: string) =>
     });
 
     if (error) {
-      onError(error.message || "Payment failed");
+      onError(error.message || t("paymentFailed"));
       setLoading(false);
     } else if (paymentIntent && paymentIntent.status === "succeeded") {
       onSuccess(paymentIntent.id);
@@ -84,6 +85,7 @@ function StripeForm({ onSuccess, onError, method }: { onSuccess: (id: string) =>
 function ExpressCheckout({ onSuccess, onError }: { onSuccess: (id: string) => void; onError: (msg: string) => void }) {
   const stripe = useStripe();
   const elements = useElements();
+  const t = useTranslations("common");
 
   return (
     <ExpressCheckoutElement
@@ -98,7 +100,7 @@ function ExpressCheckout({ onSuccess, onError }: { onSuccess: (id: string) => vo
           redirect: "if_required",
         });
         if (error) {
-          onError(error.message || "Payment failed");
+          onError(error.message || t("paymentFailed"));
         } else if (paymentIntent?.status === "succeeded") {
           onSuccess(paymentIntent.id);
         }
@@ -108,16 +110,20 @@ function ExpressCheckout({ onSuccess, onError }: { onSuccess: (id: string) => vo
 }
 
 /* ─── Main Payment Component ─── */
-export default function CheckoutPayment({ total, onSuccess, onError, disabled }: CheckoutPaymentProps) {
+export default function CheckoutPayment({ orderId, orderKey, onSuccess, onError, disabled }: CheckoutPaymentProps) {
+  const t = useTranslations("common");
   const [method, setMethod] = useState<PaymentMethod>("card");
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [clientSecretKey, setClientSecretKey] = useState<string | null>(null);
   const [loadingIntent, setLoadingIntent] = useState(false);
+  const pricingKey = JSON.stringify({ orderId, orderKey });
+  const activeClientSecret = clientSecretKey === pricingKey ? clientSecret : null;
 
   // Auto-initialize Stripe on mount for express checkout (Apple Pay/Google Pay)
   useEffect(() => {
     void initStripe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [pricingKey]);
 
   // Create Stripe PaymentIntent when card/klarna is selected
   async function initStripe() {
@@ -127,59 +133,60 @@ export default function CheckoutPayment({ total, onSuccess, onError, disabled }:
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: Math.round(total * 100), // cents
-          currency: "eur",
+          orderId,
+          orderKey,
         }),
       });
       const data = await res.json();
       if (data.clientSecret) {
         setClientSecret(data.clientSecret);
+        setClientSecretKey(pricingKey);
       } else {
-        onError("Failed to initialize payment");
+        onError(t("paymentInitializationFailed"));
       }
     } catch {
-      onError("Network error initializing payment");
+      onError(t("paymentNetworkError"));
     }
     setLoadingIntent(false);
   }
 
   function selectMethod(m: PaymentMethod) {
     setMethod(m);
-    if ((m === "card" || m === "klarna") && !clientSecret) {
+    if ((m === "card" || m === "klarna") && !activeClientSecret) {
       void initStripe();
     }
   }
 
   const methodOptions: { key: PaymentMethod; label: string; desc: string; icon: string }[] = [
-    { key: "card", label: "Kreditkarte", desc: "Visa, Mastercard, AMEX", icon: "💳" },
-    { key: "klarna", label: "Klarna", desc: "Sofort bezahlen oder in Raten", icon: "🟡" },
-    { key: "paypal", label: "PayPal", desc: "Mit PayPal-Konto bezahlen", icon: "🅿️" },
+    { key: "card", label: t("paymentCard"), desc: t("paymentCardDescription"), icon: "💳" },
+    { key: "klarna", label: "Klarna", desc: t("paymentKlarnaDescription"), icon: "🟡" },
+    { key: "paypal", label: "PayPal", desc: t("paymentPayPalDescription"), icon: "🅿️" },
   ];
 
   return (
     <div className="space-y-4">
       {/* Express Checkout: Apple Pay / Google Pay */}
-      {clientSecret && (
+      {activeClientSecret && (
         <Elements
           stripe={stripePromise}
           options={{
-            clientSecret,
+            clientSecret: activeClientSecret,
             appearance: { theme: "stripe", variables: { colorPrimary: "#4169E1" } },
           }}
         >
           <ExpressCheckout onSuccess={(id) => onSuccess({ method: "card", id })} onError={onError} />
         </Elements>
       )}
-      {!clientSecret && !loadingIntent && (
+      {!activeClientSecret && !loadingIntent && (
         <button
           type="button"
           onClick={() => void initStripe()}
           className="w-full rounded-lg border border-gray-200 py-3 text-sm text-gray-500 hover:border-gray-300 transition-colors"
         >
-          Apple Pay / Google Pay laden…
+          {t("paymentLoadingWallets")}
         </button>
       )}
-      {loadingIntent && !clientSecret && (
+      {loadingIntent && !activeClientSecret && (
         <div className="flex items-center justify-center py-3">
           <svg className="h-5 w-5 animate-spin text-gray-400" viewBox="0 0 24 24" fill="none">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -193,12 +200,13 @@ export default function CheckoutPayment({ total, onSuccess, onError, disabled }:
           <div className="w-full border-t border-gray-200" />
         </div>
         <div className="relative flex justify-center text-xs">
-          <span className="bg-white px-3 text-gray-500">oder</span>
+          <span className="bg-white px-3 text-gray-500">{t("paymentOr")}</span>
         </div>
       </div>
 
       {/* Method selector */}
-      <div className="space-y-2">
+      <fieldset className="space-y-2">
+        <legend className="sr-only">{t("checkoutPaymentMethod")}</legend>
         {methodOptions.map((opt) => (
           <label
             key={opt.key}
@@ -215,14 +223,14 @@ export default function CheckoutPayment({ total, onSuccess, onError, disabled }:
               className="text-navy-900"
               disabled={disabled}
             />
-            <span className="text-lg">{opt.icon}</span>
+            <span className="text-lg" aria-hidden="true">{opt.icon}</span>
             <div>
               <p className="text-sm font-medium text-gray-900">{opt.label}</p>
               <p className="text-xs text-gray-500">{opt.desc}</p>
             </div>
           </label>
         ))}
-      </div>
+      </fieldset>
 
       {/* Payment form area */}
       <div className="mt-4">
@@ -237,11 +245,11 @@ export default function CheckoutPayment({ total, onSuccess, onError, disabled }:
                 </svg>
               </div>
             )}
-            {clientSecret && !loadingIntent && (
+            {activeClientSecret && !loadingIntent && (
               <Elements
                 stripe={stripePromise}
                 options={{
-                  clientSecret,
+                  clientSecret: activeClientSecret,
                   appearance: {
                     theme: "stripe",
                     variables: { colorPrimary: "#4169E1" },
@@ -267,26 +275,25 @@ export default function CheckoutPayment({ total, onSuccess, onError, disabled }:
               fundingSource={FUNDING.PAYPAL}
               style={{ layout: "vertical", shape: "rect", label: "pay" }}
               disabled={disabled}
-              createOrder={(_data, actions) => {
-                return actions.order.create({
-                  intent: "CAPTURE",
-                  purchase_units: [
-                    {
-                      amount: {
-                        currency_code: "EUR",
-                        value: total.toFixed(2),
-                      },
-                      description: "KubiKart Bestellung",
-                    },
-                  ],
+              createOrder={async () => {
+                const response = await fetch("/api/paypal/create-order", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ orderId, orderKey }),
                 });
+                const order = await response.json();
+                if (!response.ok || !order.id) throw new Error(t("paymentInitializationFailed"));
+                return order.id;
               }}
-              onApprove={async (_data, actions) => {
-                const details = await actions.order!.capture();
-                if (details.status === "COMPLETED") {
-                  onSuccess({ method: "paypal", id: details.id! });
+              onApprove={async (data) => {
+                const response = await fetch("/api/paypal/capture-order", {
+                  method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderID: data.orderID }),
+                });
+                const details = await response.json();
+                if (response.ok && details.status === "COMPLETED") {
+                  onSuccess({ method: "paypal", id: details.id });
                 } else {
-                  onError("PayPal payment was not completed");
+                  onError(t("paymentPayPalIncomplete"));
                 }
               }}
               onError={(err) => {

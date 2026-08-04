@@ -1,5 +1,6 @@
 import { useTranslations } from "next-intl";
 import type { WCProduct } from "@/lib/woocommerce";
+import { serializeJsonLd } from "@/lib/seo";
 
 export function ShopJsonLd({ products, locale }: { products: WCProduct[]; locale: string }) {
   const t = useTranslations("shopPage");
@@ -46,9 +47,9 @@ export function ShopJsonLd({ products, locale }: { products: WCProduct[]; locale
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbList) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionPage) }} />
-      {products.length > 0 ? <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} /> : null}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbList) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(collectionPage) }} />
+      {products.length > 0 ? <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(itemList) }} /> : null}
     </>
   );
 }

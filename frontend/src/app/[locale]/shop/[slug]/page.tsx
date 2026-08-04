@@ -15,6 +15,7 @@ import {
   type ProductPageProduct,
 } from "@/lib/product-page";
 import { getProduct, getProductReviews, type WCProduct, type WCReview } from "@/lib/woocommerce";
+import { getRobotsMetadata } from "@/lib/seo";
 
 type ProductPageProps = {
   params: Promise<{
@@ -70,6 +71,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
       canonical,
       languages,
     },
+    robots: getRobotsMetadata(),
     openGraph: {
       title: product.seoTitle,
       description: product.seoDescription,
@@ -85,6 +87,12 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
             },
           ]
         : undefined,
+    },
+    twitter: {
+      card: primaryImage ? "summary_large_image" : "summary",
+      title: product.seoTitle,
+      description: product.seoDescription,
+      images: primaryImage ? [getProductImageAbsoluteUrl(primaryImage.src)] : undefined,
     },
   };
 }

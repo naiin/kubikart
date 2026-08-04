@@ -7,25 +7,29 @@ export function IndustryMedia({
   title,
   sizes,
   priority = false,
+  fallbackSrc,
+  fallbackAlt,
 }: {
   media?: WordPressFeaturedMedia;
   title: string;
   sizes: string;
   priority?: boolean;
+  fallbackSrc?: string;
+  fallbackAlt?: string;
 }) {
   const t = useTranslations("businessIndustries");
 
   return (
     <div className="relative flex aspect-[4/3] min-h-52 items-center justify-center overflow-hidden rounded-kubikart-lg border border-border bg-surface">
-      {media?.source_url ? (
+      {media?.source_url || fallbackSrc ? (
         <Image
-          src={media.source_url}
-          alt={media.alt_text || title}
+          src={media?.source_url || fallbackSrc!}
+          alt={media?.alt_text || fallbackAlt || title}
           fill
           sizes={sizes}
           priority={priority}
           className="object-cover"
-          unoptimized
+          unoptimized={Boolean(media?.source_url)}
         />
       ) : (
         <span
@@ -42,4 +46,3 @@ export function IndustryMedia({
     </div>
   );
 }
-
