@@ -7,6 +7,7 @@ import { IndustryDetailJsonLd } from "@/components/business-industries/IndustryJ
 import { IndustryMedia } from "@/components/business-industries/IndustryMedia";
 import { ProductCard } from "@/components/ProductCard";
 import { Link } from "@/i18n/navigation";
+import { getBusinessIndustryImage } from "@/lib/business-industry-images";
 import { isWooCommercePlaceholderImage } from "@/lib/business-kits";
 import { resolveIndustryProducts } from "@/lib/business-industries";
 import { formatProductPrice } from "@/lib/product-page";
@@ -58,6 +59,10 @@ export async function generateMetadata({ params }: IndustryDetailPageProps): Pro
   }
 
   const industry = result.industry;
+  const imageOverride = getBusinessIndustryImage(industry.slug);
+  const socialImage = industry.featuredMedia?.source_url
+    || (imageOverride ? getAbsoluteUrl(imageOverride) : undefined);
+  const socialImageAlt = industry.featuredMedia?.alt_text || industry.title;
   const slugs = await getIndustryTranslationSlugs(industry);
   const canonical = getAbsoluteUrl(`/${locale}/businesses/${industry.slug}`);
   const languages: Record<string, string> = Object.fromEntries(
@@ -82,15 +87,15 @@ export async function generateMetadata({ params }: IndustryDetailPageProps): Pro
       siteName: "Kubikart",
       locale: locale === "de" ? "de_DE" : "en_US",
       type: "website",
-      images: industry.featuredMedia?.source_url
-        ? [{ url: industry.featuredMedia.source_url, alt: industry.featuredMedia.alt_text || industry.title }]
+      images: socialImage
+        ? [{ url: socialImage, alt: socialImageAlt }]
         : undefined,
     },
     twitter: {
-      card: industry.featuredMedia?.source_url ? "summary_large_image" : "summary",
+      card: socialImage ? "summary_large_image" : "summary",
       title: industry.title,
       description: industry.excerptText || t("detail.metadataFallback", { title: industry.title }),
-      images: industry.featuredMedia?.source_url ? [industry.featuredMedia.source_url] : undefined,
+      images: socialImage ? [socialImage] : undefined,
     },
   };
 }
@@ -117,6 +122,7 @@ export default async function IndustryDetailPage({ params }: IndustryDetailPageP
   }
 
   const industry = result.industry;
+  const imageOverride = getBusinessIndustryImage(industry.slug);
   const products = await resolveIndustryProducts(industry, locale);
 
   return (
@@ -146,6 +152,8 @@ export default async function IndustryDetailPage({ params }: IndustryDetailPageP
               title={industry.title}
               sizes="(min-width: 1024px) 52vw, 100vw"
               priority
+              fallbackSrc={imageOverride}
+              fallbackAlt={industry.title}
             />
           </div>
         </div>

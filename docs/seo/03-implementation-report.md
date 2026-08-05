@@ -29,7 +29,7 @@
 - JSON-LD components under `frontend/src/components/seo`, `product`, `shop`, and `business-industries`
 - WooCommerce/product mapping types for real SEO fields
 - SEO/robots tests under `frontend/src/__tests__`
-- `backend/scripts/assign-wordpress-product-galleries.php`
+- Product and category media assignments are persisted in the WordPress database and uploads exported by the guarded backend deployment workflow.
 - `docs/seo/*`
 
 ## Preserved behaviour

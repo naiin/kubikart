@@ -124,16 +124,14 @@ website/                              ← monorepo root
 │   ├── Business.md                   ← business strategy and brand guide
 │   ├── KUBIKART-OWNER-HANDBOOK.md    ← routine WordPress/WooCommerce administration
 │   ├── MAILTRAP-SETUP.md             ← transactional email setup
-│   ├── MIGRATION-STRATO.md            ← backend migration procedure
 │   ├── redesign/                     ← authoritative design and content specifications
 │   └── seo/                          ← SEO audit, implementation, and launch checks
 │
 ├── backend/
 │   ├── .lando.yml                    ← Lando config (Nginx + PHP 8.3 + MySQL 8.0)
+│   ├── DEPLOYMENT.md                 ← guarded local-only backend deployment procedure
 │   ├── phpunit.xml                   ← PHPUnit config
 │   ├── composer.json                 ← PHP dependencies
-│   ├── recovery/                     ← DB + media backups
-│   ├── scripts/                      ← utility PHP scripts
 │   ├── tests/                        ← PHPUnit test suite
 │   │   ├── bootstrap.php             ← WP function stubs (no live WP needed)
 │   │   └── plugins/                  ← plugin unit tests

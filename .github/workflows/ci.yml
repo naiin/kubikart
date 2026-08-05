@@ -45,6 +45,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Reject backend secrets and backup artifacts
+        run: |
+          forbidden="$({
+            git ls-files 'backend/.env.deploy.local'
+            git ls-files | grep -E '(^|/)(backups?|recovery|generated-media)/|\.(sql|sql\.gz|dump|zip|tar|tar\.gz|tgz|bz2|7z)$' || true
+          } | sort -u)"
+          if [ -n "$forbidden" ]; then
+            echo "Forbidden backend secret/backup artifacts are tracked:" >&2
+            echo "$forbidden" >&2
+            exit 1
+          fi
+
+      - name: Validate local backend deployment tool
+        run: python3 -m py_compile backend/deploy-backend.py
+
       - uses: pnpm/action-setup@v4
         with:
           version: 11.5.0

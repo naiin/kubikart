@@ -37,6 +37,10 @@ frontend/.env.staging
 
 # Exclude everything inside wordpress/ ...
 backend/wordpress/*
+!backend/wordpress/.htaccess
+!backend/wordpress/wp-config.php
+backend/wordpress/wp-config-remote.php
+backend/wordpress/wp-config-remot.php
 
 # ... but keep our custom content directories
 !backend/wordpress/wp-content
@@ -61,8 +65,9 @@ backend/wordpress/wp-content/upgrade-temp-backup/
 backend/wordpress/wp-content/cache/
 backend/wordpress/wp-content/languages/
 
-# WordPress config with secrets
-backend/wordpress/wp-config.php
+# Production WordPress config and deployment secrets. The tracked
+# backend/wordpress/wp-config.php contains local Lando-only values.
+backend/.env.deploy.local
 
 # ============================================================
 # Backend — PHP dependencies
@@ -74,6 +79,9 @@ backend/.phpunit.result.cache
 backend/generated-media/
 backend/recovery/
 backend/backups/
+backend/backups/**
+backend/recovery/**
+backend/generated-media/**
 backups/
 
 # Large binary archives — never commit

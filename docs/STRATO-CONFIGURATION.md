@@ -244,7 +244,7 @@ Set up regular backups:
 
 ## Migration Troubleshooting
 
-See `MIGRATION-STRATO.md` in the docs folder for detailed troubleshooting steps.
+See `backend/DEPLOYMENT.md` for the guarded local-only deployment and recovery procedure.
 
 Common issues:
 
