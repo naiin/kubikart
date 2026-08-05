@@ -7,6 +7,7 @@ import { IndustryDetailJsonLd } from "@/components/business-industries/IndustryJ
 import { IndustryMedia } from "@/components/business-industries/IndustryMedia";
 import { ProductCard } from "@/components/ProductCard";
 import { Link } from "@/i18n/navigation";
+import { getBusinessIndustryImage } from "@/lib/business-industry-images";
 import { isWooCommercePlaceholderImage } from "@/lib/business-kits";
 import { resolveIndustryProducts } from "@/lib/business-industries";
 import { formatProductPrice } from "@/lib/product-page";
@@ -27,15 +28,6 @@ import type { WCProduct } from "@/lib/woocommerce";
 type IndustryDetailPageProps = {
   params: Promise<{ locale: string; industrySlug: string }>;
 };
-
-const RESTAURANT_INDUSTRY_IMAGE = {
-  src: "/images/home/business-kit-qr-nfc.png",
-  alt: "QR- und NFC-Aufsteller für Restaurants, Cafés und Lieferdienste",
-} as const;
-
-function getIndustryImageOverride(slug: string) {
-  return slug === "restaurants-lieferdienste" ? RESTAURANT_INDUSTRY_IMAGE : undefined;
-}
 
 async function loadIndustry(locale: "de" | "en", slug: string) {
   return resolveBusinessIndustrySlug(slug, locale);
@@ -67,11 +59,11 @@ export async function generateMetadata({ params }: IndustryDetailPageProps): Pro
   }
 
   const industry = result.industry;
-  const imageOverride = getIndustryImageOverride(industry.slug);
-  const socialImage = imageOverride?.src
-    ? getAbsoluteUrl(imageOverride.src)
+  const imageOverride = getBusinessIndustryImage(industry.slug);
+  const socialImage = imageOverride
+    ? getAbsoluteUrl(imageOverride)
     : industry.featuredMedia?.source_url;
-  const socialImageAlt = imageOverride?.alt || industry.featuredMedia?.alt_text || industry.title;
+  const socialImageAlt = industry.featuredMedia?.alt_text || industry.title;
   const slugs = await getIndustryTranslationSlugs(industry);
   const canonical = getAbsoluteUrl(`/${locale}/businesses/${industry.slug}`);
   const languages: Record<string, string> = Object.fromEntries(
@@ -131,7 +123,7 @@ export default async function IndustryDetailPage({ params }: IndustryDetailPageP
   }
 
   const industry = result.industry;
-  const imageOverride = getIndustryImageOverride(industry.slug);
+  const imageOverride = getBusinessIndustryImage(industry.slug);
   const products = await resolveIndustryProducts(industry, locale);
 
   return (
@@ -161,8 +153,8 @@ export default async function IndustryDetailPage({ params }: IndustryDetailPageP
               title={industry.title}
               sizes="(min-width: 1024px) 52vw, 100vw"
               priority
-              fallbackSrc={imageOverride?.src}
-              fallbackAlt={imageOverride?.alt}
+              fallbackSrc={imageOverride}
+              fallbackAlt={industry.title}
             />
           </div>
         </div>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { IndustryMedia } from "@/components/business-industries/IndustryMedia";
+import { getBusinessIndustryImage } from "@/lib/business-industry-images";
 import { IndustryOverviewJsonLd } from "@/components/business-industries/IndustryJsonLd";
 import { Link } from "@/i18n/navigation";
 import {
@@ -86,15 +87,19 @@ export default async function BusinessIndustriesPage({ params }: BusinessIndustr
             />
           ) : (
             <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {industries.map((industry) => (
+              {industries.map((industry) => {
+                const localImage = getBusinessIndustryImage(industry.slug);
+                return (
                 <article
                   key={industry.id}
                   className="group flex min-w-0 flex-col overflow-hidden rounded-kubikart-lg border border-border bg-surface-white"
                 >
                   <Link href={`/businesses/${industry.slug}`} className="block rounded-kubikart-sm">
                     <IndustryMedia
-                      media={industry.featuredMedia}
+                      media={localImage ? undefined : industry.featuredMedia}
                       title={industry.title}
+                      fallbackSrc={localImage}
+                      fallbackAlt={industry.title}
                       sizes="(min-width: 1280px) 390px, (min-width: 768px) 50vw, 100vw"
                     />
                   </Link>
@@ -122,7 +127,8 @@ export default async function BusinessIndustriesPage({ params }: BusinessIndustr
                     </Link>
                   </div>
                 </article>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
