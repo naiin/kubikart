@@ -10,11 +10,11 @@ describe("business industry images", () => {
     ["beauty-nagelstudios", "/images/business/nail-salon.png"],
     ["clinics-practices", "/images/business/praxen.png"],
     ["fahrschulen", "/images/business/führerschein.png"],
+    ["lokale-geschaefte", "/images/business/lokale.png"],
+    ["local-shops", "/images/business/lokale.png"],
+    ["reparatur-servicebetriebe", "/images/business/service.png"],
+    ["repair-service-businesses", "/images/business/service.png"],
   ])("maps %s to %s", (slug, expected) => {
     expect(getBusinessIndustryImage(slug)).toBe(expected);
-  });
-
-  it("leaves industries without supplied artwork unmapped", () => {
-    expect(getBusinessIndustryImage("lokale-geschaefte")).toBeUndefined();
   });
 });

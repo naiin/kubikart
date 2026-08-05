@@ -11,6 +11,10 @@ const BUSINESS_INDUSTRY_IMAGES: Readonly<Record<string, string>> = {
   "clinics-practices": "/images/business/praxen.png",
   fahrschulen: "/images/business/führerschein.png",
   "driving-schools": "/images/business/führerschein.png",
+  "lokale-geschaefte": "/images/business/lokale.png",
+  "local-shops": "/images/business/lokale.png",
+  "reparatur-servicebetriebe": "/images/business/service.png",
+  "repair-service-businesses": "/images/business/service.png",
 };
 
 export function getBusinessIndustryImage(slug: string): string | undefined {
