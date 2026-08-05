@@ -96,7 +96,7 @@ export default async function BusinessIndustriesPage({ params }: BusinessIndustr
                 >
                   <Link href={`/businesses/${industry.slug}`} className="block rounded-kubikart-sm">
                     <IndustryMedia
-                      media={localImage ? undefined : industry.featuredMedia}
+                      media={industry.featuredMedia}
                       title={industry.title}
                       fallbackSrc={localImage}
                       fallbackAlt={industry.title}

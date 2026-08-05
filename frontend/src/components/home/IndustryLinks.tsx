@@ -40,7 +40,7 @@ export async function IndustryLinks() {
               <li key={industry.id} className="min-w-0">
                 <article className="flex h-full flex-col rounded-kubikart-lg border border-border bg-surface p-4 shadow-kubikart-sm">
                   <IndustryMedia
-                    media={localImage ? undefined : industry.featuredMedia}
+                    media={industry.featuredMedia}
                     title={industry.title}
                     fallbackSrc={localImage || fallbackImages[index % fallbackImages.length]}
                     fallbackAlt={t("fallbackImageAlt", { title: industry.title })}

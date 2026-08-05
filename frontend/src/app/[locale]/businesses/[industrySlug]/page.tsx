@@ -60,9 +60,8 @@ export async function generateMetadata({ params }: IndustryDetailPageProps): Pro
 
   const industry = result.industry;
   const imageOverride = getBusinessIndustryImage(industry.slug);
-  const socialImage = imageOverride
-    ? getAbsoluteUrl(imageOverride)
-    : industry.featuredMedia?.source_url;
+  const socialImage = industry.featuredMedia?.source_url
+    || (imageOverride ? getAbsoluteUrl(imageOverride) : undefined);
   const socialImageAlt = industry.featuredMedia?.alt_text || industry.title;
   const slugs = await getIndustryTranslationSlugs(industry);
   const canonical = getAbsoluteUrl(`/${locale}/businesses/${industry.slug}`);
@@ -149,7 +148,7 @@ export default async function IndustryDetailPage({ params }: IndustryDetailPageP
               ) : null}
             </div>
             <IndustryMedia
-              media={imageOverride ? undefined : industry.featuredMedia}
+              media={industry.featuredMedia}
               title={industry.title}
               sizes="(min-width: 1024px) 52vw, 100vw"
               priority
