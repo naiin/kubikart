@@ -6,6 +6,7 @@ __pycache__/
 *.py[cod]
 .DS_Store
 Thumbs.db
+creds
 
 # ============================================================
 # Frontend (Next.js)

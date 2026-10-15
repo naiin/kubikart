@@ -4,12 +4,6 @@
 > Headless architecture: **Next.js 16** frontend + **WooCommerce** backend.
 
 **Live domain:** `kubikart.de` · **Business location:** Ulm / Neu-Ulm / Augsburg, Germany
-D@Y%reGiZH6VHO
-kubikart-woo
-
-SSH/SFTP
-9pL56$0sO@oDNa
-
 ---
 
 ## Table of Contents

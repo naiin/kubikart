@@ -11,7 +11,7 @@
  * * Database settings
  * * Secret keys
  * * Database table prefix
- * * Localized language
+ * * Localized languageQ
  * * ABSPATH
  *
  * @link https://wordpress.org/support/article/editing-wp-config-php/
