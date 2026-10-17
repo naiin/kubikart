@@ -5,7 +5,7 @@
     var typeSelect = row.querySelector("[data-field-type]");
     if (!typeSelect) return;
 
-    if (["text", "textarea", "select", "checkbox"].includes(typeSelect.value)) {
+    if (["text", "textarea", "url", "select", "checkbox", "file"].includes(typeSelect.value)) {
       row.removeAttribute("data-requires-review");
     } else {
       row.setAttribute("data-requires-review", "true");
@@ -13,11 +13,11 @@
 
     row.querySelectorAll("[data-field-control]").forEach(function (cell) {
       var appliesTo = cell.getAttribute("data-field-control");
-      var hasSelectedType = ["text", "textarea", "select", "checkbox"].includes(typeSelect.value);
+      var hasSelectedType = ["text", "textarea", "url", "select", "checkbox", "file"].includes(typeSelect.value);
       var visible =
         !hasSelectedType ||
         appliesTo === typeSelect.value ||
-        (appliesTo === "text" && (typeSelect.value === "text" || typeSelect.value === "textarea"));
+        (appliesTo === "text" && (typeSelect.value === "text" || typeSelect.value === "textarea" || typeSelect.value === "url"));
 
       // Keep desktop table cells in the column flow so later controls do not
       // shift underneath the wrong headings. CSS hides inactive controls

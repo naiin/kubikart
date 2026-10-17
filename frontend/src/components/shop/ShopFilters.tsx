@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { usePathname, useRouter } from "@/i18n/navigation";
+import { isBusinessKitsCategorySlug } from "@/lib/business-kits";
 import type { WCCategory } from "@/lib/woocommerce";
 
 const HIDDEN_CATEGORY_SLUGS = new Set(["uncategorized", "uncategorized-en"]);
@@ -71,7 +72,7 @@ export function ShopCategoryFilters({ categories }: { categories: WCCategory[] }
                   : "border-border bg-surface-white text-brand hover:border-accent hover:text-accent"
               }`}
             >
-              <span className="break-words">{category.name}</span>
+              <span className="break-words">{isBusinessKitsCategorySlug(category.slug) ? t("businessKitsCategory") : category.name}</span>
               <span className="ml-1.5 text-xs opacity-70" aria-label={t("categoryProductCount", { count: category.count })}>
                 {category.count}
               </span>

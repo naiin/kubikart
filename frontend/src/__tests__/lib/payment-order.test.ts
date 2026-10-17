@@ -31,4 +31,22 @@ describe("verifyPendingPaymentOrder", () => {
     const { verifyPendingPaymentOrder } = await import("@/lib/payment-order");
     await expect(verifyPendingPaymentOrder({ orderId: 321, orderKey: "wc_order_secret" })).rejects.toMatchObject({ status: 409 });
   });
+
+  it("lets a customer retry payment after a declined attempt left the order failed", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 321, order_key: "wc_order_secret", status: "failed", total: "23.97", currency: "EUR" }),
+    }));
+    const { verifyPendingPaymentOrder } = await import("@/lib/payment-order");
+    await expect(verifyPendingPaymentOrder({ orderId: 321, orderKey: "wc_order_secret" })).resolves.toMatchObject({ totalCents: 2397 });
+  });
+
+  it.each(["processing", "completed", "cancelled", "refunded"])("rejects a %s order", async (status) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 321, order_key: "wc_order_secret", status, total: "23.97", currency: "EUR" }),
+    }));
+    const { verifyPendingPaymentOrder } = await import("@/lib/payment-order");
+    await expect(verifyPendingPaymentOrder({ orderId: 321, orderKey: "wc_order_secret" })).rejects.toMatchObject({ status: 409 });
+  });
 });

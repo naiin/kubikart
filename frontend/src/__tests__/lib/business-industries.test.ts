@@ -46,22 +46,24 @@ beforeEach(() => {
 });
 
 describe("Business Industry WooCommerce relationship resolution", () => {
-  it("preserves owner ordering and resolves a real localized featured Kit", async () => {
+  it("renders exactly the saved bundle and product lists in their saved order", async () => {
     const records = new Map([
-      [162, product(162, { categories: [{ id: 187, name: "Business Kits", slug: "business-kits-de" }] })],
-      [164, product(164)],
-      [168, product(168)],
+      [162, product(162, { categories: [{ id: 187, name: "Business-Pakete", slug: "business-kits-de" }] })],
+      [160, product(160, { categories: [{ id: 187, name: "Business-Pakete", slug: "business-kits-de" }] })],
+      [168, product(168, { categories: [{ id: 187, name: "Business-Pakete", slug: "business-kits-de" }] })],
+      [506, product(506)],
+      [508, product(508)],
+      // A bundle that is not in the saved lists must never appear.
+      [164, product(164, { categories: [{ id: 187, name: "Business-Pakete", slug: "business-kits-de" }] })],
     ]);
     getProduct.mockImplementation(async (id: number) => records.get(id));
     const { resolveIndustryProducts } = await import("@/lib/business-industries");
 
-    const result = await resolveIndustryProducts(
-      { featuredKitId: 162, relatedProductIds: [168, 164] },
-      "de",
-    );
+    const result = await resolveIndustryProducts({ bundleIds: [168, 162, 160], relatedProductIds: [508, 506] }, "de");
 
-    expect(result.featuredKit?.id).toBe(162);
-    expect(result.relatedProducts.map((item) => item.id)).toEqual([168, 164]);
+    expect(result.bundles.map((item) => item.id)).toEqual([168, 162, 160]);
+    expect(result.relatedProducts.map((item) => item.id)).toEqual([508, 506]);
+    expect(getProduct).not.toHaveBeenCalledWith(164);
     expect(result.unavailable).toBe(false);
   });
 
@@ -73,11 +75,8 @@ describe("Business Industry WooCommerce relationship resolution", () => {
     });
     const { resolveIndustryProducts } = await import("@/lib/business-industries");
 
-    const result = await resolveIndustryProducts(
-      { relatedProductIds: [163] },
-      "de",
-    );
-    expect(result.relatedProducts.map((item) => item.id)).toEqual([164]);
+    const result = await resolveIndustryProducts({ bundleIds: [163], relatedProductIds: [] }, "de");
+    expect(result.bundles.map((item) => item.id)).toEqual([164]);
   });
 
   it("omits stale, unpublished, and untranslatable wrong-language records", async () => {
@@ -88,22 +87,19 @@ describe("Business Industry WooCommerce relationship resolution", () => {
     });
     const { resolveIndustryProducts } = await import("@/lib/business-industries");
 
-    const result = await resolveIndustryProducts(
-      { featuredKitId: 1, relatedProductIds: [2, 3] },
-      "de",
-    );
-    expect(result.featuredKit).toBeUndefined();
+    const result = await resolveIndustryProducts({ bundleIds: [1], relatedProductIds: [2, 3] }, "de");
+    expect(result.bundles).toEqual([]);
     expect(result.relatedProducts).toEqual([]);
   });
 
-  it("distinguishes total WooCommerce failure from an Industry with no selections", async () => {
+  it("keeps an emptied bundle list empty (no hidden defaults) and distinguishes total failure", async () => {
     getProduct.mockRejectedValue(new Error("backend unavailable"));
     const { resolveIndustryProducts } = await import("@/lib/business-industries");
 
-    const failed = await resolveIndustryProducts({ relatedProductIds: [1, 2] }, "de");
-    const empty = await resolveIndustryProducts({ relatedProductIds: [] }, "de");
+    const failed = await resolveIndustryProducts({ bundleIds: [], relatedProductIds: [1, 2] }, "de");
+    const empty = await resolveIndustryProducts({ bundleIds: [], relatedProductIds: [] }, "de");
     expect(failed.unavailable).toBe(true);
-    expect(empty.unavailable).toBe(false);
+    expect(empty).toEqual({ bundles: [], relatedProducts: [], unavailable: false });
+    expect(getProduct).toHaveBeenCalledTimes(2);
   });
 });
-

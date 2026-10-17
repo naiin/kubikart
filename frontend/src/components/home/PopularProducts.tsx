@@ -1,6 +1,8 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { ProductCard } from "@/components/ProductCard";
+import { isBusinessKitProduct } from "@/lib/business-kits";
+import { normalizeLocale } from "@/lib/seo";
 import { getProducts, type WCProduct } from "@/lib/woocommerce";
 
 export async function PopularProducts() {
@@ -8,7 +10,10 @@ export async function PopularProducts() {
   let products: WCProduct[] = [];
 
   try {
-    products = await getProducts({ per_page: 4, orderby: "popularity" }, locale);
+    // Kits have their own section; this one is for individually purchasable products.
+    const candidates = await getProducts({ per_page: 12, orderby: "popularity" }, locale);
+    const siteLocale = normalizeLocale(locale);
+    products = candidates.filter((product) => !isBusinessKitProduct(product, siteLocale)).slice(0, 4);
   } catch {
     products = [];
   }

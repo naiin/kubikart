@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import type { EnquiryContext } from "@/lib/enquiry-context";
+import { useProtectedFetch } from "@/components/CaptchaProvider";
 
 type FormStatus = "idle" | "submitting" | "success" | "error";
 
-export function ContactForm() {
+export function ContactForm({ context = null }: { context?: Extract<EnquiryContext, { kind: "industry" }> | null }) {
+  const protectedFetch = useProtectedFetch();
   const t = useTranslations("contact");
+  const locale = useLocale();
   const [status, setStatus] = useState<FormStatus>("idle");
   const loadedAt = useRef(0);
 
@@ -22,7 +26,7 @@ export function ContactForm() {
     const data = new FormData(form);
 
     try {
-      const res = await fetch("/api/contact", {
+      const res = await protectedFetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -31,6 +35,8 @@ export function ContactForm() {
           phone: data.get("phone"),
           type: data.get("type"),
           message: data.get("message"),
+          ...(context ? { context: { kind: context.kind, slug: context.slug, name: context.name } } : {}),
+          locale,
           _hp: data.get("_hp"),
           _t: loadedAt.current,
         }),
@@ -65,6 +71,12 @@ export function ContactForm() {
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* Honeypot field — hidden from humans, bots fill it */}
       <input type="text" name="_hp" autoComplete="off" tabIndex={-1} aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 opacity-0" />
+
+      {context ? (
+        <p role="note" className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-navy-900">
+          {t("contextIndustry", { name: context.name })}
+        </p>
+      ) : null}
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
@@ -114,6 +126,7 @@ export function ContactForm() {
           </label>
           <select
             id="contact-type"
+            defaultValue={context ? "business" : "personal"}
             name="type"
             className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 focus:border-navy-900 focus:outline-none focus:ring-1 focus:ring-navy-900 transition-colors"
           >

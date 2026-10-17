@@ -1,5 +1,8 @@
 import { getTranslations } from "next-intl/server";
-import { getProduct, getProducts, getProductsByIds, getProductVariations, sanitizeWooCommerceHtml, type WCProduct, type WCVariation } from "@/lib/woocommerce";
+import { isEnquiryOnly, parseSetConfig, type SetConfig } from "@/lib/purchase-mode";
+import { getBusinessKitCommercialState, isBusinessKitsCategorySlug, parseBusinessKitData, type BusinessKitCommercialState, type BusinessKitData } from "@/lib/business-kits";
+import { toOptionValue, toWooAttributeId } from "@/lib/option-ids";
+import { decodeEntities, getProduct, getProducts, getProductsByIds, getProductVariations, sanitizeWooCommerceHtml, type WCProduct, type WCVariation } from "@/lib/woocommerce";
 
 export type ProductAvailability = "in_stock" | "made_to_order" | "out_of_stock";
 
@@ -7,23 +10,28 @@ export interface ProductPrice {
   amount: number;
   currency: "EUR";
   prefix?: "ab";
+  /** Regular price, only set while a lower sale price is the current price. */
+  regularAmount?: number;
 }
 
 export interface ProductImage {
   src: string;
   alt: string;
+  caption?: string;
 }
 
 export interface ProductPersonalizationOption {
   id: string;
   label: string;
-  type: "text" | "textarea" | "select" | "checkbox";
+  type: "text" | "textarea" | "url" | "select" | "checkbox" | "file";
   required: boolean;
   placeholder?: string;
   helperText?: string;
   maxLength?: number;
   defaultValue?: string;
   price?: number;
+  /** Shown (and validated, priced and submitted) only while the select field `field` has the value `equals`. */
+  showWhen?: { field: string; equals: string };
   isMigrationCompatibility?: boolean;
   options?: {
     label: string;
@@ -33,6 +41,10 @@ export interface ProductPersonalizationOption {
 
 export interface ProductVariation {
   id: number;
+  /** A size without a price ("Request custom size"): selecting it replaces the purchase controls with an enquiry. */
+  requestOnly?: boolean;
+  /** Which enquiry replaces the purchase controls: a custom size (width and height) or a plain quotation request. */
+  requestKind?: "size" | "quote";
   attributes: Record<string, string>;
   price: ProductPrice;
   availability: ProductAvailability;
@@ -112,6 +124,10 @@ export interface ProductPageProduct {
   averageRating?: number;
   reviewCount?: number;
   purchasable?: boolean;
+  kit?: BusinessKitData;
+  kitCommercialState?: BusinessKitCommercialState;
+  /** Sold in fixed sets (for example stickers): the quantity counts sets. */
+  setConfig?: SetConfig;
   weight?: number; // kg
   dimensions?: { length: number; width: number; height: number }; // cm
 }
@@ -170,7 +186,7 @@ export function parseProductCustomFields(metaData: { key: string; value: unknown
       const rawType = String(field.type || "");
       const type = rawType === "color" ? "select" : rawType;
 
-      if (!["text", "textarea", "select", "checkbox"].includes(type)) {
+      if (!["text", "textarea", "url", "select", "checkbox", "file"].includes(type)) {
         if (process.env.NODE_ENV !== "production") {
           console.warn(`Unsupported Kubikart product field type "${rawType}" for field "${String(field.id)}".`);
         }
@@ -189,7 +205,12 @@ export function parseProductCustomFields(metaData: { key: string; value: unknown
         parsedField.price = Number(field.price);
       }
 
-      if (type === "text" || type === "textarea") {
+      const showWhen = field.showWhen as { field?: unknown; equals?: unknown } | undefined;
+      if (showWhen && showWhen.field && showWhen.equals !== undefined && showWhen.equals !== "") {
+        parsedField.showWhen = { field: String(showWhen.field), equals: String(showWhen.equals) };
+      }
+
+      if (type === "text" || type === "textarea" || type === "url") {
         parsedField.placeholder = field.placeholder ? String(field.placeholder) : undefined;
         parsedField.maxLength =
           Number.isFinite(Number(field.maxLength)) && Number(field.maxLength) > 0
@@ -258,14 +279,6 @@ function parsePriceAmount(rawValue: string | undefined, fallbackAmount: number) 
   return Number.isFinite(parsed) ? parsed : fallbackAmount;
 }
 
-function toOptionId(rawValue: string | undefined) {
-  return (rawValue || "").trim().toLowerCase().replace(/\s+/g, "_");
-}
-
-function toOptionValue(rawValue: string | undefined) {
-  return (rawValue || "").trim().toLowerCase().replace(/\s+/g, "-");
-}
-
 function mapAvailability(stockStatus: string | undefined, fallbackAvailability: ProductAvailability): ProductAvailability {
   if (stockStatus === "outofstock") {
     return "out_of_stock";
@@ -308,7 +321,7 @@ function mapAttributePersonalizationOptions(product: WCProduct): ProductPersonal
   return product.attributes
     .filter((attr) => attr.variation === true && attr.options.length > 0)
     .map((attr) => ({
-      id: toOptionId(attr.slug || attr.name),
+      id: toWooAttributeId(attr),
       label: attr.name,
       type: "select" as const,
       required: true,
@@ -340,7 +353,17 @@ export function resolveProductPersonalizationOptions(
   return migrationPresetOptions.length > 0 ? migrationPresetOptions : attributeOptions;
 }
 
-function mapWooVariations(variations: WCVariation[] | undefined, fallbackAvailability: ProductAvailability): ProductVariation[] | undefined {
+function mapWooPrice(item: { price: string; regular_price: string; sale_price: string }): ProductPrice {
+  const amount = parsePriceAmount(item.price || item.regular_price || item.sale_price, 0);
+  const regularAmount = parsePriceAmount(item.regular_price, 0);
+  return {
+    amount,
+    currency: "EUR",
+    ...(amount > 0 && regularAmount > amount ? { regularAmount } : {}),
+  };
+}
+
+export function mapWooVariations(variations: WCVariation[] | undefined, fallbackAvailability: ProductAvailability): ProductVariation[] | undefined {
   if (!variations?.length) {
     return undefined;
   }
@@ -348,13 +371,12 @@ function mapWooVariations(variations: WCVariation[] | undefined, fallbackAvailab
   return variations.map((variation) => ({
     id: variation.id,
     attributes: variation.attributes.reduce<Record<string, string>>((mappedAttributes, attribute) => {
-      mappedAttributes[toOptionId(attribute.slug || attribute.name)] = toOptionValue(attribute.option);
+      mappedAttributes[toWooAttributeId(attribute)] = toOptionValue(attribute.option);
       return mappedAttributes;
     }, {}),
-    price: {
-      amount: parsePriceAmount(variation.price || variation.regular_price || variation.sale_price, 0),
-      currency: "EUR",
-    },
+    price: mapWooPrice(variation),
+    requestOnly: !(variation.price || variation.regular_price),
+    requestKind: variation.meta_data?.find((entry) => entry.key === "_kubikart_request_kind")?.value === "quote" ? "quote" : "size",
     availability: mapAvailability(variation.stock_status, fallbackAvailability),
     image: variation.image?.src
       ? {
@@ -367,7 +389,7 @@ function mapWooVariations(variations: WCVariation[] | undefined, fallbackAvailab
 
 function mapWooDefaultOptionValues(product: WCProduct) {
   const defaultOptionValues = product.default_attributes?.reduce<Record<string, string>>((mappedDefaults, attribute) => {
-    mappedDefaults[toOptionId(attribute.name)] = toOptionValue(attribute.option);
+    mappedDefaults[toWooAttributeId(attribute)] = toOptionValue(attribute.option);
     return mappedDefaults;
   }, {});
 
@@ -382,7 +404,7 @@ function mapWooProductToProductPageProduct(
   const primaryCategory = product.categories[0]
     ? {
         id: product.categories[0].id,
-        name: product.categories[0].name,
+        name: decodeEntities(product.categories[0].name),
         slug: product.categories[0].slug,
       }
     : { id: 0, name: labels.fallbackCategory, slug: "produkte" };
@@ -397,6 +419,7 @@ function mapWooProductToProductPageProduct(
     product.attributes.map((attribute) => `${attribute.name}: ${attribute.options.join(", ")}`).slice(0, 3);
 
   const priceAmount = parsePriceAmount(product.price || product.regular_price || product.sale_price, 0);
+  const isKit = product.categories.some((category) => isBusinessKitsCategorySlug(category.slug));
   const mappedVariations = mapWooVariations(variations, "in_stock");
   const defaultOptionValues = mapWooDefaultOptionValues(product);
   const attributePersonalizationOptions = mapAttributePersonalizationOptions(product);
@@ -421,7 +444,7 @@ function mapWooProductToProductPageProduct(
     categories: product.categories.length
         ? product.categories.map((category) => ({
           id: category.id,
-          name: category.name,
+          name: decodeEntities(category.name),
           slug: category.slug,
         }))
       : [primaryCategory],
@@ -429,12 +452,10 @@ function mapWooProductToProductPageProduct(
       ? product.images.map((image) => ({
           src: image.src,
           alt: image.alt || `${product.name} – Kubikart`,
+          ...(image.caption ? { caption: image.caption } : {}),
         }))
       : [],
-    price: {
-      amount: priceAmount,
-      currency: "EUR",
-    },
+    price: mapWooPrice(product),
     priceNote: labels.priceNote,
     availability: mapAvailability(product.stock_status, "in_stock"),
     productionTime: "",
@@ -442,10 +463,7 @@ function mapWooProductToProductPageProduct(
     badges: [],
     trustItems: [],
     paymentHints: [],
-    quickFacts: [
-      { label: labels.factCategory, value: primaryCategory.name },
-      ...(product.weight ? [{ label: "Weight", value: `${product.weight} kg` }] : []),
-    ],
+    quickFacts: product.weight ? [{ label: "Weight", value: `${product.weight} kg` }] : [],
     personalizationOptions: configuredPersonalizationOptions,
     defaultOptionValues,
     variations: mappedVariations,
@@ -487,7 +505,14 @@ function mapWooProductToProductPageProduct(
     sku: product.sku?.trim() || undefined,
     averageRating: Number.parseFloat(product.average_rating || "0") || 0,
     reviewCount: product.rating_count || 0,
-    purchasable: product.purchasable !== false && priceAmount > 0,
+    purchasable:
+      product.purchasable !== false &&
+      priceAmount > 0 &&
+      !isEnquiryOnly(product) &&
+      (!isKit || ["purchasable", "outOfStock"].includes(getBusinessKitCommercialState(product).kind)),
+    ...(isKit ? { kit: parseBusinessKitData(product.meta_data) } : {}),
+    ...(isKit || isEnquiryOnly(product) ? { kitCommercialState: getBusinessKitCommercialState(product) } : {}),
+    ...(parseSetConfig(product.meta_data) ? { setConfig: parseSetConfig(product.meta_data) as SetConfig } : {}),
     weight: parseFloat(product.weight) || undefined,
     dimensions:
       product.dimensions?.length || product.dimensions?.width || product.dimensions?.height
@@ -581,6 +606,39 @@ export function formatProductPrice(price: ProductPrice) {
   }).format(price.amount);
 
   return price.prefix ? `${price.prefix} ${formattedAmount}` : formattedAmount;
+}
+
+/**
+ * Select fields with few, short options (sizes, fonts, colours) are shown as buttons; longer lists, such as the design
+ * choice, or three or more long labels, such as "Innen angebracht, von außen lesbar", as a compact dropdown.
+ */
+/** Strip products (frosted film) are sized by film width and height, printed products by finished width and height. */
+export const FILM_SIZE_ATTRIBUTE_ID = "pa_folienformat";
+export const PRINT_FORMAT_ATTRIBUTE_ID = "pa_druckformat";
+
+export type CustomSizeKind = "overall" | "film" | "format";
+
+export function getCustomSizeKind(variationAttributeIds: string[]): CustomSizeKind {
+  if (variationAttributeIds.includes(FILM_SIZE_ATTRIBUTE_ID)) return "film";
+  return variationAttributeIds.includes(PRINT_FORMAT_ATTRIBUTE_ID) ? "format" : "overall";
+}
+
+export const MAX_BUTTON_SELECT_OPTIONS = 4;
+export const MAX_BUTTON_LABEL_LENGTH = 30;
+
+export function shouldRenderSelectAsButtons(option: ProductPersonalizationOption) {
+  const choices = option.options ?? [];
+  if (option.type !== "select" || choices.length === 0 || choices.length > MAX_BUTTON_SELECT_OPTIONS) return false;
+  // Two options stack nicely whatever their length; three or four long labels do not.
+  return choices.length <= 2 || choices.every((choice) => choice.label.length <= MAX_BUTTON_LABEL_LENGTH);
+}
+
+/** Struck-through regular price text, or null when the product is not on sale. */
+export function formatRegularProductPrice(price: ProductPrice, extras = 0) {
+  if (!price.regularAmount) {
+    return null;
+  }
+  return formatProductPrice({ ...price, amount: price.regularAmount + extras });
 }
 
 export function getAvailabilityLabel(availability: ProductAvailability) {

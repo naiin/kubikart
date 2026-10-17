@@ -38,17 +38,17 @@ export function HomeHero() {
         </div>
 
         <div className="relative min-w-0">
-          <div className="relative min-h-[25rem] overflow-hidden rounded-kubikart-xl bg-brand sm:min-h-[32rem] lg:min-h-[36rem]">
+          <div className="relative aspect-[4/3] overflow-hidden rounded-kubikart-xl bg-surface">
             <Image
-              src="/images/home/kubikart-business-visibility-hero.png"
+              src="/images/home/qr-nfc-stands-business-cards-stickers.webp"
               alt={t("imageAlt")}
               fill
               priority
-              sizes="(min-width: 1280px) 55vw, (min-width: 768px) 100vw, calc(100vw - 40px)"
-              className="object-cover"
+              sizes="(min-width: 1280px) 625px, (min-width: 1024px) calc(100vw - 80px), (min-width: 640px) calc(100vw - 56px), calc(100vw - 40px)"
+              className="object-contain"
             />
           </div>
-          <div className="absolute -bottom-4 left-4 max-w-[15rem] rounded-kubikart-md border border-border bg-surface-white px-4 py-3 shadow-kubikart-sm sm:left-8">
+          <div className="mt-4 border-l-2 border-accent pl-4">
             <p className="text-xs font-semibold tracking-[0.08em] text-accent uppercase">{t("visualLabel")}</p>
             <p className="mt-1 text-sm font-semibold text-brand">{t("visualText")}</p>
           </div>

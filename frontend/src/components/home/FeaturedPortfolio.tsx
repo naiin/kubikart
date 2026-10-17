@@ -2,9 +2,9 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 
 const projects = [
-  { key: "counter", image: "/images/home/business-setting-cafe.webp" },
-  { key: "production", image: "/images/home/business-setting-salon.webp" },
-  { key: "presentation", image: "/images/home/business-setting-retail.webp" },
+  { key: "counter", image: "/images/home/cafe-acrylic-qr-nfc-stand.webp" },
+  { key: "production", image: "/images/home/personalised-business-card-designs.webp" },
+  { key: "presentation", image: "/images/home/custom-stickers-cafe-packaging.webp" },
 ] as const;
 
 export function FeaturedPortfolio() {

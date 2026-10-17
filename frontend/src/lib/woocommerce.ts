@@ -53,7 +53,7 @@ export async function wcApi<T>(endpoint: string, options: WCRequestOptions = {})
 }
 
 /** Decode common HTML entities returned by WooCommerce */
-function decodeEntities(text: string): string {
+export function decodeEntities(text: string): string {
   return text
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
@@ -90,7 +90,7 @@ export interface WCProduct {
   categories: { id: number; name: string; slug: string }[];
   related_ids?: number[];
   upsell_ids?: number[];
-  images: { id: number; src: string; alt: string }[];
+  images: { id: number; src: string; alt: string; name?: string; caption?: string }[];
   attributes: { id: number; name: string; slug?: string; variation?: boolean; options: string[] }[];
   default_attributes?: { id: number; name: string; option: string }[];
   variations?: number[];
@@ -121,6 +121,7 @@ export interface WCVariation {
     slug?: string;
     option: string;
   }[];
+  meta_data?: { key: string; value: unknown }[];
 }
 
 export interface WCCategory {
@@ -153,10 +154,11 @@ export interface WCOrder {
 // API helper functions
 export async function getProducts(params?: Record<string, string | number | boolean>, lang?: string) {
   const products = await wcApi<WCProduct[]>("products", {
-    params: { per_page: 20, ...(lang ? { lang } : {}), ...params },
+    // The authenticated REST client returns drafts/private products unless told otherwise.
+    params: { per_page: 20, status: "publish", ...(lang ? { lang } : {}), ...params },
     tags: [CACHE_TAGS.products],
   });
-  return products.map((p) => ({ ...p, name: decodeEntities(p.name) }));
+  return products.map((p) => ({ ...p, name: decodeEntities(p.name), categories: (p.categories ?? []).map((category) => ({ ...category, name: decodeEntities(category.name) })) }));
 }
 
 export async function getProduct(idOrSlug: string | number, lang?: string) {
@@ -203,10 +205,19 @@ export async function getProductVariations(productId: number, lang?: string, pro
     tags.push(CACHE_TAGS.product(productSlug));
   }
 
-  return wcApi<WCVariation[]>(`products/${productId}/variations`, {
-    params: { per_page: 100, ...(lang ? { lang } : {}) },
-    tags,
-  });
+  // WooCommerce caps a page at 100 entries; products with many shape/size/quantity combinations need several pages.
+  const perPage = 100;
+  const variations: WCVariation[] = [];
+  for (let page = 1; page <= 10; page += 1) {
+    const batch = await wcApi<WCVariation[]>(`products/${productId}/variations`, {
+      params: { per_page: perPage, page, ...(lang ? { lang } : {}) },
+      tags,
+    });
+    variations.push(...batch);
+    if (batch.length < perPage) break;
+  }
+
+  return variations;
 }
 
 export async function getCategories(lang?: string) {

@@ -26,7 +26,7 @@ Kubikart is a German small-business e-commerce website for personalized products
 ```
 website/
 ├── .github/
-│   └── copilot-instructions.md   ← you are here
+│   └── copilot-instructions.md   ← you are here (documentation index: readme.md > Documentation map)
 ├── AGENTS.md                     ← CLI agent instructions
 ├── backend/
 │   ├── .lando.yml
@@ -78,7 +78,7 @@ website/
         ├── lib/
         │   ├── woocommerce.ts    ← WC REST API client + types
         │   ├── cart.ts           ← client-side cart (localStorage)
-        │   ├── auth.tsx          ← auth context + localStorage
+        │   ├── auth.tsx          ← auth context (reads the server session; no token in JS)
         │   ├── security.ts       ← rate limiting + bot detection
         │   ├── shipping.ts       ← shipping rate helpers
         │   └── header-navigation.ts
@@ -136,10 +136,10 @@ website/
 - Return `Response.json({...}, { status: ... })` — use the Web API Response, not NextResponse.
 
 ### 8. Authentication
-- Auth state is in `localStorage` (`kubikart-user`, `kubikart-token`).
+- Auth is a signed, HTTP-only `kubikart_session` cookie issued by the server (`lib/auth-session.ts`, HMAC-SHA-256 with `AUTH_SESSION_SECRET`).
 - Access auth state via `useAuth()` from `@/lib/auth`.
-- Token is Base64-encoded `customer_id:email:timestamp`.
-- **No server sessions** — purely client-side with cross-tab sync.
+- Protected API routes verify the cookie with `getRequestSession()`; never trust caller-supplied identity headers.
+- Never store authentication data in `localStorage`; the cart is the only client-side store.
 
 ### 9. Cart
 - Cart is in `localStorage`.
@@ -161,7 +161,7 @@ website/
 - ✅ Checkout (multi-step: information → shipping → payment)
 - ✅ Stripe + PayPal payment integration
 - ✅ Account page (profile + order history)
-- ✅ Auth system (register, login, localStorage + cross-tab sync)
+- ✅ Auth system (register, login, signed HTTP-only session cookie)
 - ✅ Service pages (Lasergravur, Laserschnitt, 3D-Druck, overview)
 - ✅ Contact page + ContactForm with bot protection
 - ✅ FAQ page
@@ -174,7 +174,7 @@ website/
 - ✅ Cookie banner (GDPR)
 - ✅ i18n (DE + EN) with next-intl v4
 - ✅ WooCommerce webhook cache revalidation
-- ✅ Rate limiting middleware
+- ✅ Rate limiting (distributed, in `proxy.ts`)
 - ✅ Bot detection (honeypot + timing + origin check)
 - ✅ Security headers
 - ✅ Custom WordPress plugins (newsletter + security)

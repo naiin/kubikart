@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   BUSINESS_KITS_CATEGORY_SLUGS,
+  getBusinessKitCommercialState,
   isBusinessKitProduct,
+  parseBusinessKitData,
+  removeProseContentLists,
   isWooCommercePlaceholderImage,
   resolveBusinessKitsCategory,
 } from "@/lib/business-kits";
@@ -64,5 +67,94 @@ describe("Business Kits category resolution", () => {
         src: "https://example.test/wp-content/uploads/starter-visibility-kit.webp",
       }),
     ).toBe(false);
+  });
+});
+
+function kitMeta(value: Record<string, unknown>) {
+  return [{ key: "_kubikart_kit", value }];
+}
+
+describe("Business Kit commercial state", () => {
+  it("treats a kit without an explicit purchase decision as enquiry-only, even when WooCommerce has a price", () => {
+    expect(getBusinessKitCommercialState({ price: "149", purchasable: true, stock_status: "instock", meta_data: [] })).toEqual({ kind: "enquiry", startingPrice: 149 });
+    expect(
+      getBusinessKitCommercialState({ price: "149", purchasable: true, stock_status: "instock", meta_data: kitMeta({ order_mode: "enquiry", order_mode_explicit: true }) }),
+    ).toEqual({ kind: "enquiry", startingPrice: 149 });
+  });
+
+  it("is purchasable only when the owner chose purchase and WooCommerce has a real price and stock", () => {
+    expect(
+      getBusinessKitCommercialState({ price: "149", purchasable: true, stock_status: "instock", meta_data: kitMeta({ order_mode: "purchase" }) }),
+    ).toEqual({ kind: "purchasable", price: 149 });
+  });
+
+  it("distinguishes a genuine sold-out kit from a quote-only kit", () => {
+    expect(
+      getBusinessKitCommercialState({ price: "149", purchasable: true, stock_status: "outofstock", meta_data: kitMeta({ order_mode: "purchase" }) }),
+    ).toEqual({ kind: "outOfStock", price: 149 });
+    expect(getBusinessKitCommercialState({ price: "", purchasable: false, stock_status: "outofstock", meta_data: [] })).toEqual({ kind: "enquiry" });
+  });
+
+  it("flags a purchase kit without a real price as unavailable instead of inventing a quote state", () => {
+    expect(
+      getBusinessKitCommercialState({ price: "", purchasable: false, stock_status: "instock", meta_data: kitMeta({ order_mode: "purchase" }) }),
+    ).toEqual({ kind: "unavailable" });
+  });
+});
+
+describe("parseBusinessKitData", () => {
+  it("defaults to enquiry with no contents when the backend entry is missing or unreadable", () => {
+    expect(parseBusinessKitData(undefined)).toMatchObject({ orderMode: "enquiry", needsContents: true, items: [] });
+    expect(parseBusinessKitData([{ key: "_kubikart_kit", value: "{broken" }])).toMatchObject({ orderMode: "enquiry", items: [] });
+  });
+
+  it("keeps order, quantities and kit-specific text, and only links valid products", () => {
+    const data = parseBusinessKitData(
+      kitMeta({
+        order_mode: "purchase",
+        order_mode_explicit: true,
+        items: [
+          {
+            id: "a",
+            quantity: 2,
+            title: "",
+            description: "Acryl, 10 cm",
+            image: null,
+            link_state: "linked",
+            product: { id: 71, variation_id: 0, name: "NFC Stand", slug: "nfc-stand", image: { src: "https://x.test/a.jpg", alt: "" } },
+          },
+          { id: "b", quantity: 1, title: "Gestaltung", description: "", image: null, link_state: "unavailable", product: null },
+          { id: "c", quantity: 1, title: "", description: "", image: null, link_state: "linked", product: null },
+        ],
+      }),
+    );
+
+    expect(data.orderMode).toBe("purchase");
+    expect(data.needsContents).toBe(false);
+    expect(data.items.map((item) => [item.id, item.quantity, item.linkState, item.product?.slug ?? null])).toEqual([
+      ["a", 2, "linked", "nfc-stand"],
+      ["b", 1, "unavailable", null],
+    ]);
+    expect(data.items[0].description).toBe("Acryl, 10 cm");
+  });
+
+  it("ignores WooCommerce placeholder images", () => {
+    const data = parseBusinessKitData(
+      kitMeta({
+        items: [{ id: "a", quantity: 1, title: "Aufsteller", image: { src: "https://x.test/woocommerce-placeholder.png" }, link_state: "unlinked", product: null }],
+      }),
+    );
+    expect(data.items[0].image).toBeNull();
+  });
+});
+
+describe("removeProseContentLists", () => {
+  it("drops a prose contents list and its introducing line but keeps other description text", () => {
+    const html = "<strong>Nur auf Anfrage.</strong>\n\nAktuell vorgesehene Zusammenstellung:\n<ul><li>A</li><li>B</li></ul>\nWeitere Hinweise.";
+    const cleaned = removeProseContentLists(html);
+    expect(cleaned).toContain("Nur auf Anfrage.");
+    expect(cleaned).toContain("Weitere Hinweise.");
+    expect(cleaned).not.toContain("<li>");
+    expect(cleaned).not.toContain("Zusammenstellung");
   });
 });

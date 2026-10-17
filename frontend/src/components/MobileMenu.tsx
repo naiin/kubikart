@@ -122,6 +122,34 @@ export function MobileMenu({
               {headerNavigation.map((item) => {
                 const active = item === activePrimaryItem;
 
+                if (item.children?.length) {
+                  const activeChild = getActiveNavigationItem(pathname, item.children);
+
+                  return (
+                    <li key={item.labelKey}>
+                      <p className={`flex min-h-12 items-center px-4 py-3 text-base font-semibold ${active ? "text-accent" : "text-brand"}`}>
+                        {t(item.labelKey)}
+                      </p>
+                      <ul className="ml-4 space-y-1 border-l border-border pl-2">
+                        {item.children.map((child) => (
+                          <li key={child.labelKey}>
+                            <Link
+                              href={getNavigationHref(child, locale)}
+                              onClick={onClose}
+                              aria-current={child === activeChild ? "page" : undefined}
+                              className={`flex min-h-11 items-center rounded-kubikart-sm px-3 py-2 text-[15px] font-medium transition-colors ${
+                                child === activeChild ? "bg-page text-accent" : "text-brand hover:bg-page"
+                              }`}
+                            >
+                              {t(child.labelKey)}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </li>
+                  );
+                }
+
                 return (
                   <li key={item.labelKey}>
                     <Link
@@ -148,7 +176,7 @@ export function MobileMenu({
                 return (
                   <li key={item.labelKey}>
                     <Link
-                      href={item.href}
+                      href={getNavigationHref(item, locale)}
                       onClick={onClose}
                       aria-current={active ? "page" : undefined}
                       className={`flex min-h-11 items-center rounded-kubikart-sm px-4 py-2 text-sm font-medium transition-colors ${

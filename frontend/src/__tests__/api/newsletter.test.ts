@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+const { sendNewsletterConfirmation } = vi.hoisted(() => ({ sendNewsletterConfirmation: vi.fn() }));
+vi.mock("@/lib/email", () => ({ sendNewsletterConfirmation }));
 
 function makeRequest(body: object, ip = "2.3.4.5") {
   return new Request("http://localhost:3000/api/newsletter", {
@@ -15,6 +17,7 @@ function makeRequest(body: object, ip = "2.3.4.5") {
 beforeEach(() => {
   vi.resetModules();
   vi.unstubAllGlobals();
+  sendNewsletterConfirmation.mockReset().mockResolvedValue(undefined);
 });
 
 describe("POST /api/newsletter", () => {
@@ -79,5 +82,21 @@ describe("POST /api/newsletter", () => {
     const [, options] = fetchMock.mock.calls[0];
     const body = JSON.parse((options as RequestInit).body as string);
     expect(body.title).toContain("user@kubikart.de");
+  });
+
+  it("uses the real unprefixed confirmation endpoint and selected locale", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: 100 }) }));
+    const { POST } = await import("@/app/api/newsletter/route");
+    await POST(makeRequest({ email: "user@kubikart.de", locale: "en", _t: Date.now() - 2000 }) as never);
+    expect(sendNewsletterConfirmation).toHaveBeenCalledWith("user@kubikart.de", expect.stringContaining("/api/newsletter/confirm?"), "en");
+    expect(sendNewsletterConfirmation.mock.calls[0][1]).not.toContain("/en/api/");
+  });
+
+  it("does not report email success when the provider fails", async () => {
+    sendNewsletterConfirmation.mockRejectedValue(new Error("Provider unavailable"));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: 100 }) }));
+    const { POST } = await import("@/app/api/newsletter/route");
+    const response = await POST(makeRequest({ email: "user@kubikart.de", _t: Date.now() - 2000 }) as never);
+    expect(response.status).toBe(503);
   });
 });

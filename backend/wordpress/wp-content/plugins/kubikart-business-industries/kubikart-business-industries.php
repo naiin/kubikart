@@ -13,7 +13,9 @@ if (!defined('ABSPATH')) {
 
 const KUBIKART_INDUSTRY_POST_TYPE = 'business_industry';
 const KUBIKART_INDUSTRY_REST_BASE = 'business-industries';
+/** Retired single-bundle field; only the migration reads it. */
 const KUBIKART_INDUSTRY_FEATURED_KIT_META = '_kubikart_featured_kit_id';
+const KUBIKART_INDUSTRY_BUNDLES_META = '_kubikart_bundle_ids';
 const KUBIKART_INDUSTRY_RELATED_PRODUCTS_META = '_kubikart_related_product_ids';
 const KUBIKART_INDUSTRY_NONCE_ACTION = 'kubikart_save_business_industry_products';
 const KUBIKART_INDUSTRY_NONCE_NAME = 'kubikart_business_industry_nonce';
@@ -85,57 +87,42 @@ function kubikart_register_business_industry_meta(): void
         return current_user_can('edit_post', $post_id);
     };
 
-    register_post_meta(KUBIKART_INDUSTRY_POST_TYPE, KUBIKART_INDUSTRY_FEATURED_KIT_META, [
-        'type' => 'integer',
-        'single' => true,
-        'default' => 0,
-        'show_in_rest' => [
-            'schema' => [
-                'type' => 'integer',
-                'minimum' => 0,
-                'context' => ['view', 'edit'],
+    foreach ([KUBIKART_INDUSTRY_BUNDLES_META, KUBIKART_INDUSTRY_RELATED_PRODUCTS_META] as $meta_key) {
+        register_post_meta(KUBIKART_INDUSTRY_POST_TYPE, $meta_key, [
+            'type' => 'array',
+            'single' => true,
+            'default' => [],
+            'show_in_rest' => [
+                'schema' => [
+                    'type' => 'array',
+                    'items' => ['type' => 'integer'],
+                    'context' => ['view', 'edit'],
+                ],
             ],
-        ],
-        'sanitize_callback' => 'absint',
-        'auth_callback' => $auth_callback,
-    ]);
-
-    register_post_meta(KUBIKART_INDUSTRY_POST_TYPE, KUBIKART_INDUSTRY_RELATED_PRODUCTS_META, [
-        'type' => 'array',
-        'single' => true,
-        'default' => [],
-        'show_in_rest' => [
-            'schema' => [
-                'type' => 'array',
-                'items' => ['type' => 'integer'],
-                'context' => ['view', 'edit'],
-            ],
-        ],
-        'sanitize_callback' => 'kubikart_industry_sanitize_id_list',
-        'auth_callback' => $auth_callback,
-    ]);
+            'sanitize_callback' => 'kubikart_industry_sanitize_id_list',
+            'auth_callback' => $auth_callback,
+        ]);
+    }
 }
 add_action('init', 'kubikart_register_business_industry_meta', 20);
 
 /**
- * Expose only the two approved relationship fields. A published Industry may
- * be read by an authenticated account with read_post; writes still require
- * edit_post and pass the same WooCommerce validation as the admin metabox.
+ * Expose the two ordered relationship lists: Business Bundles and individual
+ * products. A published Industry may be read by an authenticated account with
+ * read_post; writes still require edit_post and pass the same WooCommerce
+ * validation as the admin metabox. The legacy single "featured kit" field no
+ * longer exists (see backend/scripts/migrate-industry-relations.php).
  */
 function kubikart_register_business_industry_rest_fields(): void
 {
-    $register = static function (string $field, string $type, mixed $default): void {
+    $register = static function (string $field): void {
         register_rest_field(KUBIKART_INDUSTRY_POST_TYPE, $field, [
-            'get_callback' => static function (array $object) use ($field, $default): mixed {
+            'get_callback' => static function (array $object) use ($field): array {
                 $post_id = absint($object['id'] ?? 0);
                 if (!$post_id || !current_user_can('read_post', $post_id)) {
-                    return $default;
+                    return [];
                 }
-                $value = get_post_meta($post_id, $field, true);
-                if ($field === KUBIKART_INDUSTRY_RELATED_PRODUCTS_META) {
-                    return kubikart_industry_sanitize_id_list($value);
-                }
-                return absint($value);
+                return kubikart_industry_sanitize_id_list(get_post_meta($post_id, $field, true));
             },
             'update_callback' => static function (mixed $value, object $post) use ($field): bool|WP_Error {
                 $post_id = absint($post->ID ?? 0);
@@ -147,15 +134,15 @@ function kubikart_register_business_industry_rest_fields(): void
                     );
                 }
 
-                $featured = $field === KUBIKART_INDUSTRY_FEATURED_KIT_META
+                $bundles = $field === KUBIKART_INDUSTRY_BUNDLES_META
                     ? $value
-                    : get_post_meta($post_id, KUBIKART_INDUSTRY_FEATURED_KIT_META, true);
-                $related = $field === KUBIKART_INDUSTRY_RELATED_PRODUCTS_META
+                    : get_post_meta($post_id, KUBIKART_INDUSTRY_BUNDLES_META, true);
+                $products = $field === KUBIKART_INDUSTRY_RELATED_PRODUCTS_META
                     ? $value
                     : get_post_meta($post_id, KUBIKART_INDUSTRY_RELATED_PRODUCTS_META, true);
                 $validation = kubikart_industry_validate_relationships(
-                    $featured,
-                    $related,
+                    $bundles,
+                    $products,
                     kubikart_industry_post_language($post_id)
                 );
 
@@ -167,34 +154,27 @@ function kubikart_register_business_industry_rest_fields(): void
                     );
                 }
 
-                $saved = $field === KUBIKART_INDUSTRY_FEATURED_KIT_META
-                    ? $validation['featured_kit_id']
-                    : $validation['related_product_ids'];
-                if ($saved === 0 || $saved === []) {
-                    delete_post_meta($post_id, $field);
-                } else {
-                    update_post_meta($post_id, $field, $saved);
-                }
+                // An empty list is a deliberate choice and stays stored as an empty list.
+                update_post_meta(
+                    $post_id,
+                    $field,
+                    $field === KUBIKART_INDUSTRY_BUNDLES_META ? $validation['bundle_ids'] : $validation['product_ids']
+                );
                 return true;
             },
-            'schema' => $type === 'array'
-                ? [
-                    'description' => __('Ordered WooCommerce Product IDs selected for this Industry.', 'kubikart-business-industries'),
-                    'type' => 'array',
-                    'items' => ['type' => 'integer'],
-                    'context' => ['view', 'edit'],
-                ]
-                : [
-                    'description' => __('Featured Business Kit WooCommerce Product ID.', 'kubikart-business-industries'),
-                    'type' => 'integer',
-                    'minimum' => 0,
-                    'context' => ['view', 'edit'],
-                ],
+            'schema' => [
+                'description' => $field === KUBIKART_INDUSTRY_BUNDLES_META
+                    ? __('Ordered Business Bundle WooCommerce Product IDs for this Industry.', 'kubikart-business-industries')
+                    : __('Ordered individual WooCommerce Product IDs for this Industry.', 'kubikart-business-industries'),
+                'type' => 'array',
+                'items' => ['type' => 'integer'],
+                'context' => ['view', 'edit'],
+            ],
         ]);
     };
 
-    $register(KUBIKART_INDUSTRY_FEATURED_KIT_META, 'integer', 0);
-    $register(KUBIKART_INDUSTRY_RELATED_PRODUCTS_META, 'array', []);
+    $register(KUBIKART_INDUSTRY_BUNDLES_META);
+    $register(KUBIKART_INDUSTRY_RELATED_PRODUCTS_META);
 }
 add_action('rest_api_init', 'kubikart_register_business_industry_rest_fields');
 
@@ -268,15 +248,17 @@ function kubikart_industry_product_is_business_kit(int $product_id, string $lang
 }
 
 /**
- * Validate relationships without mutating metadata.
+ * Validate relationships without mutating metadata. Business Bundles must be
+ * Business Bundle products of the Industry's language; individual products may
+ * be any other existing product (a bundle belongs in the bundle list).
  */
 function kubikart_industry_validate_relationships(
-    mixed $featured_kit_id,
-    mixed $related_product_ids,
+    mixed $bundle_ids,
+    mixed $product_ids,
     string $language = ''
 ): array {
-    $featured_kit_id = absint($featured_kit_id);
-    $related_product_ids = kubikart_industry_sanitize_id_list($related_product_ids);
+    $bundle_ids = kubikart_industry_sanitize_id_list($bundle_ids);
+    $product_ids = kubikart_industry_sanitize_id_list($product_ids);
     $errors = [];
     $warnings = [];
 
@@ -284,8 +266,8 @@ function kubikart_industry_validate_relationships(
         return [
             'valid' => false,
             'woocommerce_available' => false,
-            'featured_kit_id' => $featured_kit_id,
-            'related_product_ids' => $related_product_ids,
+            'bundle_ids' => $bundle_ids,
+            'product_ids' => $product_ids,
             'errors' => [],
             'warnings' => [
                 __('WooCommerce is unavailable. Existing product relationships were preserved.', 'kubikart-business-industries'),
@@ -293,22 +275,38 @@ function kubikart_industry_validate_relationships(
         ];
     }
 
-    if ($featured_kit_id > 0 && !kubikart_industry_product_is_business_kit($featured_kit_id, $language)) {
-        $errors[] = sprintf(
-            __('Featured Kit ID %d is not a valid localized Business Kit product.', 'kubikart-business-industries'),
-            $featured_kit_id
-        );
+    foreach ($bundle_ids as $bundle_id) {
+        if (!kubikart_industry_product_is_business_kit($bundle_id, $language)) {
+            $errors[] = sprintf(
+                __('Product ID %d is not a valid Business Bundle in this language.', 'kubikart-business-industries'),
+                $bundle_id
+            );
+        }
     }
 
-    foreach ($related_product_ids as $product_id) {
+    foreach ($product_ids as $product_id) {
         if (!kubikart_industry_product_is_valid($product_id)) {
             $errors[] = sprintf(
-                __('Related product ID %d no longer refers to a WooCommerce product.', 'kubikart-business-industries'),
+                __('Product ID %d no longer refers to a WooCommerce product.', 'kubikart-business-industries'),
                 $product_id
             );
             continue;
         }
+        if (kubikart_industry_product_is_business_kit($product_id)) {
+            $errors[] = sprintf(
+                __('“%s” is a Business Bundle. Add it under Business Bundles, not Individual Products.', 'kubikart-business-industries'),
+                get_the_title($product_id)
+            );
+        }
+        if (in_array($product_id, $bundle_ids, true)) {
+            $errors[] = sprintf(
+                __('Product ID %d is listed as a bundle and as an individual product.', 'kubikart-business-industries'),
+                $product_id
+            );
+        }
+    }
 
+    foreach (array_merge($bundle_ids, $product_ids) as $product_id) {
         $product_language = kubikart_industry_product_language($product_id);
         if ($language && $product_language && $product_language !== $language) {
             $warnings[] = sprintf(
@@ -320,28 +318,21 @@ function kubikart_industry_validate_relationships(
         }
     }
 
-    if ($featured_kit_id > 0) {
-        $kit_language = kubikart_industry_product_language($featured_kit_id);
-        if ($language && $kit_language && $kit_language !== $language) {
-            $warnings[] = sprintf(
-                __('Featured Kit “%1$s” is assigned to %2$s rather than %3$s.', 'kubikart-business-industries'),
-                get_the_title($featured_kit_id),
-                $kit_language,
-                $language
-            );
-        }
-    }
-
     return [
         'valid' => empty($errors),
         'woocommerce_available' => true,
-        'featured_kit_id' => $featured_kit_id,
-        'related_product_ids' => $related_product_ids,
+        'bundle_ids' => $bundle_ids,
+        'product_ids' => $product_ids,
         'errors' => $errors,
         'warnings' => $warnings,
     ];
 }
 
+/**
+ * Products offered in the two pickers. Choices are limited to the Industry's
+ * language (all languages if the Industry has none), so a German page never
+ * offers English products. Each product carries its bundle flag.
+ */
 function kubikart_industry_get_product_choices(int $industry_id): array
 {
     if (!kubikart_industry_woocommerce_available()) {
@@ -359,7 +350,7 @@ function kubikart_industry_get_product_choices(int $industry_id): array
     ]);
     $language = kubikart_industry_post_language($industry_id);
 
-    return array_map(static function ($id) use ($language) {
+    $choices = array_map(static function ($id) use ($language) {
         $id = absint($id);
         $product_language = kubikart_industry_product_language($id);
         return [
@@ -368,130 +359,129 @@ function kubikart_industry_get_product_choices(int $industry_id): array
             'status' => (string) get_post_status($id),
             'language' => $product_language,
             'language_mismatch' => $language && $product_language && $language !== $product_language,
-            'is_business_kit' => kubikart_industry_product_is_business_kit($id, $language),
+            'is_business_kit' => kubikart_industry_product_is_business_kit($id, $language ?: $product_language),
         ];
     }, $ids);
+
+    return array_values(array_filter($choices, static fn (array $choice): bool => !$choice['language_mismatch']));
 }
 
-function kubikart_industry_order_product_choices(array $products, array $selected_ids): array
+/**
+ * One picker: the ordered, saved selection on top (up/down/remove) and the
+ * searchable list of remaining eligible products below (add).
+ */
+function kubikart_industry_render_picker(string $dom_id, string $field_name, string $title, string $help, array $choices, array $selected_ids, string $empty_text): void
 {
-    $selected_order = array_flip($selected_ids);
-    usort($products, static function (array $left, array $right) use ($selected_order): int {
-        $left_order = $selected_order[$left['id']] ?? PHP_INT_MAX;
-        $right_order = $selected_order[$right['id']] ?? PHP_INT_MAX;
-        if ($left_order !== $right_order) {
-            return $left_order <=> $right_order;
+    $by_id = [];
+    foreach ($choices as $choice) {
+        $by_id[$choice['id']] = $choice;
+    }
+
+    echo '<section class="kubikart-industry-field kubikart-picker" id="' . esc_attr($dom_id) . '" data-field="' . esc_attr($field_name) . '">';
+    echo '<header class="kubikart-picker__head">';
+    echo '<h3>' . esc_html($title) . '</h3>';
+    echo '<p class="description">' . esc_html($help) . '</p>';
+    echo '</header>';
+    echo '<div class="kubikart-picker__body">';
+    echo '<input type="hidden" name="' . esc_attr($field_name . '_present') . '" value="1">';
+
+    echo '<h4>' . esc_html__('Ausgewählt (Reihenfolge = Anzeige auf der Seite)', 'kubikart-business-industries') . '</h4>';
+    echo '<ol class="kubikart-selected" aria-label="' . esc_attr($title) . '">';
+    foreach ($selected_ids as $id) {
+        $choice = $by_id[$id] ?? [
+            'id' => $id,
+            'title' => get_the_title($id) ?: sprintf(__('Nicht verfügbares Produkt #%d', 'kubikart-business-industries'), $id),
+            'status' => (string) (get_post_status($id) ?: 'unavailable'),
+            'language' => kubikart_industry_product_language($id),
+            'language_mismatch' => false,
+            'is_business_kit' => false,
+        ];
+        kubikart_industry_render_picker_row($choice, $field_name, true);
+    }
+    echo '</ol>';
+    echo '<p class="kubikart-empty description"' . ($selected_ids ? ' hidden' : '') . '>' . esc_html($empty_text) . '</p>';
+
+    echo '<h4>' . esc_html__('Hinzufügen', 'kubikart-business-industries') . '</h4>';
+    echo '<input type="search" class="widefat kubikart-product-search" placeholder="' . esc_attr__('Suchen …', 'kubikart-business-industries') . '" aria-label="' . esc_attr(sprintf(__('%s durchsuchen', 'kubikart-business-industries'), $title)) . '">';
+    echo '<ul class="kubikart-available">';
+    foreach ($choices as $choice) {
+        if (in_array($choice['id'], $selected_ids, true)) {
+            continue;
         }
-        if ($left['language_mismatch'] !== $right['language_mismatch']) {
-            return $left['language_mismatch'] <=> $right['language_mismatch'];
-        }
-        return strcasecmp($left['title'], $right['title']);
-    });
-    return $products;
+        kubikart_industry_render_picker_row($choice, $field_name, false);
+    }
+    echo '</ul>';
+    echo '</div>';
+    echo '</section>';
+}
+
+function kubikart_industry_render_picker_row(array $product, string $field_name, bool $selected): void
+{
+    $label = $product['title'] ?: sprintf(__('Produkt #%d', 'kubikart-business-industries'), $product['id']);
+    $search = strtolower($label . ' ' . $product['status'] . ' ' . $product['language']);
+
+    echo '<li class="kubikart-product-row" data-id="' . esc_attr((string) $product['id']) . '" data-product-search="' . esc_attr($search) . '">';
+    echo '<input type="hidden" name="' . esc_attr($field_name) . '[]" value="' . esc_attr((string) $product['id']) . '"' . ($selected ? '' : ' disabled') . '>';
+    echo '<span class="kubikart-product-row__content"><strong>' . esc_html($label) . '</strong>';
+    echo '<small>' . esc_html(sprintf(__('ID %1$d · %2$s', 'kubikart-business-industries'), $product['id'], $product['status']));
+    if ($product['language']) {
+        echo ' · ' . esc_html(strtoupper($product['language']));
+    }
+    echo '</small></span>';
+    echo '<span class="kubikart-product-row__actions">';
+    echo '<button type="button" class="button button-small" data-action="up" aria-label="' . esc_attr(sprintf(__('%s nach oben', 'kubikart-business-industries'), $label)) . '">↑</button>';
+    echo '<button type="button" class="button button-small" data-action="down" aria-label="' . esc_attr(sprintf(__('%s nach unten', 'kubikart-business-industries'), $label)) . '">↓</button>';
+    echo '<button type="button" class="button button-small" data-action="remove" aria-label="' . esc_attr(sprintf(__('%s entfernen', 'kubikart-business-industries'), $label)) . '">' . esc_html__('Entfernen', 'kubikart-business-industries') . '</button>';
+    echo '<button type="button" class="button button-small button-primary" data-action="add" aria-label="' . esc_attr(sprintf(__('%s hinzufügen', 'kubikart-business-industries'), $label)) . '">' . esc_html__('Hinzufügen', 'kubikart-business-industries') . '</button>';
+    echo '</span>';
+    echo '</li>';
 }
 
 function kubikart_industry_render_relationship_metabox(object $post): void
 {
     wp_nonce_field(KUBIKART_INDUSTRY_NONCE_ACTION, KUBIKART_INDUSTRY_NONCE_NAME);
 
-    $featured_kit_id = absint(get_post_meta($post->ID, KUBIKART_INDUSTRY_FEATURED_KIT_META, true));
-    $related_ids = kubikart_industry_sanitize_id_list(
-        get_post_meta($post->ID, KUBIKART_INDUSTRY_RELATED_PRODUCTS_META, true)
-    );
-    $products = kubikart_industry_order_product_choices(
-        kubikart_industry_get_product_choices($post->ID),
-        $related_ids
-    );
-    $available_ids = array_column($products, 'id');
-    $stale_ids = array_values(array_filter(
-        $related_ids,
-        static fn (int $id): bool => !in_array($id, $available_ids, true)
-    ));
-
     if (!kubikart_industry_woocommerce_available()) {
         echo '<div class="notice notice-warning inline"><p>';
         echo esc_html__('WooCommerce is unavailable. Saved relationships are retained and cannot be edited safely.', 'kubikart-business-industries');
         echo '</p></div>';
-        kubikart_industry_render_saved_ids($featured_kit_id, $related_ids);
         return;
     }
 
+    $bundle_ids = kubikart_industry_sanitize_id_list(get_post_meta($post->ID, KUBIKART_INDUSTRY_BUNDLES_META, true));
+    $product_ids = kubikart_industry_sanitize_id_list(get_post_meta($post->ID, KUBIKART_INDUSTRY_RELATED_PRODUCTS_META, true));
+    $choices = kubikart_industry_get_product_choices($post->ID);
+    $bundle_choices = array_values(array_filter($choices, static fn (array $choice): bool => $choice['is_business_kit']));
+    $product_choices = array_values(array_filter($choices, static fn (array $choice): bool => !$choice['is_business_kit']));
+
     echo '<div class="kubikart-industry-fields">';
-    if (($featured_kit_id && !in_array($featured_kit_id, $available_ids, true)) || $stale_ids) {
-        echo '<div class="notice notice-warning inline kubikart-industry-fields__notice"><p>';
-        echo esc_html__('Some saved product relationships are stale or unavailable. They will remain stored until an administrator deliberately saves a valid replacement.', 'kubikart-business-industries');
-        echo '</p>';
-        kubikart_industry_render_saved_ids(
-            $featured_kit_id && !in_array($featured_kit_id, $available_ids, true) ? $featured_kit_id : 0,
-            $stale_ids
-        );
-        echo '</div>';
-    }
-    echo '<section class="kubikart-industry-field">';
-    echo '<h3>' . esc_html__('Featured Business Kit', 'kubikart-business-industries') . '</h3>';
-    echo '<p class="description">' . esc_html__('Choose one WooCommerce product from the localized Business Kits category.', 'kubikart-business-industries') . '</p>';
-    echo '<input type="search" class="widefat kubikart-product-search" data-target="kubikart-featured-kit-list" placeholder="' . esc_attr__('Search Business Kits…', 'kubikart-business-industries') . '">';
-    echo '<div id="kubikart-featured-kit-list" class="kubikart-product-list">';
-    echo '<label class="kubikart-product-row"><input type="radio" name="kubikart_featured_kit_id" value="0"' . checked($featured_kit_id, 0, false) . '> <span>' . esc_html__('None selected', 'kubikart-business-industries') . '</span></label>';
-    foreach ($products as $product) {
-        if (!$product['is_business_kit'] && $product['id'] !== $featured_kit_id) {
-            continue;
-        }
-        kubikart_industry_render_product_row($product, 'radio', $featured_kit_id === $product['id']);
-    }
-    echo '</div></section>';
+    echo '<p class="description kubikart-industry-fields__intro"><strong>' . esc_html__('Hier legst du fest, welche Business-Pakete und Einzelprodukte diese Branchenseite zeigt – genau in dieser Reihenfolge.', 'kubikart-business-industries') . '</strong> ' . esc_html__('Die Auswahl bestimmt nicht, was ein Business-Paket enthält (das pflegst du im Produkt unter „Kubikart: Paketinhalt“). Eine leere Liste bleibt leer: dann erscheint der Abschnitt nicht.', 'kubikart-business-industries') . '</p>';
 
-    echo '<section class="kubikart-industry-field">';
-    echo '<h3>' . esc_html__('Related Products', 'kubikart-business-industries') . '</h3>';
-    echo '<p class="description">' . esc_html__('Select products and drag selected rows to set their display order.', 'kubikart-business-industries') . '</p>';
-    echo '<input type="search" class="widefat kubikart-product-search" data-target="kubikart-related-products-list" placeholder="' . esc_attr__('Search products…', 'kubikart-business-industries') . '">';
-    echo '<div id="kubikart-related-products-list" class="kubikart-product-list kubikart-sortable-products">';
-    foreach ($products as $product) {
-        kubikart_industry_render_product_row($product, 'checkbox', in_array($product['id'], $related_ids, true));
-    }
-    echo '</div></section></div>';
-}
-
-function kubikart_industry_render_saved_ids(int $featured_kit_id, array $related_ids): void
-{
-    echo '<p><strong>' . esc_html__('Saved featured Kit ID:', 'kubikart-business-industries') . '</strong> ' . esc_html((string) ($featured_kit_id ?: '—')) . '</p>';
-    echo '<p><strong>' . esc_html__('Saved related product IDs:', 'kubikart-business-industries') . '</strong> ' . esc_html($related_ids ? implode(', ', $related_ids) : '—') . '</p>';
-}
-
-function kubikart_industry_render_product_row(array $product, string $control_type, bool $selected): void
-{
-    $name = $control_type === 'radio'
-        ? 'kubikart_featured_kit_id'
-        : 'kubikart_related_product_ids[]';
-    $classes = 'kubikart-product-row' . ($selected ? ' is-selected' : '');
-    $label = $product['title'] ?: sprintf(__('Product #%d', 'kubikart-business-industries'), $product['id']);
-    $search = strtolower($label . ' ' . $product['status'] . ' ' . $product['language']);
-
-    echo '<label class="' . esc_attr($classes) . '" data-product-search="' . esc_attr($search) . '" draggable="' . ($control_type === 'checkbox' ? 'true' : 'false') . '">';
-    echo '<input type="' . esc_attr($control_type) . '" name="' . esc_attr($name) . '" value="' . esc_attr((string) $product['id']) . '"' . checked($selected, true, false) . '>';
-    echo '<span class="kubikart-product-row__content"><strong>' . esc_html($label) . '</strong>';
-    echo '<small>' . esc_html(sprintf(
-        __('ID %1$d · %2$s', 'kubikart-business-industries'),
-        $product['id'],
-        $product['status']
-    ));
-    if ($product['language']) {
-        echo ' · ' . esc_html(strtoupper($product['language']));
-    }
-    echo '</small></span>';
-    if ($product['language_mismatch']) {
-        echo '<span class="kubikart-language-warning" title="' . esc_attr__('Language differs from this Industry.', 'kubikart-business-industries') . '">!</span>';
-    }
-    if ($control_type === 'checkbox') {
-        echo '<span class="dashicons dashicons-move" aria-hidden="true"></span>';
-    }
-    echo '</label>';
+    kubikart_industry_render_picker(
+        'kubikart-bundles-picker',
+        'kubikart_bundle_ids',
+        __('Business-Pakete', 'kubikart-business-industries'),
+        __('Nur Produkte der Kategorie Business-Pakete in der Sprache dieser Seite. Das erste Paket wird zuerst angezeigt.', 'kubikart-business-industries'),
+        $bundle_choices,
+        $bundle_ids,
+        __('Keine Business-Pakete ausgewählt – der Abschnitt wird auf der Seite nicht angezeigt.', 'kubikart-business-industries')
+    );
+    kubikart_industry_render_picker(
+        'kubikart-products-picker',
+        'kubikart_related_product_ids',
+        __('Einzelprodukte', 'kubikart-business-industries'),
+        __('Alle Produkte außer Business-Paketen in der Sprache dieser Seite.', 'kubikart-business-industries'),
+        $product_choices,
+        $product_ids,
+        __('Keine Einzelprodukte ausgewählt – der Abschnitt wird auf der Seite nicht angezeigt.', 'kubikart-business-industries')
+    );
+    echo '</div>';
 }
 
 add_action('add_meta_boxes', static function (): void {
     add_meta_box(
         'kubikart-business-industry-products',
-        __('Kubikart Product Relationships', 'kubikart-business-industries'),
+        __('Kubikart: Business-Pakete und Einzelprodukte dieser Branche', 'kubikart-business-industries'),
         'kubikart_industry_render_relationship_metabox',
         KUBIKART_INDUSTRY_POST_TYPE,
         'normal',
@@ -508,18 +498,18 @@ add_action('admin_enqueue_scripts', static function (): void {
         return;
     }
 
-    $version = '1.0.0';
+    $asset_version = static fn (string $file): string => (string) (@filemtime(__DIR__ . '/assets/' . $file) ?: '1.0.0');
     wp_enqueue_style(
         'kubikart-business-industries-admin',
         plugin_dir_url(__FILE__) . 'assets/admin.css',
         [],
-        $version
+        $asset_version('admin.css')
     );
     wp_enqueue_script(
         'kubikart-business-industries-admin',
         plugin_dir_url(__FILE__) . 'assets/admin.js',
         [],
-        $version,
+        $asset_version('admin.js'),
         true
     );
 });
@@ -571,15 +561,23 @@ function kubikart_save_business_industry_relationships(int $post_id): void
         return;
     }
 
-    $featured_kit_id = isset($_POST['kubikart_featured_kit_id'])
-        ? absint(wp_unslash($_POST['kubikart_featured_kit_id']))
-        : 0;
-    $related_ids = isset($_POST['kubikart_related_product_ids'])
-        ? wp_unslash($_POST['kubikart_related_product_ids'])
-        : [];
+    // A list is only replaced when its section was part of the submitted form;
+    // a submitted-but-empty list is a deliberate choice and is stored as empty.
+    $bundles_submitted = isset($_POST['kubikart_bundle_ids_present']);
+    $products_submitted = isset($_POST['kubikart_related_product_ids_present']);
+    if (!$bundles_submitted && !$products_submitted) {
+        return;
+    }
+
+    $bundle_ids = $bundles_submitted
+        ? (isset($_POST['kubikart_bundle_ids']) ? wp_unslash($_POST['kubikart_bundle_ids']) : [])
+        : get_post_meta($post_id, KUBIKART_INDUSTRY_BUNDLES_META, true);
+    $product_ids = $products_submitted
+        ? (isset($_POST['kubikart_related_product_ids']) ? wp_unslash($_POST['kubikart_related_product_ids']) : [])
+        : get_post_meta($post_id, KUBIKART_INDUSTRY_RELATED_PRODUCTS_META, true);
     $validation = kubikart_industry_validate_relationships(
-        $featured_kit_id,
-        $related_ids,
+        $bundle_ids,
+        $product_ids,
         kubikart_industry_post_language($post_id)
     );
 
@@ -588,17 +586,10 @@ function kubikart_save_business_industry_relationships(int $post_id): void
         return;
     }
 
-    if ($validation['featured_kit_id'] > 0) {
-        update_post_meta($post_id, KUBIKART_INDUSTRY_FEATURED_KIT_META, $validation['featured_kit_id']);
-    } else {
-        delete_post_meta($post_id, KUBIKART_INDUSTRY_FEATURED_KIT_META);
-    }
-
-    if ($validation['related_product_ids']) {
-        update_post_meta($post_id, KUBIKART_INDUSTRY_RELATED_PRODUCTS_META, $validation['related_product_ids']);
-    } else {
-        delete_post_meta($post_id, KUBIKART_INDUSTRY_RELATED_PRODUCTS_META);
-    }
+    update_post_meta($post_id, KUBIKART_INDUSTRY_BUNDLES_META, $validation['bundle_ids']);
+    update_post_meta($post_id, KUBIKART_INDUSTRY_RELATED_PRODUCTS_META, $validation['product_ids']);
+    // The retired single-bundle field must not linger beside the new list.
+    delete_post_meta($post_id, KUBIKART_INDUSTRY_FEATURED_KIT_META);
 }
 add_action('save_post_' . KUBIKART_INDUSTRY_POST_TYPE, 'kubikart_save_business_industry_relationships');
 
@@ -638,13 +629,20 @@ function kubikart_revalidate_business_industry(int $post_id, string $action = 'u
         }
     }
 
-    $body = wp_json_encode([
+    $payload = [
         'id' => $post_id,
         'slug' => (string) ($post->post_name ?? ''),
         'status' => (string) ($post->post_status ?? ''),
         'language' => kubikart_industry_post_language($post_id),
         'translations' => $translations,
-    ]);
+    ];
+    if (function_exists('kubikart_frontend_revalidate_queue')) {
+        // Deduplicated and delivered on shutdown, after REST meta has been written.
+        kubikart_frontend_revalidate_queue('industry.' . sanitize_key($action), $payload);
+        return;
+    }
+
+    $body = wp_json_encode($payload);
     $signature = base64_encode(hash_hmac('sha256', $body, KUBIKART_REVALIDATE_SECRET, true));
 
     wp_remote_post(trailingslashit(KUBIKART_FRONTEND_URL) . 'api/revalidate', [

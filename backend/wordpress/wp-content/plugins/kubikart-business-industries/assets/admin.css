@@ -1,26 +1,67 @@
 .kubikart-industry-fields {
   display: grid;
-  gap: 24px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
 }
 
-.kubikart-industry-fields__notice {
+.kubikart-industry-fields__notice,
+.kubikart-industry-fields__intro {
   grid-column: 1 / -1;
   margin: 0;
+  max-width: 80ch;
 }
 
-.kubikart-industry-field h3 {
-  margin-bottom: 4px;
+.kubikart-picker {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #dcdcde;
+  border-radius: 4px;
+  background: #fcfcfc;
+}
+
+.kubikart-picker__head h3 {
+  margin: 0 0 4px;
+  padding: 0;
+  font-size: 15px;
+}
+
+.kubikart-picker__head .description {
+  margin: 0 0 12px;
+}
+
+.kubikart-picker__body > :first-child + h4 {
+  margin-top: 0;
 }
 
 .kubikart-product-search {
-  margin: 12px 0 8px;
+  margin: 0 0 8px;
 }
 
-.kubikart-product-list {
-  max-height: 320px;
-  overflow: auto;
+.kubikart-empty {
+  margin: 0 0 8px;
+}
+
+.kubikart-picker h4 {
+  margin: 16px 0 6px;
+  font-size: 13px;
+}
+
+.kubikart-selected,
+.kubikart-available {
+  margin: 0;
+  padding: 0;
+  list-style: none;
   border: 1px solid #c3c4c7;
   background: #fff;
+}
+
+.kubikart-selected:empty {
+  display: none;
+}
+
+.kubikart-available {
+  max-height: 260px;
+  overflow: auto;
 }
 
 .kubikart-product-row {
@@ -28,21 +69,21 @@
   align-items: center;
   gap: 10px;
   min-height: 42px;
+  margin: 0;
   padding: 8px 10px;
   border-bottom: 1px solid #dcdcde;
-  cursor: pointer;
 }
 
 .kubikart-product-row:last-child {
   border-bottom: 0;
 }
 
-.kubikart-product-row.is-selected {
+.kubikart-selected .kubikart-product-row {
   background: #f0f6fc;
 }
 
-.kubikart-product-row.is-dragging {
-  opacity: 0.55;
+.kubikart-product-row[hidden] {
+  display: none;
 }
 
 .kubikart-product-row__content {
@@ -53,6 +94,19 @@
 
 .kubikart-product-row__content small {
   color: #646970;
+}
+
+.kubikart-product-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.kubikart-available [data-action="up"],
+.kubikart-available [data-action="down"],
+.kubikart-available [data-action="remove"],
+.kubikart-selected [data-action="add"] {
+  display: none;
 }
 
 .kubikart-language-warning {
@@ -66,13 +120,19 @@
   font-weight: 700;
 }
 
-.kubikart-sortable-products .dashicons-move {
-  color: #646970;
-  cursor: move;
-}
-
 @media (min-width: 1100px) {
   .kubikart-industry-fields {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 20px;
+  }
+
+  /* Subgrid keeps both headers and both list bodies on the same lines. */
+  @supports (grid-template-rows: subgrid) {
+    .kubikart-picker {
+      display: grid;
+      grid-row: span 2;
+      grid-template-rows: subgrid;
+      row-gap: 0;
+    }
   }
 }

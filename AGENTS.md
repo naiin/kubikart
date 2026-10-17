@@ -35,8 +35,8 @@ The current redesign scope is:
 Use the following priority order:
 
 1. `AGENTS.md`
-2. `docs/redesign/01-design-system.md`
-3. The relevant page-layout specification under `docs/redesign/`
+2. `docs/03-design-system.md`
+3. The relevant page-layout specification (`docs/04-homepage-layout.md`, `docs/05-header-footer.md`, `docs/06-content-model.md`)
 4. Existing functional contracts and tests
 5. Existing implementation
 
@@ -168,7 +168,7 @@ Avoid:
 
 Approved tokens and component rules are defined in:
 
-`docs/redesign/01-design-system.md`
+`docs/03-design-system.md`
 
 ---
 
@@ -357,7 +357,7 @@ Legacy tokens should be marked clearly and must not be used in newly written com
 Before coding:
 
 1. Read `AGENTS.md`.
-2. Read `docs/redesign/01-design-system.md`.
+2. Read `docs/03-design-system.md`.
 3. Read the relevant layout document.
 4. Inspect the current route and its dependencies.
 5. Identify the existing functionality that must remain.

@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 export default function AGBPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Allgemeine Geschäftsbedingungen (AGB)</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-8 break-words">Allgemeine Geschäftsbedingungen (AGB)</h1>
 
       <p className="mb-6 text-sm text-gray-600">
         Maßgebliche Fassung als PDF:{" "}

@@ -171,7 +171,7 @@ export default function AccountPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            minLength={6}
+            minLength={mode === "register" ? 8 : undefined}
             className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none"
             placeholder="••••••••"
           />

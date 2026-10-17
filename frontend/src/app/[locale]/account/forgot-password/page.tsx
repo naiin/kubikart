@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { useProtectedFetch } from "@/components/CaptchaProvider";
 
 export default function ForgotPasswordPage() {
+  const protectedFetch = useProtectedFetch();
   const t = useTranslations("account");
   const tc = useTranslations("common");
 
@@ -19,11 +21,12 @@ export default function ForgotPasswordPage() {
     setSubmitting(true);
 
     try {
-      await fetch("/api/auth/forgot-password", {
+      const response = await protectedFetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
+      if (!response.ok) throw new Error("Request failed");
       // Always show success — no email enumeration
       setDone(true);
     } catch {

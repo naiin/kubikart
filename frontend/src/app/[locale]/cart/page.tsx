@@ -4,12 +4,16 @@ import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { formatCartCurrency, getCartLineId, readCart, useCart, useHasMounted, writeCart } from "@/lib/cart";
+import { CartAvailabilityNotice } from "@/components/CartAvailabilityNotice";
+import { CartSetSummary } from "@/components/CartSetSummary";
+import { useCartAvailability } from "@/lib/use-cart-availability";
 
 export default function CartPage() {
   const t = useTranslations("common");
   const locale = useLocale();
   const cart = useCart();
   const hasMounted = useHasMounted();
+  const availability = useCartAvailability(cart);
 
   function updateQuantity(lineId: string, delta: number) {
     const updated = readCart()
@@ -17,6 +21,10 @@ export default function CartPage() {
       .filter((item) => item.quantity > 0);
 
     writeCart(updated);
+  }
+
+  function removeProduct(productId: number) {
+    writeCart(readCart().filter((item) => (item.productId ?? item.id) !== productId));
   }
 
   function removeItem(lineId: string) {
@@ -40,6 +48,9 @@ export default function CartPage() {
         </div>
       ) : (
         <div>
+          <div className="mb-6">
+            <CartAvailabilityNotice blocked={availability.blocked} onRemove={removeProduct} />
+          </div>
           {/* Cart Items */}
           <div className="divide-y divide-gray-200 border-y border-gray-200">
             {cart.map((item) => (
@@ -61,6 +72,7 @@ export default function CartPage() {
                   <Link href={item.slug ? `/shop/${item.slug}` : "/shop"} className="text-sm font-medium text-gray-900 hover:text-navy-900">
                     {item.name}
                   </Link>
+                  <CartSetSummary item={item} />
                   {item.customizationSummary?.length ? (
                     <div className="mt-1 space-y-1">
                       {item.customizationSummary.map((line) => (
@@ -120,12 +132,22 @@ export default function CartPage() {
               {t("shipping")} + {t("tax")} wird an der Kasse berechnet.
             </p>
             <div className="mt-6 flex flex-col sm:flex-row gap-3">
-              <Link
-                href="/checkout"
-                className="flex-1 inline-flex items-center justify-center rounded-lg bg-accent-600 px-6 py-3 text-sm font-semibold text-white hover:bg-accent-500 transition-colors"
-              >
-                {t("proceedToCheckout")}
-              </Link>
+              {availability.hasBlocked ? (
+                <span
+                  role="link"
+                  aria-disabled="true"
+                  className="flex-1 inline-flex cursor-not-allowed items-center justify-center rounded-lg bg-gray-300 px-6 py-3 text-sm font-semibold text-white"
+                >
+                  {t("proceedToCheckout")}
+                </span>
+              ) : (
+                <Link
+                  href="/checkout"
+                  className="flex-1 inline-flex items-center justify-center rounded-lg bg-accent-600 px-6 py-3 text-sm font-semibold text-white hover:bg-accent-500 transition-colors"
+                >
+                  {t("proceedToCheckout")}
+                </Link>
+              )}
               <Link
                 href="/shop"
                 className="flex-1 inline-flex items-center justify-center rounded-lg border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"

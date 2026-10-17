@@ -1,6 +1,7 @@
 import "server-only";
 
-import { sendOrderStatusUpdate } from "@/lib/email";
+import { acquireLock } from "@/lib/distributed-lock";
+import { sendOrderConfirmation } from "@/lib/email";
 import { wcApi } from "@/lib/woocommerce";
 
 const EMAIL_STATUS_KEY = "_kubikart_payment_email_status";
@@ -14,6 +15,10 @@ type PaymentEmailOrder = {
   id: number;
   status: string;
   billing?: { email?: string; first_name?: string; last_name?: string };
+  total?: string;
+  number?: string;
+  line_items?: Array<{ name: string; quantity: number; price: number }>;
+  shipping?: { address_1?: string; address_2?: string; city?: string; postcode?: string };
   meta_data?: OrderMeta[];
 };
 
@@ -40,6 +45,18 @@ async function updateEmailState(order: PaymentEmailOrder, values: Record<string,
  * reduces normal duplicate delivery while allowing recovery after a crashed request.
  */
 export async function deliverWooOrderPaidEmail(orderId: number): Promise<{ sent: boolean; reason?: string }> {
+  // WooCommerce metadata has no compare-and-set, so concurrent duplicate events
+  // need an atomic claim before the state is read.
+  const release = await acquireLock(`kubikart:paid-email:${orderId}`, SENDING_LEASE_MS);
+  if (!release) return { sent: false, reason: "delivery-in-progress" };
+  try {
+    return await deliverWithClaim(orderId);
+  } finally {
+    await release();
+  }
+}
+
+async function deliverWithClaim(orderId: number): Promise<{ sent: boolean; reason?: string }> {
   const order = await wcApi<PaymentEmailOrder>(`orders/${orderId}`, { revalidate: 0 });
   const meta = order.meta_data || [];
   const state = metaValue(meta, EMAIL_STATUS_KEY);
@@ -64,11 +81,20 @@ export async function deliverWooOrderPaidEmail(orderId: number): Promise<{ sent:
     const locale = String(localeMeta || "de").startsWith("en") ? "en" : "de";
     const customerName = `${order.billing?.first_name || ""} ${order.billing?.last_name || ""}`.trim() || "Kunde";
 
-    await sendOrderStatusUpdate(email, {
+    if (typeof order.total !== "string" || !order.line_items?.length) {
+      throw new Error("Paid order has no receipt data");
+    }
+    await sendOrderConfirmation(email, {
       orderId: order.id,
-      orderNumber: `#${order.id}`,
-      status: order.status,
-      customerName,
+      orderNumber: `#${order.number || order.id}`,
+      total: order.total,
+      items: order.line_items.map((item) => ({ name: item.name, quantity: item.quantity, price: String(item.price) })),
+      customer: { name: customerName },
+      shipping: {
+        address: [order.shipping?.address_1, order.shipping?.address_2].filter(Boolean).join(", "),
+        city: order.shipping?.city || "",
+        postalCode: order.shipping?.postcode || "",
+      },
     }, locale);
 
     await updateEmailState(stateOrder, {

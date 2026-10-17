@@ -6,6 +6,7 @@ const { sendWithdrawalConfirmation } = vi.hoisted(() => ({
 
 vi.mock("@/lib/email", () => ({
   sendWithdrawalConfirmation,
+  sendOwnerEnquiryNotification: vi.fn().mockResolvedValue({ messageId: "owner-mail-id" }),
 }));
 
 function request(body: Record<string, unknown>) {
@@ -55,7 +56,7 @@ describe("POST /api/withdrawal", () => {
   });
 
   it("stores the declaration before returning a dated acknowledgement", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: 101 }) });
     vi.stubGlobal("fetch", fetchMock);
     const { POST } = await import("@/app/api/withdrawal/route");
     const response = await POST(request({}));
@@ -90,7 +91,7 @@ describe("POST /api/withdrawal", () => {
   });
 
   it("keeps the stored withdrawal available when email is not configured", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: 101 }) }));
     sendWithdrawalConfirmation.mockResolvedValue(false);
     const { POST } = await import("@/app/api/withdrawal/route");
     const response = await POST(request({}));

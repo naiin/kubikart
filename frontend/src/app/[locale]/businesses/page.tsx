@@ -5,6 +5,7 @@ import { IndustryMedia } from "@/components/business-industries/IndustryMedia";
 import { getBusinessIndustryImage } from "@/lib/business-industry-images";
 import { IndustryOverviewJsonLd } from "@/components/business-industries/IndustryJsonLd";
 import { Link } from "@/i18n/navigation";
+import { PageHero } from "@/components/layout/PageHero";
 import {
   buildPageMetadata,
   normalizeLocale,
@@ -52,23 +53,12 @@ export default async function BusinessIndustriesPage({ params }: BusinessIndustr
 
   return (
     <main className="bg-page text-foreground">
-      <section className="border-b border-border bg-surface">
-        <div className="kk-container-full py-12 lg:py-16">
-          <nav aria-label={t("breadcrumbLabel")} className="text-sm text-muted">
-            <Link href="/" className="kk-link">{t("home")}</Link>
-            <span className="mx-2" aria-hidden="true">/</span>
-            <span aria-current="page">{t("parent")}</span>
-          </nav>
-
-          <div className="mt-8 max-w-4xl">
-            <p className="kk-eyebrow">{t("overview.eyebrow")}</p>
-            <h1 className="kk-page-intro-heading mt-3">{t("overview.heading")}</h1>
-            <p className="mt-5 max-w-3xl text-base leading-7 text-muted sm:text-lg">
-              {t("overview.intro")}
-            </p>
-          </div>
-        </div>
-      </section>
+      <PageHero
+        breadcrumbs={[{ label: t("parent") }]}
+        eyebrow={t("overview.eyebrow")}
+        title={t("overview.heading")}
+        intro={t("overview.intro")}
+      />
 
       <section aria-labelledby="industry-list-heading" className="kk-section">
         <div className="kk-container-full">

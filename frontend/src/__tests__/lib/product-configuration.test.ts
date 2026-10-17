@@ -18,6 +18,7 @@ import {
   resolveProductPersonalizationOptions,
   type ProductPersonalizationOption,
 } from "@/lib/product-page";
+import { toOptionId, toWooAttributeId } from "@/lib/option-ids";
 
 const fields: ProductPersonalizationOption[] = [
   {
@@ -89,6 +90,15 @@ describe("product field character limits", () => {
 });
 
 describe("product configuration validation", () => {
+  it("matches WooCommerce custom attribute names to variation slugs", () => {
+    expect(toOptionId("Paper / Papier")).toBe("paper-papier");
+    expect(toOptionId("Quantity / Stückzahl")).toBe("quantity-stuckzahl");
+    expect(toOptionId("paper-papier")).toBe("paper-papier");
+    expect(toWooAttributeId({ id: 0, name: "Quantity / Stückzahl", slug: "Quantity / Stückzahl" })).toBe("quantity-stuckzahl");
+    expect(toWooAttributeId({ id: 0, name: "Quantity / Stückzahl", slug: "quantity-stueckzahl" })).toBe("quantity-stuckzahl");
+    expect(toWooAttributeId({ id: 12, name: "Colour", slug: "pa_colour" })).toBe("pa_colour");
+  });
+
   it("blocks an empty required engraving while leaving optional fields optional", () => {
     const errors = validateProductConfiguration(fields, createState(), requiredMessage, maxLengthMessage);
     expect(errors).toEqual({ engraving: "Engraving required" });
@@ -136,6 +146,52 @@ describe("product configuration validation", () => {
         validationErrors: {},
       }),
     ).toBe(false);
+  });
+
+  it("requires artwork only for the finished-artwork path", () => {
+    const designFields: ProductPersonalizationOption[] = [
+      {
+        id: "design_service",
+        label: "Design option",
+        type: "select",
+        required: true,
+        options: [
+          { label: "Upload", value: "own-artwork" },
+          { label: "Simple layout", value: "simple-layout" },
+        ],
+      },
+      {
+        id: "artwork",
+        label: "Finished artwork",
+        type: "file",
+        required: true,
+        showWhen: { field: "design_service", equals: "own-artwork" },
+      },
+      {
+        id: "business_name",
+        label: "Business name",
+        type: "text",
+        required: true,
+        showWhen: { field: "design_service", equals: "simple-layout" },
+      },
+    ];
+
+    expect(
+      validateProductConfiguration(
+        designFields,
+        createState({ selectedOptions: { design_service: "simple-layout" }, textInputs: { business_name: "Kubikart" } }),
+        requiredMessage,
+        maxLengthMessage,
+      ),
+    ).toEqual({});
+    expect(
+      validateProductConfiguration(
+        designFields,
+        createState({ selectedOptions: { design_service: "own-artwork" } }),
+        requiredMessage,
+        maxLengthMessage,
+      ),
+    ).toEqual({ artwork: "Finished artwork required" });
   });
 });
 
@@ -357,11 +413,22 @@ describe("WordPress field schema and presentation", () => {
     const parsed = parseProductCustomFields([
       {
         key: "_kubikart_custom_fields",
-        value: [{ id: "upload", label: "Upload", type: "file", required: false }],
+        value: [{ id: "birthday", label: "Birthday", type: "date", required: false }],
       },
     ]);
 
     expect(parsed).toEqual([]);
+  });
+
+  it("parses the explicit file upload field type", () => {
+    const parsed = parseProductCustomFields([
+      {
+        key: "_kubikart_custom_fields",
+        value: { schema_version: 3, fields: [{ id: "logo", label: "Logo", type: "file", required: true }] },
+      },
+    ]);
+
+    expect(parsed).toEqual([expect.objectContaining({ id: "logo", type: "file", required: true })]);
   });
 
   it("uses real metadata instead of migration presets once metadata exists", () => {

@@ -7,6 +7,7 @@ import { HomeHero } from "@/components/home/HomeHero";
 import { HomepageFinalCta } from "@/components/home/HomepageFinalCta";
 import { HomepageTrustStrip } from "@/components/home/HomepageTrustStrip";
 import { IndustryLinks } from "@/components/home/IndustryLinks";
+import { HomePaths } from "@/components/home/HomePaths";
 import { KitContentsStrip } from "@/components/home/KitContentsStrip";
 import { PopularProducts } from "@/components/home/PopularProducts";
 import { SiteJsonLd } from "@/components/seo/SiteJsonLd";
@@ -21,12 +22,12 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       ? {
           title: "Kubikart | Visibility products and personalized products",
           description:
-            "Kubikart creates QR and NFC stands, stickers, menus, visibility kits and selected personalized products for local businesses and private customers.",
+            "Kubikart creates QR and NFC stands, stickers, menus, Business Bundles and selected personalized products for local businesses and private customers.",
         }
       : {
           title: "Kubikart | Sichtbarkeitslösungen und personalisierte Produkte",
           description:
-            "Kubikart gestaltet QR- und NFC-Aufsteller, Aufkleber, Menüs, Sichtbarkeits-Kits und ausgewählte personalisierte Produkte für lokale Unternehmen und Privatkunden.",
+            "Kubikart gestaltet QR- und NFC-Aufsteller, Aufkleber, Menüs, Business-Pakete und ausgewählte personalisierte Produkte für lokale Unternehmen und Privatkunden.",
         };
 
   return buildPageMetadata({
@@ -43,10 +44,11 @@ export default function HomePage() {
       <SiteJsonLd />
       <div className="overflow-clip bg-page">
         <HomeHero />
-        <BeforeAfterSection />
+        <HomePaths />
         <FeaturedKits />
         <KitContentsStrip />
         <PopularProducts />
+        <BeforeAfterSection />
         <IndustryLinks />
         <CustomOrderProcess />
         <FeaturedPortfolio />

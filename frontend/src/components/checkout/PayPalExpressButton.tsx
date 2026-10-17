@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { PayPalScriptProvider, PayPalButtons, FUNDING } from "@paypal/react-paypal-js";
+import { useProtectedFetch } from "@/components/CaptchaProvider";
 
 interface PayPalExpressButtonProps {
   pendingOrderRequest: Record<string, unknown>;
@@ -14,6 +15,7 @@ interface PayPalExpressButtonProps {
 }
 
 export default function PayPalExpressButton({ pendingOrderRequest, onSuccess, onError }: PayPalExpressButtonProps) {
+  const protectedFetch = useProtectedFetch();
   const pendingOrder = useRef<{ id: number; orderKey: string } | null>(null);
   if (!process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID) return null;
   return (
@@ -23,7 +25,7 @@ export default function PayPalExpressButton({ pendingOrderRequest, onSuccess, on
         style={{ layout: "horizontal", shape: "rect", label: "buynow", height: 48, tagline: false }}
         createOrder={async () => {
           if (!pendingOrder.current) {
-            const orderResponse = await fetch("/api/orders/create", {
+            const orderResponse = await protectedFetch("/api/orders/create", {
               method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(pendingOrderRequest),
             });
             const order = await orderResponse.json();

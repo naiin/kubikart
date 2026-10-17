@@ -16,6 +16,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const response = serverCartErrorResponse(error);
     if (response.status === 500) console.error("Shipping calculation error:", error);
-    return NextResponse.json({ error: response.message }, { status: response.status });
+    return NextResponse.json({ error: response.message, ...(response.code ? { code: response.code } : {}) }, { status: response.status });
   }
 }

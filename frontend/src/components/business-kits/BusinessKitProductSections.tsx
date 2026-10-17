@@ -3,13 +3,19 @@
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { isWooCommercePlaceholderImage } from "@/lib/business-kits";
+import { getBusinessKitCommercialState, isWooCommercePlaceholderImage, parseBusinessKitData, removeProseContentLists, type BusinessKitCommercialState, type BusinessKitContentItem } from "@/lib/business-kits";
+import { KitIllustrationForProduct } from "@/components/business-kits/KitIllustration";
+import { IllustrativeImageBadge } from "@/components/business-kits/IllustrativeImageBadge";
 import { formatProductPrice, type ProductPageProduct } from "@/lib/product-page";
 import type { WCProduct, WCReview } from "@/lib/woocommerce";
 
-export function BusinessKitSupportStrip() {
+export function BusinessKitSupportStrip({ orderable = true }: { orderable?: boolean }) {
   const t = useTranslations("businessKitProduct");
-  const items = [t("supportCoordinated"), t("supportConfiguration"), t("supportPayment"), t("supportEnquiry")];
+  const items = [
+    t("supportCoordinated"),
+    ...(orderable ? [t("supportConfiguration"), t("supportPayment")] : []),
+    t("supportEnquiry"),
+  ];
 
   return (
     <section aria-label={t("supportLabel")} className="border-y border-border bg-brand text-white">
@@ -25,6 +31,100 @@ export function BusinessKitSupportStrip() {
   );
 }
 
+export function BusinessKitContents({
+  items,
+  state,
+}: {
+  items: BusinessKitContentItem[];
+  state: BusinessKitCommercialState;
+}) {
+  const t = useTranslations("businessKitProduct");
+  if (items.length === 0) return null;
+
+  return (
+    <section aria-labelledby="kit-contents-heading" className="kk-container-full pt-16 lg:pt-20">
+      <div className="max-w-3xl">
+        <p className="kk-eyebrow">{t("contentsEyebrow")}</p>
+        <h2 id="kit-contents-heading" className="kk-heading-2 mt-3">{t("contentsTitle")}</h2>
+        <p className="mt-4 leading-7 text-muted">
+          {state.kind === "enquiry" ? t("contentsIntroEnquiry") : t("contentsIntro")}
+        </p>
+      </div>
+
+      <ul className="mt-8 grid gap-4 md:grid-cols-2">
+        {items.map((item) => {
+          const name = item.title || item.product?.name || "";
+          const image = item.image || item.product?.image || null;
+
+          return (
+            <li key={item.id || name} className="flex min-w-0 gap-4 rounded-kubikart-lg border border-border bg-surface-white p-4 sm:p-5">
+              {image ? (
+                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-kubikart-md bg-surface sm:h-24 sm:w-24">
+                  <Image src={image.src} alt={image.alt || name} fill sizes="96px" className="object-cover" unoptimized />
+                </div>
+              ) : null}
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                  <h3 className="min-w-0 font-heading text-base leading-6 font-bold text-brand break-words">{name}</h3>
+                  <span className="shrink-0 rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs font-semibold text-brand">
+                    {t("contentsQuantity", { count: item.quantity })}
+                  </span>
+                </div>
+                {item.description ? (
+                  <p className="mt-2 text-sm leading-6 whitespace-pre-line text-muted">{item.description}</p>
+                ) : null}
+                {item.product ? (
+                  <Link href={`/shop/${item.product.slug}`} className="kk-link mt-2 inline-flex min-h-11 items-center text-sm font-semibold">
+                    {t("contentsViewProduct", { name: item.product.name })}
+                  </Link>
+                ) : null}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="mt-5 text-sm text-muted">
+        {t("contentsNote")}
+        {items.some((item) => item.product) ? ` ${t("contentsNoteLinked")}` : ""}
+      </p>
+    </section>
+  );
+}
+
+export function BusinessKitEnquiryPanel({
+  product,
+  state,
+  bundle = true,
+}: {
+  product: ProductPageProduct;
+  state: BusinessKitCommercialState;
+  bundle?: boolean;
+}) {
+  const t = useTranslations("businessKitProduct");
+  const unavailable = state.kind === "unavailable";
+  const startingPrice = state.kind === "enquiry" ? state.startingPrice : undefined;
+
+  return (
+    <div className="rounded-kubikart-lg border border-border bg-surface p-5 sm:p-6" role="region" aria-labelledby="kit-enquiry-heading">
+      {!unavailable ? (
+        <p className="font-heading text-[30px] font-bold tracking-[-0.03em] text-accent sm:text-[34px]">
+          {startingPrice ? t("startingPrice", { price: formatProductPrice({ amount: startingPrice, currency: "EUR" }) }) : t("priceOnRequest")}
+        </p>
+      ) : null}
+      <h2 id="kit-enquiry-heading" className="mt-2 font-heading text-xl font-bold text-brand">
+        {unavailable ? t("unavailableTitle") : t("enquiryTitle")}
+      </h2>
+      <p className="mt-3 text-sm leading-6 text-muted">{unavailable ? t("unavailableText") : t("enquiryText")}</p>
+      <div className="mt-5 flex flex-wrap gap-3">
+        <Link href={`/kontakt?product=${encodeURIComponent(product.slug)}`} className="kk-button kk-button-primary">
+          {bundle ? t("enquiryCta") : t("enquiryCtaGeneric")}
+        </Link>
+        <Link href="/shop" className="kk-button kk-button-secondary">{t("enquiryShop")}</Link>
+      </div>
+    </div>
+  );
+}
+
 function ReviewStars({ rating }: { rating: number }) {
   return (
     <span className="flex gap-0.5" aria-hidden="true">
@@ -37,14 +137,25 @@ function ReviewStars({ rating }: { rating: number }) {
   );
 }
 
-export function BusinessKitDetails({ product, reviews }: { product: ProductPageProduct; reviews: WCReview[] }) {
+export function BusinessKitDetails({
+  product,
+  reviews,
+  hasStructuredContents = false,
+}: {
+  product: ProductPageProduct;
+  reviews: WCReview[];
+  hasStructuredContents?: boolean;
+}) {
   const t = useTranslations("businessKitProduct");
   const locale = useLocale();
   const hasSpecifications = Boolean(product.attributes?.length || product.weight || product.dimensions);
+  const descriptionHtml = hasStructuredContents
+    ? removeProseContentLists(product.descriptionHtml || "")
+    : product.descriptionHtml || "";
 
   return (
     <div className="kk-container-full space-y-16 py-16 lg:space-y-20 lg:py-20">
-      {product.descriptionHtml ? (
+      {descriptionHtml.trim() ? (
         <section aria-labelledby="kit-details-heading" className="grid gap-8 lg:grid-cols-[0.36fr_0.64fr] lg:gap-12 xl:grid-cols-[0.32fr_0.68fr] xl:gap-16">
           <div>
             <p className="kk-eyebrow">{t("detailsEyebrow")}</p>
@@ -52,7 +163,7 @@ export function BusinessKitDetails({ product, reviews }: { product: ProductPageP
           </div>
           <div
             className="min-w-0 space-y-4 leading-7 text-muted [&_a]:text-brand [&_a]:underline [&_h2]:mt-8 [&_h2]:font-heading [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-brand [&_h3]:mt-6 [&_h3]:font-heading [&_h3]:text-xl [&_h3]:font-bold [&_h3]:text-brand [&_li]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:max-w-3xl [&_table]:w-full [&_table]:min-w-[34rem] [&_td]:border-b [&_td]:border-border [&_td]:p-3 [&_th]:border-b [&_th]:border-border [&_th]:p-3 [&_ul]:list-disc [&_ul]:pl-5"
-            dangerouslySetInnerHTML={{ __html: product.descriptionHtml }}
+            dangerouslySetInnerHTML={{ __html: descriptionHtml }}
           />
         </section>
       ) : null}
@@ -189,12 +300,14 @@ export function OtherBusinessKits({ products }: { products: WCProduct[] }) {
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {products.map((product) => {
           const image = getKitImage(product);
-          const price = Number.parseFloat(product.price);
+          const state = getBusinessKitCommercialState(product);
           return (
             <article key={product.id} className="group flex min-w-0 flex-col overflow-hidden rounded-kubikart-lg border border-border bg-surface-white">
-              <Link href={`/shop/${product.slug}`} className="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-surface">
+              <Link href={`/shop/${product.slug}`} className={`relative flex items-center justify-center overflow-hidden bg-surface ${image ? "aspect-square" : "aspect-[4/3]"}`}>
                 {image ? (
-                  <Image src={image.src} alt={image.alt || product.name} fill sizes="(min-width: 1024px) 25vw, 50vw" className="object-cover transition-transform group-hover:scale-[1.025]" unoptimized />
+                  <Image src={image.src} alt={product.name} fill sizes="(min-width: 1024px) 25vw, 50vw" className="object-cover transition-transform group-hover:scale-[1.025]" unoptimized />
+                ) : parseBusinessKitData(product.meta_data).items.length > 0 ? (
+                  <KitIllustrationForProduct product={product} />
                 ) : (
                   <span className="flex flex-col items-center gap-3 px-5 text-center text-sm text-muted" role="img" aria-label={t("missingImage", { name: product.name })}>
                     <svg className="h-11 w-11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
@@ -203,21 +316,34 @@ export function OtherBusinessKits({ products }: { products: WCProduct[] }) {
                     {t("imagePending")}
                   </span>
                 )}
+                {image ? <IllustrativeImageBadge /> : null}
               </Link>
               <div className="flex flex-1 flex-col p-5">
                 <h3 className="font-heading text-lg font-bold text-brand">
                   <Link href={`/shop/${product.slug}`} className="hover:text-accent">{product.name}</Link>
                 </h3>
-                {Number.isFinite(price) && product.purchasable !== false ? (
+                {state.kind === "purchasable" || state.kind === "outOfStock" ? (
                   <p className="mt-3 font-heading text-lg font-bold text-accent">
-                    {formatProductPrice({ amount: price, currency: "EUR" })}
+                    {formatProductPrice({ amount: state.price, currency: "EUR" })}
                   </p>
-                ) : null}
-                {product.stock_status ? (
-                  <p className={`mt-1 text-xs font-semibold ${product.stock_status === "outofstock" ? "text-danger" : "text-muted"}`}>
-                    {product.stock_status === "outofstock" ? t("outOfStock") : t("available")}
+                ) : state.kind === "enquiry" && state.startingPrice ? (
+                  <p className="mt-3 font-heading text-lg font-bold text-accent">
+                    {t("startingPrice", { price: formatProductPrice({ amount: state.startingPrice, currency: "EUR" }) })}
                   </p>
-                ) : null}
+                ) : (
+                  <p className="mt-3 font-heading text-base font-bold text-brand">
+                    {state.kind === "enquiry" ? t("enquiryPrice") : t("notOrderable")}
+                  </p>
+                )}
+                <p className={`mt-1 text-xs font-semibold ${state.kind === "outOfStock" || state.kind === "unavailable" ? "text-danger" : "text-muted"}`}>
+                  {state.kind === "purchasable"
+                    ? t("available")
+                    : state.kind === "outOfStock"
+                      ? t("outOfStock")
+                      : state.kind === "enquiry"
+                        ? t("enquiryOnly")
+                        : t("notOrderable")}
+                </p>
                 <Link href={`/shop/${product.slug}`} className="kk-button kk-button-secondary mt-5 w-full">
                   {t("viewKit", { name: product.name })}
                 </Link>

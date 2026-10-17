@@ -160,36 +160,43 @@ add_action('wp_login', function () {
 // ============================================================
 // 7. Disable REST API for unauthenticated users (except needed endpoints)
 // ============================================================
+/**
+ * REST route (for example "/wc/v3/products") of the current request, taken from WordPress's own parsed
+ * request and not from the raw URI, so a query string or path suffix cannot impersonate an allowed route.
+ */
+function kubikart_current_rest_route(): string {
+    $route = isset($GLOBALS['wp']->query_vars['rest_route']) ? (string) $GLOBALS['wp']->query_vars['rest_route'] : '';
+    return '/' . ltrim($route, '/');
+}
+
+/** Whether a REST route may be called without authentication. */
+function kubikart_rest_route_is_public(string $route): bool {
+    // Namespaces that authenticate themselves, plus the one public Kubikart endpoint (exact match).
+    foreach (['/wc/', '/contact-form-7/'] as $prefix) {
+        if (str_starts_with($route, $prefix)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 add_filter('rest_authentication_errors', function ($result) {
     if ($result !== null) {
         return $result;
     }
 
-    // Allow these REST routes without auth
-    $allowed_routes = [
-        '/wp-json/wc/',                                  // WooCommerce (has its own auth)
-        '/wp-json/contact-form-7/',                      // CF7 submissions
-        '/wp-json/kubikart/v1/forgot-password',          // Headless password reset request (unauthenticated)
-    ];
-
-    $request_uri = $_SERVER['REQUEST_URI'] ?? '';
-    foreach ($allowed_routes as $route) {
-        if (strpos($request_uri, $route) !== false) {
-            return $result;
-        }
+    if (kubikart_rest_route_is_public(kubikart_current_rest_route())) {
+        return $result;
     }
 
-    // Require auth for all other REST API requests
+    // Everything else needs a logged-in user. A valid Application Password has already authenticated the user
+    // by this point, so a bare Authorization header proves nothing and is not accepted on its own.
     if (!is_user_logged_in()) {
-        // Check for Application Password or Basic Auth
-        $auth_header = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
-        if (empty($auth_header)) {
-            return new WP_Error(
-                'rest_not_logged_in',
-                __('Authentication required.', 'kubikart'),
-                ['status' => 401]
-            );
-        }
+        return new WP_Error(
+            'rest_not_logged_in',
+            __('Authentication required.', 'kubikart'),
+            ['status' => 401]
+        );
     }
 
     return $result;
@@ -214,24 +221,46 @@ remove_action('wp_head', 'feed_links_extra', 3);
 // ============================================================
 // 10. Password reset REST endpoints (headless frontend)
 //
-//  POST /wp-json/kubikart/v1/forgot-password  — unauthenticated
+//  POST /wp-json/kubikart/v1/forgot-password  — requires frontend integration authentication
 //  POST /wp-json/kubikart/v1/reset-password   — requires Application Password
 // ============================================================
 add_action('rest_api_init', function () {
 
-    // — Forgot Password (public) ————————————————————————————————————
+    // REST Basic authentication accepts application passwords, not customer passwords.
+    // Keep customer credential verification behind the server's integration identity.
+    register_rest_route('kubikart/v1', '/customer-login', [
+        'methods' => 'POST',
+        'permission_callback' => fn() => current_user_can('manage_options') || current_user_can(KUBIKART_INTEGRATION_CAPABILITY),
+        'callback' => function (WP_REST_Request $request) {
+            $email = sanitize_email($request->get_param('email') ?? '');
+            $password = $request->get_param('password');
+            if (!$email || !is_string($password) || $password === '') {
+                return new WP_Error('invalid_credentials', 'Invalid email or password.', ['status' => 401]);
+            }
+            $user = wp_authenticate($email, $password);
+            if (is_wp_error($user)) {
+                return new WP_Error('invalid_credentials', 'Invalid email or password.', ['status' => 401]);
+            }
+            do_action('wp_login', $user->user_login, $user);
+            return new WP_REST_Response(['id' => (int) $user->ID], 200);
+        },
+    ]);
+
+    // — Forgot Password (CAPTCHA is verified by the authenticated frontend proxy) —
     register_rest_route('kubikart/v1', '/forgot-password', [
         'methods'             => 'POST',
-        'permission_callback' => '__return_true',
+        'permission_callback' => fn() => current_user_can('manage_options') || current_user_can(KUBIKART_INTEGRATION_CAPABILITY),
         'args' => [
-            'email'    => ['required' => true, 'sanitize_callback' => 'sanitize_email'],
-            'locale'   => ['required' => false, 'sanitize_callback' => 'sanitize_text_field'],
-            'site_url' => ['required' => false, 'sanitize_callback' => 'esc_url_raw'],
+            'email'  => ['required' => true, 'sanitize_callback' => 'sanitize_email'],
+            'locale' => ['required' => false, 'sanitize_callback' => 'sanitize_key'],
         ],
         'callback' => function (WP_REST_Request $req) {
-            $email    = $req->get_param('email');
-            $locale   = $req->get_param('locale') ?: 'de';
-            $site_url = rtrim($req->get_param('site_url') ?: get_option('kubikart_frontend_url', site_url()), '/');
+            $email  = $req->get_param('email');
+            // Only the two storefront locales; anything else falls back to German.
+            $locale = in_array($req->get_param('locale'), ['de', 'en'], true) ? $req->get_param('locale') : 'de';
+            // The link base comes from server configuration only. A caller-supplied URL would let anyone send
+            // a victim a genuine reset e-mail that points at a site they control.
+            $site_url = kubikart_reset_link_base_url();
 
             $user = get_user_by('email', $email);
 
@@ -245,9 +274,9 @@ add_action('rest_api_init', function () {
                 . '&login=' . rawurlencode($user->user_login);
 
             $name    = !empty($user->first_name) ? $user->first_name : $user->display_name;
-            $subject = 'Passwort zurücksetzen – Kubikart';
+            $subject = $locale === 'en' ? 'Reset your password – Kubikart' : 'Passwort zurücksetzen – Kubikart';
             $headers = ['Content-Type: text/html; charset=UTF-8'];
-            $body    = kubikart_reset_email_html($name, $reset_url);
+            $body    = kubikart_reset_email_html($name, $reset_url, $locale);
 
             wp_mail($user->user_email, $subject, $body, $headers);
 
@@ -258,7 +287,7 @@ add_action('rest_api_init', function () {
     // — Reset Password (requires Application Password) ——————————————
     register_rest_route('kubikart/v1', '/reset-password', [
         'methods'             => 'POST',
-        'permission_callback' => fn() => is_user_logged_in() && current_user_can('read'),
+        'permission_callback' => fn() => current_user_can('manage_options') || current_user_can(KUBIKART_INTEGRATION_CAPABILITY),
         'args' => [
             'key'      => ['required' => true, 'sanitize_callback' => 'sanitize_text_field'],
             'login'    => ['required' => true, 'sanitize_callback' => 'sanitize_text_field'],
@@ -287,8 +316,25 @@ add_action('rest_api_init', function () {
     ]);
 });
 
+/** Trusted storefront origin for reset links: KUBIKART_FRONTEND_URL, then the stored option, then the site URL. */
+function kubikart_reset_link_base_url(): string {
+    $configured = defined('KUBIKART_FRONTEND_URL') ? trim((string) KUBIKART_FRONTEND_URL) : '';
+    $base = $configured !== '' ? $configured : (string) get_option('kubikart_frontend_url', site_url());
+    return rtrim(esc_url_raw($base), '/');
+}
+
 /** HTML email for password reset — matches Kubikart brand */
-function kubikart_reset_email_html(string $name, string $reset_url): string {
+function kubikart_reset_email_html(string $name, string $reset_url, string $locale = 'de'): string {
+    $name = esc_html($name);
+    $reset_url = esc_url($reset_url);
+    if ($locale === 'en') {
+        return '<!doctype html><html lang="en"><head><meta charset="UTF-8"></head><body>'
+            . '<h1>Reset your password</h1><p>Hello ' . $name . ',</p>'
+            . '<p>We received a request to reset your Kubikart account password.</p>'
+            . '<p><a href="' . $reset_url . '">Set a new password</a></p>'
+            . '<p>This link is valid for 24 hours. If you did not request this, you can ignore this email.</p>'
+            . '<p>Kubikart</p></body></html>';
+    }
     return <<<HTML
 <!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"></head>
 <body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#f3f4f6;">

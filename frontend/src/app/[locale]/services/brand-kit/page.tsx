@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { BusinessKitCard } from "@/components/business-kits/BusinessKitCard";
 import { Link } from "@/i18n/navigation";
+import { PageHero } from "@/components/layout/PageHero";
 import { getBusinessKits } from "@/lib/business-kits";
 import {
   buildPageMetadata,
@@ -72,25 +73,18 @@ export default async function BrandKitPage({ params }: BrandKitPageProps) {
 
   return (
     <main className="bg-page text-foreground">
-      <section className="border-b border-border bg-surface">
-        <div className="kk-container-full py-12 lg:py-16">
-          <nav aria-label={t("breadcrumbLabel")} className="text-sm text-muted">
-            <Link href="/" className="kk-link">{t("breadcrumbHome")}</Link>
-            <span className="mx-2" aria-hidden="true">/</span>
-            <span aria-current="page">{t("breadcrumbCurrent")}</span>
-          </nav>
-
-          <div className="mt-8 max-w-4xl">
-            <p className="kk-eyebrow">{t("eyebrow")}</p>
-            <h1 className="kk-page-intro-heading mt-3">{t("heading")}</h1>
-            <p className="mt-5 max-w-3xl text-base leading-7 text-muted sm:text-lg">{t("intro")}</p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <a href="#business-kits" className="kk-button kk-button-primary">{t("explore")}</a>
-              <Link href="/sonderanfertigung" className="kk-button kk-button-secondary">{t("customKit")}</Link>
-            </div>
-          </div>
-        </div>
-      </section>
+      <PageHero
+        breadcrumbs={[{ label: t("breadcrumbCurrent") }]}
+        eyebrow={t("eyebrow")}
+        title={t("heading")}
+        intro={t("intro")}
+        actions={
+          <>
+            <a href="#business-kits" className="kk-button kk-button-primary">{t("explore")}</a>
+            <Link href="/sonderanfertigung" className="kk-button kk-button-secondary">{t("customKit")}</Link>
+          </>
+        }
+      />
 
       <section id="business-kits" aria-labelledby="business-kits-heading" className="kk-section scroll-mt-28">
         <div className="kk-container-full">

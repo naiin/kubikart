@@ -12,9 +12,10 @@ const client = new MailtrapClient({
   token: process.env.MAILTRAP_TOKEN || "",
 });
 
+// The sender address must be a verified sending identity at the mail provider.
 const sender = {
-  email: "noreply@kubikart.de",
-  name: "Kubikart Team",
+  email: process.env.MAIL_FROM_EMAIL?.trim() || "noreply@kubikart.de",
+  name: process.env.MAIL_FROM_NAME?.trim() || "Kubikart Team",
 };
 
 interface EmailParams {
@@ -352,8 +353,16 @@ export async function sendWithdrawalConfirmation(
   },
 ): Promise<boolean> {
   const templateUuid = resolveTemplateUuid(process.env.MAILTRAP_TEMPLATE_WITHDRAWAL, "");
-  if (!process.env.MAILTRAP_TOKEN || !templateUuid) {
+  if (!process.env.MAILTRAP_TOKEN) {
     return false;
+  }
+
+  if (!templateUuid) {
+    const english = data.locale === "en";
+    const title = english ? "Withdrawal received" : "Widerruf erhalten";
+    const text = `${title}\n${data.name}\n${data.receiptId}\n${data.receivedAt}\n${data.contractReference}\n${data.scope || (english ? "Entire contract" : "Gesamter Vertrag")}`;
+    await client.send({ from: sender, to: [{ email }], subject: `${title} – Kubikart`, text, html: `<h1>${title}</h1><p>${escapeHtml(text).replace(/\n/g, "<br>")}</p>`, category: "withdrawal-confirmation" });
+    return true;
   }
 
   await sendEmail({
@@ -375,7 +384,14 @@ export async function sendWithdrawalConfirmation(
  * Welcome email after newsletter subscription
  * Sent after double opt-in confirmation
  */
-export async function sendNewsletterWelcome(email: string, locale: "de" | "en" = "de"): Promise<void> {
+export async function sendNewsletterWelcome(email: string, locale: "de" | "en" = "de", couponCode?: string): Promise<void> {
+  if (couponCode) {
+    const english = locale === "en";
+    const subject = english ? "Welcome to Kubikart" : "Willkommen bei Kubikart";
+    const text = english ? `Thank you for subscribing. Your personal 10% coupon: ${couponCode}. Valid for 90 days, single use.` : `Danke für deine Anmeldung. Dein persönlicher 10%-Gutschein: ${couponCode}. 90 Tage gültig, einmalig einlösbar.`;
+    await client.send({ from: sender, to: [{ email }], subject, text, html: `<h1>${subject}</h1><p>${escapeHtml(text)}</p>`, category: "newsletter-welcome" });
+    return;
+  }
   await sendEmail({
     to: email,
     templateUuid: resolveTemplateUuid(process.env.MAILTRAP_TEMPLATE_NEWSLETTER_WELCOME, ""),
@@ -457,4 +473,113 @@ export async function sendOrderStatusUpdate(
       legal_withdrawal_url: `${DEFAULT_SITE_URL}/${locale}/legal/widerruf`,
     },
   });
+}
+
+export interface OwnerEnquiryEmail {
+  reference: string;
+  receivedAt: string;
+  locale: "de" | "en";
+  name: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  message?: string;
+  kind: "product" | "industry" | "contact" | "withdrawal";
+  product?: { id: number; name: string; slug: string; url: string; mode: string };
+  industry?: { name: string; slug: string };
+  adminUrl?: string;
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+/** Plain-text lines for the owner; also used (escaped) for the inline HTML body. */
+export function buildOwnerEnquiryLines(enquiry: OwnerEnquiryEmail): [string, string][] {
+  const lines: [string, string][] = [
+    ["Referenz", enquiry.reference],
+    ["Eingegangen", enquiry.receivedAt],
+  ];
+  if (enquiry.product) {
+    lines.push(
+      ["Produkt/Paket", `${enquiry.product.name} (ID ${enquiry.product.id}, ${enquiry.product.slug})`],
+      ["Seite", enquiry.product.url],
+      ["Bestellart", enquiry.product.mode === "enquiry" ? "Nur auf Anfrage" : "Direktkauf"],
+    );
+  } else if (enquiry.industry) {
+    lines.push(["Branche", `${enquiry.industry.name} (${enquiry.industry.slug})`]);
+  } else {
+    lines.push(["Art", enquiry.kind === "withdrawal" ? "Widerruf" : "Allgemeine Kontaktanfrage"]);
+  }
+  lines.push(
+    ["Sprache", enquiry.locale],
+    ["Name", enquiry.name],
+    ["E-Mail", enquiry.email],
+    ["Telefon", enquiry.phone || "–"],
+    ["Unternehmen", enquiry.company || "–"],
+    ["Nachricht", enquiry.message || "–"],
+  );
+  if (enquiry.adminUrl) lines.push(["In WordPress", enquiry.adminUrl]);
+  return lines;
+}
+
+export function ownerEnquirySubject(enquiry: OwnerEnquiryEmail): string {
+  const subject = enquiry.product?.name || enquiry.industry?.name || (enquiry.kind === "withdrawal" ? "Widerruf" : "Kontaktanfrage");
+  return `Neue Anfrage ${enquiry.reference}: ${subject}`.slice(0, 200);
+}
+
+/**
+ * Notifies the owner of a stored enquiry. The customer's address is the
+ * Reply-To. With MAILTRAP_TEMPLATE_OWNER_ENQUIRY set the provider template is
+ * used (variables: reference, received_at, enquiry_type, product_name,
+ * product_id, product_slug, page_url, language, customer_name, customer_email,
+ * customer_phone, business_name, message, admin_url); otherwise a plain inline
+ * message is sent, so no remote template is required. Resolves with the
+ * provider message id; "accepted by the provider" is not inbox delivery.
+ */
+export async function sendOwnerEnquiryNotification(enquiry: OwnerEnquiryEmail): Promise<{ messageId?: string; mode: "template" | "inline" }> {
+  if (!process.env.MAILTRAP_TOKEN) {
+    throw new Error("MAILTRAP_TOKEN is not configured");
+  }
+
+  const to = [{ email: process.env.ENQUIRY_OWNER_EMAIL?.trim() || "info@kubikart.de" }];
+  const replyTo = { email: enquiry.email, name: enquiry.name };
+  const templateUuid = resolveTemplateUuid(process.env.MAILTRAP_TEMPLATE_OWNER_ENQUIRY, "");
+
+  const response = templateUuid
+    ? await client.send({
+        from: sender,
+        to,
+        reply_to: replyTo,
+        template_uuid: templateUuid,
+        template_variables: {
+          reference: enquiry.reference,
+          received_at: enquiry.receivedAt,
+          enquiry_type: enquiry.kind,
+          product_name: enquiry.product?.name ?? "",
+          product_id: enquiry.product ? String(enquiry.product.id) : "",
+          product_slug: enquiry.product?.slug ?? "",
+          page_url: enquiry.product?.url ?? "",
+          language: enquiry.locale,
+          customer_name: enquiry.name,
+          customer_email: enquiry.email,
+          customer_phone: enquiry.phone ?? "",
+          business_name: enquiry.company ?? "",
+          message: enquiry.message ?? "",
+          admin_url: enquiry.adminUrl ?? "",
+        },
+      })
+    : await client.send({
+        from: sender,
+        to,
+        reply_to: replyTo,
+        subject: ownerEnquirySubject(enquiry),
+        category: "owner-enquiry",
+        text: buildOwnerEnquiryLines(enquiry).map(([label, value]) => `${label}: ${value}`).join("\n"),
+        html: `<table>${buildOwnerEnquiryLines(enquiry)
+          .map(([label, value]) => `<tr><th align="left" valign="top">${escapeHtml(label)}</th><td>${escapeHtml(value).replace(/\n/g, "<br>")}</td></tr>`)
+          .join("")}</table>`,
+      });
+
+  return { messageId: response?.message_ids?.[0], mode: templateUuid ? "template" : "inline" };
 }

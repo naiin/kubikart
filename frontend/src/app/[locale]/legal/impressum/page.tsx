@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 export default function ImpressumPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Impressum</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-8 break-words">Impressum</h1>
 
       <div className="prose prose-gray max-w-none">
         <h2>Angaben gemäß § 5 DDG</h2>

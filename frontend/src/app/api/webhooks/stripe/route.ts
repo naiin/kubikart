@@ -26,7 +26,8 @@ export async function POST(request: NextRequest) {
   try {
     event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
   } catch (err) {
-    console.error("Stripe webhook signature verification failed:", err);
+    // Log only the reason: the SDK error carries the raw payload, which holds payment data.
+    console.error("Stripe webhook signature verification failed:", err instanceof Error ? err.message : "unknown error");
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
@@ -44,14 +45,14 @@ export async function POST(request: NextRequest) {
       }
       case "payment_intent.payment_failed": {
         const pi = event.data.object as Stripe.PaymentIntent;
-        await updateOrderStatus(pi.id, "failed", undefined, Number(pi.metadata.wc_order_id));
+        await updateOrderStatus(pi.id, "failed", { boundOrderId: Number(pi.metadata.wc_order_id), allowedFrom: ["pending"] });
         break;
       }
       case "charge.refunded": {
         const charge = event.data.object as Stripe.Charge;
         const piId = charge.payment_intent as string;
         if (charge.amount_refunded === charge.amount) {
-          await updateOrderStatus(piId, "refunded");
+          await updateOrderStatus(piId, "refunded", { allowedFrom: PAID_STATUSES });
         }
         break;
       }
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
         const chargeId = dispute.charge as string;
         const chargeObj = await stripe.charges.retrieve(chargeId);
         const piId = chargeObj.payment_intent as string;
-        await updateOrderStatus(piId, "on-hold", "Stripe Dispute eröffnet");
+        await updateOrderStatus(piId, "on-hold", { note: "Stripe Dispute eröffnet", allowedFrom: PAID_STATUSES });
         break;
       }
     }
@@ -72,19 +73,36 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ received: true });
 }
 
-async function updateOrderStatus(transactionId: string, status: string, note?: string, boundOrderId?: number) {
-  const order = Number.isInteger(boundOrderId) && Number(boundOrderId) > 0
-    ? await wcApi<{ id: number; status: string }>(`orders/${boundOrderId}`, { revalidate: 0 })
-    : (await wcApi<Array<{ id: number; status: string }>>("orders", { params: { search: transactionId, per_page: 1 } }))[0];
+const PAID_STATUSES = ["processing", "completed", "on-hold"];
+
+interface StatusUpdateOptions {
+  note?: string;
+  boundOrderId?: number;
+  /** Statuses the order may transition from; late or replayed events must not undo a newer state. */
+  allowedFrom: string[];
+}
+
+async function updateOrderStatus(transactionId: string, status: string, { note, boundOrderId, allowedFrom }: StatusUpdateOptions) {
+  type StatusOrder = { id: number; status: string; transaction_id?: string };
+  const bound = Number.isInteger(boundOrderId) && Number(boundOrderId) > 0;
+  const order = bound
+    ? await wcApi<StatusOrder>(`orders/${boundOrderId}`, { revalidate: 0 })
+    : (await wcApi<StatusOrder[]>("orders", { params: { search: transactionId, per_page: 1 } }))[0];
   if (!order) return console.warn(`No WC order found for transaction: ${transactionId}`);
+  // Order search is fuzzy; only act on an order that actually carries this transaction.
+  if (!bound && order.transaction_id !== transactionId) {
+    return console.warn(`WC order ${order.id} does not match transaction: ${transactionId}`);
+  }
   const previousStatus = order.status;
   if (previousStatus === status) return;
+  if (!allowedFrom.includes(previousStatus)) {
+    return console.warn(`Ignoring ${status} event for WC order ${order.id} in status ${previousStatus}`);
+  }
   const updateData: Record<string, unknown> = {
     status,
     transaction_id: transactionId,
     payment_method: "stripe",
     payment_method_title: "Stripe",
-    ...(status === "processing" ? { set_paid: true } : {}),
   };
 
   await wcApi(`orders/${order.id}`, {
@@ -98,5 +116,4 @@ async function updateOrderStatus(transactionId: string, status: string, note?: s
       body: { note, customer_note: false },
     });
   }
-
 }

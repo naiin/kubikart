@@ -1,0 +1,93 @@
+.kubikart-kit-box h4 {
+  margin: 18px 0 6px;
+}
+
+.kubikart-kit-items {
+  margin: 12px 0;
+}
+
+.kubikart-kit-row {
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border: 1px solid #dcdcde;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
+}
+
+.kubikart-kit-row__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.kubikart-kit-row__actions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.kubikart-kit-row__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+
+.kubikart-kit-field {
+  min-width: 0;
+}
+
+.kubikart-kit-field--wide {
+  grid-column: 1 / -1;
+}
+
+.kubikart-kit-field label {
+  display: block;
+  font-weight: 600;
+}
+
+.kubikart-kit-field input[type="text"],
+.kubikart-kit-field input[type="number"],
+.kubikart-kit-field textarea {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.kubikart-kit-row__status {
+  margin: 6px 0 0;
+  color: #8a4b00;
+}
+
+.kubikart-kit-image {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.kubikart-kit-image[hidden],
+.kubikart-kit-image [hidden] {
+  display: none;
+}
+
+.kubikart-kit-image__label {
+  flex-basis: 100%;
+  font-weight: 600;
+}
+
+.kubikart-kit-image__preview {
+  width: 64px;
+  height: 64px;
+  border: 1px solid #dcdcde;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+@media (max-width: 782px) {
+  .kubikart-kit-row__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

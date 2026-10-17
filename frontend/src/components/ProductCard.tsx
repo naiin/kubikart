@@ -1,6 +1,11 @@
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { getBusinessKitCommercialState, isBusinessKitProduct, parseBusinessKitData } from "@/lib/business-kits";
+import { isEnquiryOnly } from "@/lib/purchase-mode";
+import { KitIllustrationForProduct } from "@/components/business-kits/KitIllustration";
+import { IllustrativeImageBadge } from "@/components/business-kits/IllustrativeImageBadge";
+import { normalizeLocale } from "@/lib/seo";
 import type { WCProduct } from "@/lib/woocommerce";
 
 function formatPrice(value: string, locale: string) {
@@ -21,14 +26,20 @@ export function ProductCard({ product }: { product: WCProduct }) {
   const locale = useLocale();
   const image = product.images[0];
   const category = product.categories[0];
-  const currentPrice = formatPrice(product.price, locale);
+  const isKit = isBusinessKitProduct(product, normalizeLocale(locale));
+  const kitState = isKit || isEnquiryOnly(product) ? getBusinessKitCommercialState(product) : null;
+  const enquiryState = kitState?.kind === "enquiry" ? kitState : null;
+  const showsPrice = !kitState || kitState.kind === "purchasable" || kitState.kind === "outOfStock";
+  const currentPrice = showsPrice ? formatPrice(product.price, locale) : null;
   const regularPrice = product.on_sale ? formatPrice(product.regular_price, locale) : null;
+  // Variable products whose variations differ in price are shown "from" their lowest price.
+  const isPriceRange = product.type === "variable" && /–|&ndash;|&#8211;/.test(product.price_html ?? "");
   const averageRating = Number.parseFloat(product.average_rating || "0");
   const hasRating = product.rating_count > 0 && averageRating > 0;
 
   return (
     <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-kubikart-md border border-border bg-surface-white transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-border-strong hover:shadow-kubikart-md">
-      <Link href={`/shop/${product.slug}`} className="relative block aspect-[4/3] overflow-hidden bg-page">
+      <Link href={`/shop/${product.slug}`} className={`relative block overflow-hidden bg-page ${kitState && image ? "aspect-square" : "aspect-[4/3]"}`}>
         {image ? (
           <Image
             src={image.src}
@@ -38,6 +49,8 @@ export function ProductCard({ product }: { product: WCProduct }) {
             className="object-cover transition-transform duration-200 group-hover:scale-[1.025]"
             unoptimized
           />
+        ) : kitState && parseBusinessKitData(product.meta_data).items.length > 0 ? (
+          <KitIllustrationForProduct product={product} />
         ) : (
           <span
             className="flex h-full w-full items-center justify-center text-muted"
@@ -50,6 +63,8 @@ export function ProductCard({ product }: { product: WCProduct }) {
             </svg>
           </span>
         )}
+
+        {kitState && image ? <IllustrativeImageBadge /> : null}
 
         {product.on_sale ? (
           <span className="absolute top-3 left-3 rounded-full bg-accent px-3 py-1 text-xs font-semibold text-white">{t("sale")}</span>
@@ -76,18 +91,44 @@ export function ProductCard({ product }: { product: WCProduct }) {
         <div className="mt-auto flex flex-wrap items-end justify-between gap-3 pt-5">
           <div className="flex flex-wrap items-baseline gap-2">
             {regularPrice ? <span className="text-sm text-muted line-through">{regularPrice}</span> : null}
-            {currentPrice ? <span className="font-heading text-lg font-bold text-accent">{currentPrice}</span> : <span className="text-sm text-muted">{t("priceUnavailable")}</span>}
+            {enquiryState ? (
+              enquiryState.startingPrice ? (
+                <span className="font-heading text-lg font-bold text-accent">{t("startingPrice", { price: formatPrice(String(enquiryState.startingPrice), locale) ?? "" })}</span>
+              ) : (
+                <span className="text-sm font-semibold text-brand">{t("priceOnRequest")}</span>
+              )
+            ) : currentPrice ? (
+              <span className="font-heading text-lg font-bold text-accent">{isPriceRange ? t("startingPrice", { price: currentPrice }) : currentPrice}</span>
+            ) : (
+              <span className="text-sm text-muted">{kitState ? t("kitUnavailable") : t("priceUnavailable")}</span>
+            )}
           </div>
 
-          {product.stock_status === "outofstock" ? (
+          {enquiryState ? (
+            <span className="rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-semibold text-brand">{t("kitEnquiry")}</span>
+          ) : null}
+
+          {(kitState ? kitState.kind === "outOfStock" : product.stock_status === "outofstock") ? (
             <span className="rounded-full border border-danger/25 bg-danger/5 px-2.5 py-1 text-xs font-semibold text-danger">{t("outOfStock")}</span>
           ) : null}
         </div>
 
-        <Link href={`/shop/${product.slug}`} className="kk-link mt-4 inline-flex min-h-11 items-center gap-2 self-start text-sm font-semibold">
-          {t("viewDetails")}
-          <span aria-hidden="true">→</span>
-        </Link>
+        {enquiryState ? (
+          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1">
+            <Link href={`/kontakt?product=${encodeURIComponent(product.slug)}`} className="kk-link inline-flex min-h-11 items-center gap-2 self-start text-sm font-semibold">
+              {isKit ? t("enquireBundle") : t("enquire")}
+              <span aria-hidden="true">→</span>
+            </Link>
+            <Link href={`/shop/${product.slug}`} className="inline-flex min-h-11 items-center text-sm text-muted underline-offset-2 hover:text-brand hover:underline">
+              {t("viewDetails")}
+            </Link>
+          </div>
+        ) : (
+          <Link href={`/shop/${product.slug}`} className="kk-link mt-4 inline-flex min-h-11 items-center gap-2 self-start text-sm font-semibold">
+            {t("selectProduct")}
+            <span aria-hidden="true">→</span>
+          </Link>
+        )}
       </div>
     </article>
   );

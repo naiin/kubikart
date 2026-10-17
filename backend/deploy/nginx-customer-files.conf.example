@@ -1,0 +1,27 @@
+# Kubikart customer files – production web-server hardening (EXAMPLE, not deployed).
+#
+# 1. Primary protection: keep the files OUTSIDE the document root and point
+#    WordPress at them with an absolute path, e.g. in wp-config.php
+#        define( 'KUBIKART_CUSTOMER_FILES_DIR', '/home/<user>/private/kubikart-customer-files' );
+#    or the environment variable KUBIKART_CUSTOMER_FILES_DIR. The directory must
+#    be persistent, backed up, owned by the PHP user (directory mode 0750, files
+#    0640) and must NOT be inside the web root. Without it production uploads
+#    are refused.
+#
+# 2. Defence in depth: deny the legacy public location (inside the uploads
+#    folder) so that nothing stored there can ever be fetched by URL.
+location ^~ /wp-content/uploads/kubikart-customer-files/ {
+    deny all;
+    return 404;
+}
+
+# 3. Request size: the application limit is 4 MiB per file. Allow the multipart
+#    overhead (the WordPress REST upload is sent server-to-server):
+#        client_max_body_size 6m;      # in the server/location serving WordPress
+#    PHP (php.ini or .user.ini):
+#        upload_max_filesize = 5M
+#        post_max_size       = 6M
+#
+# Apache: the plugin writes a "Require all denied" .htaccess into the legacy
+# directory and into the private directory automatically. If the private
+# directory is outside the docroot Apache never serves it.

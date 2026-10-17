@@ -61,11 +61,8 @@ export async function POST(request: NextRequest) {
 
       if (item.variationId) lineItem.variation_id = item.variationId;
 
-      if (item.customizations && Object.keys(item.customizations).length > 0) {
-        lineItem.meta_data = Object.entries(item.customizations).map(([key, value]) => ({
-          key,
-          value,
-        }));
+      if (item.orderMeta.length > 0) {
+        lineItem.meta_data = item.orderMeta;
       }
 
       return lineItem;
@@ -113,7 +110,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ id: order.id, orderKey: order.order_key, status: order.status, total: order.total });
   } catch (error) {
     const response = serverCartErrorResponse(error);
-    if (response.status !== 500) return NextResponse.json({ error: response.message }, { status: response.status });
+    if (response.status !== 500) return NextResponse.json({ error: response.message, ...(response.code ? { code: response.code } : {}) }, { status: response.status });
     console.error("Create order error:", error);
     return NextResponse.json({ error: "Failed to create order" }, { status: 500 });
   }

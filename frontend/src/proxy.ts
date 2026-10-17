@@ -1,7 +1,9 @@
 import createMiddleware from "next-intl/middleware";
 import { NextRequest, NextResponse } from "next/server";
 import { getRootLocaleRedirect, routing } from "./i18n/routing";
-import { applyRateLimit, getApiRateLimitPolicy } from "./lib/rate-limit";
+import { getClientIp } from "./lib/client-ip";
+import { CAPTCHA_ACTIONS, verifyCaptcha } from "./lib/captcha";
+import { applyRateLimit, getApiRateLimitPolicy, getRateLimitMessage, inferRequestLocale } from "./lib/rate-limit";
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -42,18 +44,25 @@ export default async function proxy(request: NextRequest) {
 
   // API route protection
   if (pathname.startsWith("/api/")) {
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-    const rateLimit = await applyRateLimit(`kubikart:api:${pathname}:${ip}`, getApiRateLimitPolicy(pathname));
+    const forwardedHeaders = new Headers(request.headers);
+    forwardedHeaders.delete("x-kubikart-captcha-verified");
+    const ip = getClientIp(request.headers);
+    const rateLimit = await applyRateLimit(`${process.env.RATE_LIMIT_NAMESPACE || "kubikart"}:api:${pathname}:${ip}`, getApiRateLimitPolicy(pathname));
     if (!rateLimit.allowed) {
-      return NextResponse.json({ error: "Too many requests" }, {
+      const retryAfterSeconds = rateLimit.retryAfterSeconds;
+      return NextResponse.json({
+        error: getRateLimitMessage(inferRequestLocale(request.headers), retryAfterSeconds),
+        code: "rate_limited",
+        retryAfterSeconds,
+      }, {
         status: 429,
-        headers: { "Retry-After": String(rateLimit.retryAfterSeconds), "X-RateLimit-Remaining": "0" },
+        headers: { "Retry-After": String(retryAfterSeconds), "X-RateLimit-Remaining": "0" },
       });
     }
 
     const isUnsafeMethod = !["GET", "HEAD", "OPTIONS"].includes(request.method);
     const isProviderWebhook = pathname.startsWith("/api/webhooks/");
-    const isSignedMachineEndpoint = pathname === "/api/revalidate";
+    const isSignedMachineEndpoint = pathname === "/api/revalidate" || pathname === "/api/enquiries/retry";
     if (isUnsafeMethod && !isProviderWebhook && !isSignedMachineEndpoint) {
       const origin = request.headers.get("origin");
       const fetchSite = request.headers.get("sec-fetch-site");
@@ -69,6 +78,28 @@ export default async function proxy(request: NextRequest) {
       }
     }
 
+    const captchaAction = CAPTCHA_ACTIONS[pathname];
+    if (isUnsafeMethod && captchaAction) {
+      let token: unknown;
+      try {
+        const copy = request.clone();
+        token = request.headers.get("content-type")?.includes("multipart/form-data")
+          ? (await copy.formData()).get("captchaToken")
+          : (await copy.json()).captchaToken;
+      } catch {
+        return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+      }
+      const verification = await verifyCaptcha(token, captchaAction);
+      if (verification !== "valid") {
+        const english = inferRequestLocale(request.headers) === "en";
+        return NextResponse.json({
+          code: verification === "unavailable" ? "captcha_unavailable" : "captcha_invalid",
+          error: english ? "Security verification failed. Please try again." : "Die Sicherheitsprüfung ist fehlgeschlagen. Bitte versuche es erneut.",
+        }, { status: verification === "unavailable" ? 503 : 403 });
+      }
+      forwardedHeaders.set("x-kubikart-captcha-verified", captchaAction);
+    }
+
     // Block requests with suspicious user agents
     const ua = request.headers.get("user-agent") || "";
     if (!ua || /curl|wget|python-requests|scrapy|bot(?!.*google)/i.test(ua)) {
@@ -81,7 +112,7 @@ export default async function proxy(request: NextRequest) {
       return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
     }
 
-    return NextResponse.next();
+    return NextResponse.next({ request: { headers: forwardedHeaders } });
   }
 
   // The public root is always the German storefront. Keep explicit /en URLs

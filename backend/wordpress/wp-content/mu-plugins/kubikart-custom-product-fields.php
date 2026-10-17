@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Kubikart Custom Product Fields
  * Description: Adds data-driven personalization fields and paid extras to WooCommerce products.
- * Version: 1.4.0
+ * Version: 1.5.0
  * Author: Kubikart
  */
 
@@ -11,6 +11,14 @@ if (!defined('ABSPATH')) exit;
 const KUBIKART_PRODUCT_FIELDS_SCHEMA_VERSION = 3;
 const KUBIKART_PRODUCT_FIELDS_META_KEY = '_kubikart_custom_fields';
 const KUBIKART_PRODUCT_FIELDS_BACKUP_META_KEY = '_kubikart_custom_fields_backup_v1';
+
+/**
+ * Explicit control types the owner can choose. `file` is a customer upload
+ * (logo/artwork) handled by kubikart-customer-files.php.
+ */
+function kubikart_custom_field_types() {
+    return ['text', 'textarea', 'url', 'select', 'checkbox', 'file'];
+}
 
 /**
  * Read both the original list format and the versioned schema without
@@ -39,7 +47,7 @@ function kubikart_normalize_custom_fields_payload($raw) {
     $warnings = [];
     foreach ($fields as $index => $field) {
         $type = is_array($field) ? ($field['type'] ?? '') : '';
-        if (!is_array($field) || !in_array($type, ['text', 'textarea', 'select', 'checkbox'], true)) {
+        if (!is_array($field) || !in_array($type, kubikart_custom_field_types(), true)) {
             $warnings[] = sprintf(
                 'Field row %d (%s) has no supported explicit type and requires owner review.',
                 $index + 1,
@@ -90,7 +98,7 @@ function kubikart_sanitize_custom_fields_payload($raw_fields) {
         }
 
         $type = sanitize_key($field['type'] ?? '');
-        if (!in_array($type, ['text', 'textarea', 'select', 'checkbox'], true)) {
+        if (!in_array($type, kubikart_custom_field_types(), true)) {
             $errors[] = sprintf('Field "%s" has unsupported type "%s".', $id, $type ?: 'missing');
             continue;
         }
@@ -103,7 +111,7 @@ function kubikart_sanitize_custom_fields_payload($raw_fields) {
             'helperText' => sanitize_text_field($field['helperText'] ?? ''),
         ];
 
-        if ($type === 'text' || $type === 'textarea') {
+        if ($type === 'text' || $type === 'textarea' || $type === 'url') {
             $saved_field['placeholder'] = sanitize_text_field($field['placeholder'] ?? '');
             $saved_field['maxLength'] = absint($field['maxLength'] ?? 0) ?: null;
         }
@@ -128,6 +136,14 @@ function kubikart_sanitize_custom_fields_payload($raw_fields) {
             if ($default_value && in_array($default_value, array_column($options, 'value'), true)) {
                 $saved_field['defaultValue'] = $default_value;
             }
+        }
+
+        // "field-id=value": show this field only while that select field has that value.
+        $show_when = array_map('trim', explode('=', (string) ($field['showWhen'] ?? ''), 2));
+        $show_field = sanitize_key($show_when[0] ?? '');
+        $show_value = sanitize_title($show_when[1] ?? '');
+        if ($show_field && $show_value) {
+            $saved_field['showWhen'] = ['field' => $show_field, 'equals' => $show_value];
         }
 
         $saved_field['price'] = max(0, (float) wc_format_decimal($field['price'] ?? 0));
@@ -164,36 +180,14 @@ function kubikart_backup_legacy_custom_fields($post_id, $existing) {
 /**
  * Revalidate the matching Next.js product cache after fields are saved.
  *
- * Configure KUBIKART_FRONTEND_URL and KUBIKART_REVALIDATE_SECRET in
- * wp-config.php. The secret must match REVALIDATE_SECRET in the frontend.
+ * Kept for existing callers; signing and delivery live in
+ * kubikart-frontend-revalidation.php (KUBIKART_FRONTEND_URL and
+ * KUBIKART_REVALIDATE_SECRET, see docs/10-revalidation.md).
  */
 function kubikart_revalidate_product_fields($post_id) {
-    if (!defined('KUBIKART_FRONTEND_URL') || !defined('KUBIKART_REVALIDATE_SECRET') || !KUBIKART_REVALIDATE_SECRET) {
-        return;
+    if (function_exists('kubikart_frontend_revalidate_product')) {
+        kubikart_frontend_revalidate_product((int) $post_id, 'updated');
     }
-
-    $product = wc_get_product($post_id);
-    if (!$product) {
-        return;
-    }
-
-    $body = wp_json_encode([
-        'id' => $product->get_id(),
-        'slug' => $product->get_slug(),
-    ]);
-    $signature = base64_encode(hash_hmac('sha256', $body, KUBIKART_REVALIDATE_SECRET, true));
-    $endpoint = trailingslashit(KUBIKART_FRONTEND_URL) . 'api/revalidate';
-
-    wp_remote_post($endpoint, [
-        'blocking' => false,
-        'timeout' => 0.5,
-        'headers' => [
-            'Content-Type' => 'application/json',
-            'X-WC-Webhook-Signature' => $signature,
-            'X-WC-Webhook-Topic' => 'product.updated',
-        ],
-        'body' => $body,
-    ]);
 }
 
 /**
@@ -221,20 +215,20 @@ add_action('admin_enqueue_scripts', function () {
         'kubikart-custom-product-fields-admin',
         $base_url . 'assets/kubikart-custom-product-fields-admin.css',
         [],
-        '1.4.0'
+        '1.5.0'
     );
     wp_enqueue_script(
         'kubikart-custom-product-fields-admin',
         $base_url . 'assets/kubikart-custom-product-fields-admin.js',
         [],
-        '1.4.0',
+        '1.5.0',
         true
     );
 });
 
 function kubikart_render_custom_field_row($index, $field = []) {
     $type = $field['type'] ?? '';
-    $known_type = in_array($type, ['text', 'textarea', 'select', 'checkbox'], true);
+    $known_type = in_array($type, kubikart_custom_field_types(), true);
     $is_new_row = !$type && empty($field['id']) && empty($field['label']);
     $name_prefix = 'kubikart_cf[' . $index . ']';
     $option_lines = array_map(function ($option) {
@@ -251,8 +245,10 @@ function kubikart_render_custom_field_row($index, $field = []) {
                 <?php endif; ?>
                 <option value="text" <?php selected($type, 'text'); ?>>Text</option>
                 <option value="textarea" <?php selected($type, 'textarea'); ?>>Textarea</option>
+                <option value="url" <?php selected($type, 'url'); ?>>Web-Link (URL)</option>
                 <option value="select" <?php selected($type, 'select'); ?>>Select</option>
                 <option value="checkbox" <?php selected($type, 'checkbox'); ?>>Checkbox / Extra</option>
+                <option value="file" <?php selected($type, 'file'); ?>>Datei-Upload (Logo)</option>
             </select>
         </td>
         <td data-column="Pflicht"><input type="checkbox" name="<?php echo esc_attr($name_prefix); ?>[required]" value="1" <?php checked(!empty($field['required'])); ?> /></td>
@@ -261,6 +257,7 @@ function kubikart_render_custom_field_row($index, $field = []) {
         <td data-column="Optionen" data-field-control="select"><textarea name="<?php echo esc_attr($name_prefix); ?>[options]" placeholder="wert|Beschriftung&#10;modern|Modern"><?php echo esc_textarea(implode("\n", $option_lines)); ?></textarea></td>
         <td data-column="Standardwert" data-field-control="select"><input type="text" name="<?php echo esc_attr($name_prefix); ?>[defaultValue]" value="<?php echo esc_attr($field['defaultValue'] ?? ''); ?>" placeholder="z. B. classic" /></td>
         <td data-column="Aufpreis (€)" class="kubikart-price-field"><input type="number" min="0" step="0.01" inputmode="decimal" name="<?php echo esc_attr($name_prefix); ?>[price]" value="<?php echo esc_attr($field['price'] ?? ''); ?>" placeholder="0,00" aria-label="Aufpreis in Euro für <?php echo esc_attr($field['label'] ?? 'dieses Feld'); ?>" /></td>
+        <td data-column="Sichtbar wenn"><input type="text" name="<?php echo esc_attr($name_prefix); ?>[showWhen]" value="<?php echo esc_attr(!empty($field['showWhen']['field']) ? $field['showWhen']['field'] . '=' . ($field['showWhen']['equals'] ?? '') : ''); ?>" placeholder="feld-id=wert" aria-label="Feld nur anzeigen, wenn ein Select-Feld diesen Wert hat" /></td>
         <td data-column="Hilfetext (keine Preisangabe)"><input type="text" name="<?php echo esc_attr($name_prefix); ?>[helperText]" value="<?php echo esc_attr($field['helperText'] ?? ''); ?>" placeholder="Optionale Erklärung für Kunden" /></td>
         <td data-column="Aktion"><button type="button" class="button kubikart-remove-field" data-remove-field aria-label="Feld entfernen">×</button></td>
     </tr>
@@ -295,16 +292,17 @@ function kubikart_render_custom_fields_metabox($post) {
     <table class="kubikart-fields-table" id="kubikart-fields-table" data-next-index="<?php echo esc_attr(count($fields)); ?>">
         <thead>
             <tr>
-                <th style="width:9%">ID</th>
-                <th style="width:14%">Label</th>
-                <th style="width:10%">Typ</th>
-                <th style="width:6%">Pflicht</th>
-                <th style="width:11%">Placeholder</th>
+                <th style="width:8%">ID</th>
+                <th style="width:12%">Label</th>
+                <th style="width:9%">Typ</th>
+                <th style="width:5%">Pflicht</th>
+                <th style="width:10%">Placeholder</th>
                 <th style="width:5%">Max</th>
-                <th style="width:13%">Optionen</th>
-                <th style="width:9%">Standardwert</th>
-                <th style="width:8%">Aufpreis (€)</th>
-                <th style="width:11%">Hilfetext</th>
+                <th style="width:12%">Optionen</th>
+                <th style="width:8%">Standardwert</th>
+                <th style="width:7%">Aufpreis (€)</th>
+                <th style="width:10%">Sichtbar wenn</th>
+                <th style="width:10%">Hilfetext</th>
                 <th style="width:4%"></th>
             </tr>
         </thead>

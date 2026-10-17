@@ -46,7 +46,7 @@ export type BusinessIndustryRestRecord = {
   featured_media: number;
   lang?: SiteLocale;
   translations?: Partial<Record<SiteLocale, number>>;
-  _kubikart_featured_kit_id?: number;
+  _kubikart_bundle_ids?: number[];
   _kubikart_related_product_ids?: number[];
   _embedded?: {
     "wp:featuredmedia"?: WordPressFeaturedMedia[];
@@ -65,7 +65,9 @@ export type BusinessIndustry = {
   contentHtml: string;
   featuredMedia?: WordPressFeaturedMedia;
   translations: Partial<Record<SiteLocale, number>>;
-  featuredKitId?: number;
+  /** Business Bundles in the owner's saved order. */
+  bundleIds: number[];
+  /** Individual products in the owner's saved order. */
   relatedProductIds: number[];
 };
 
@@ -226,7 +228,7 @@ function adaptIndustry(record: BusinessIndustryRestRecord, requestedLocale: Site
     contentHtml,
     featuredMedia: record._embedded?.["wp:featuredmedia"]?.[0],
     translations: record.translations || {},
-    featuredKitId: Number(record._kubikart_featured_kit_id) || undefined,
+    bundleIds: Array.from(new Set((record._kubikart_bundle_ids || []).map(Number).filter((id) => id > 0))),
     relatedProductIds: Array.from(
       new Set((record._kubikart_related_product_ids || []).map(Number).filter((id) => id > 0)),
     ),

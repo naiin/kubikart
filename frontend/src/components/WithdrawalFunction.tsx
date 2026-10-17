@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { useProtectedFetch } from "@/components/CaptchaProvider";
 
 type Step = "start" | "details" | "review" | "success";
 
@@ -35,6 +36,7 @@ function downloadReceipt(receipt: Receipt, labels: { title: string; received: st
 }
 
 export function WithdrawalFunction() {
+  const protectedFetch = useProtectedFetch();
   const t = useTranslations("withdrawal");
   const locale = useLocale();
   const [step, setStep] = useState<Step>("start");
@@ -57,7 +59,7 @@ export function WithdrawalFunction() {
   async function submitWithdrawal() {
     setStatus("submitting");
     try {
-      const response = await fetch("/api/withdrawal", {
+      const response = await protectedFetch("/api/withdrawal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -7,15 +7,21 @@ import { formatCartCurrency, getCartLineId, readCart, toServerCartItems, useCart
 import { useAuth } from "@/lib/auth";
 import { Link } from "@/i18n/navigation";
 import CheckoutPayment from "@/components/checkout/CheckoutPayment";
+import { CartAvailabilityNotice } from "@/components/CartAvailabilityNotice";
+import { CartSetSummary } from "@/components/CartSetSummary";
+import { useCartAvailability } from "@/lib/use-cart-availability";
+import { useProtectedFetch } from "@/components/CaptchaProvider";
 
 type Step = "information" | "shipping" | "payment";
 
 export default function CheckoutPage() {
+  const protectedFetch = useProtectedFetch();
   const t = useTranslations("common");
   const locale = useLocale();
   const { user } = useAuth();
   const cart = useCart();
   const hasMounted = useHasMounted();
+  const availability = useCartAvailability(cart);
   const [step, setStep] = useState<Step>("information");
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
@@ -130,6 +136,23 @@ export default function CheckoutPage() {
     );
   }
 
+  if (availability.hasBlocked) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="mx-auto max-w-2xl px-4 py-16">
+          <h1 className="mb-6 text-2xl font-semibold text-gray-900">{t("checkout")}</h1>
+          <CartAvailabilityNotice
+            blocked={availability.blocked}
+            onRemove={(productId) => writeCart(readCart().filter((item) => (item.productId ?? item.id) !== productId))}
+          />
+          <Link href="/cart" className="mt-6 inline-flex text-sm font-semibold text-navy-900 hover:underline">
+            ← {t("cart")}
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     setPendingOrder(null);
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -140,7 +163,7 @@ export default function CheckoutPage() {
     setCreatingOrder(true);
     setPaymentError(null);
     try {
-      const response = await fetch("/api/orders/create", {
+      const response = await protectedFetch("/api/orders/create", {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
@@ -559,6 +582,7 @@ export default function CheckoutPage() {
                           </svg>
                         </button>
                       </div>
+                      <CartSetSummary item={item} />
                       {item.customizationSummary?.length ? (
                         <div className="mt-1 space-y-0.5">
                           {item.customizationSummary.map((line, i) => (

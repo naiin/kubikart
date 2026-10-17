@@ -23,7 +23,7 @@ function industry(overrides: Record<string, unknown> = {}) {
     featured_media: 174,
     lang: "de",
     translations: { de: 173, en: 176 },
-    _kubikart_featured_kit_id: 162,
+    _kubikart_bundle_ids: [162, 166, 162],
     _kubikart_related_product_ids: [164, 168, 164],
     _embedded: {
       "wp:featuredmedia": [
@@ -47,7 +47,7 @@ describe("authenticated Business Industries WordPress client", () => {
     const result = await getBusinessIndustries("de");
 
     expect(result).toHaveLength(1);
-    expect(result[0].featuredKitId).toBe(162);
+    expect(result[0].bundleIds).toEqual([162, 166]);
     expect(result[0].title).toBe("Restaurants & Lieferdienste");
     expect(result[0].relatedProductIds).toEqual([164, 168]);
     expect(result[0].featuredMedia?.id).toBe(174);

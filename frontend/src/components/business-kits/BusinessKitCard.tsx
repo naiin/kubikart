@@ -1,6 +1,9 @@
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { getBusinessKitCommercialState, parseBusinessKitData } from "@/lib/business-kits";
+import { KitIllustrationForProduct } from "@/components/business-kits/KitIllustration";
+import { IllustrativeImageBadge } from "@/components/business-kits/IllustrativeImageBadge";
 import type { WCProduct } from "@/lib/woocommerce";
 import type { SiteLocale } from "@/lib/seo";
 
@@ -27,13 +30,21 @@ export async function BusinessKitCard({ product, locale }: { product: WCProduct;
   const t = await getTranslations("businessKitsOverview");
   const image = product.images[0];
   const description = plainText(product.short_description);
-  const price = product.purchasable === false ? null : formatPrice(product.price, locale);
-  const isOutOfStock = product.stock_status === "outofstock";
-  const isNotPurchasable = product.purchasable === false;
+  const state = getBusinessKitCommercialState(product);
+  const hasIllustration = parseBusinessKitData(product.meta_data).items.length > 0;
+  const price = state.kind === "purchasable" || state.kind === "outOfStock" ? formatPrice(product.price, locale) : null;
+  const statusLabel =
+    state.kind === "purchasable"
+      ? t("orderable")
+      : state.kind === "outOfStock"
+        ? t("outOfStock")
+        : state.kind === "enquiry"
+          ? t("enquiryOnly")
+          : t("notOrderable");
 
   return (
     <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-kubikart-lg border border-border bg-surface-white shadow-kubikart-sm">
-      <Link href={`/shop/${product.slug}`} className="relative block aspect-[16/10] overflow-hidden bg-surface">
+      <Link href={`/shop/${product.slug}`} className={`relative block overflow-hidden bg-surface ${image ? "aspect-square" : "aspect-[16/10]"}`}>
         {image ? (
           <Image
             src={image.src}
@@ -43,6 +54,8 @@ export async function BusinessKitCard({ product, locale }: { product: WCProduct;
             className="object-cover transition-transform duration-200 group-hover:scale-[1.025]"
             unoptimized
           />
+        ) : hasIllustration ? (
+          <KitIllustrationForProduct product={product} />
         ) : (
           <span className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-sm text-muted" role="img" aria-label={t("missingImage", { name: product.name })}>
             <svg className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
@@ -52,6 +65,7 @@ export async function BusinessKitCard({ product, locale }: { product: WCProduct;
             {t("imagePending")}
           </span>
         )}
+        {image ? <IllustrativeImageBadge /> : null}
       </Link>
 
       <div className="flex flex-1 flex-col p-5 sm:p-6">
@@ -65,15 +79,32 @@ export async function BusinessKitCard({ product, locale }: { product: WCProduct;
 
         <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-6">
           <div>
-            {price ? <p className="font-heading text-lg font-bold text-accent">{price}</p> : <p className="text-sm text-muted">{t("priceUnavailable")}</p>}
-            <p className={`mt-1 text-xs font-semibold ${isOutOfStock ? "text-danger" : "text-muted"}`}>
-              {isOutOfStock ? t("outOfStock") : isNotPurchasable ? t("notPurchasable") : t("availabilityDetails")}
+            {price ? (
+              <p className="font-heading text-lg font-bold text-accent">{price}</p>
+            ) : state.kind === "enquiry" && state.startingPrice ? (
+              <p className="font-heading text-lg font-bold text-accent">{t("startingPrice", { price: formatPrice(String(state.startingPrice), locale) ?? "" })}</p>
+            ) : (
+              <p className="font-heading text-base font-bold text-brand">{state.kind === "enquiry" ? t("enquiryPrice") : t("priceUnavailable")}</p>
+            )}
+            <p className={`mt-1 text-xs font-semibold ${state.kind === "outOfStock" || state.kind === "unavailable" ? "text-danger" : "text-muted"}`}>
+              {statusLabel}
             </p>
           </div>
 
-          <Link href={`/shop/${product.slug}`} className="kk-button kk-button-secondary min-h-11">
-            {t("viewKit", { name: product.name })}
-          </Link>
+          {state.kind === "enquiry" ? (
+            <div className="flex flex-wrap gap-2">
+              <Link href={`/kontakt?product=${encodeURIComponent(product.slug)}`} className="kk-button kk-button-primary min-h-11">
+                {t("enquire")}
+              </Link>
+              <Link href={`/shop/${product.slug}`} className="kk-button kk-button-secondary min-h-11" aria-label={t("viewKit", { name: product.name })}>
+                {t("details")}
+              </Link>
+            </div>
+          ) : (
+            <Link href={`/shop/${product.slug}`} className="kk-button kk-button-secondary min-h-11">
+              {t("viewKit", { name: product.name })}
+            </Link>
+          )}
         </div>
       </div>
     </article>

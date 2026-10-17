@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
       username: string;
     }>("customers", {
       method: "POST",
+      params: { kubikart_email_owner: "mailtrap" },
       body: {
         email,
         password,

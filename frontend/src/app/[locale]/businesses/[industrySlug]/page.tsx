@@ -1,4 +1,3 @@
-import Image from "next/image";
 import type { Metadata } from "next";
 import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
@@ -6,11 +5,11 @@ import { notFound, redirect } from "next/navigation";
 import { IndustryDetailJsonLd } from "@/components/business-industries/IndustryJsonLd";
 import { IndustryMedia } from "@/components/business-industries/IndustryMedia";
 import { ProductCard } from "@/components/ProductCard";
+import { PageHero } from "@/components/layout/PageHero";
+import { BusinessKitCard } from "@/components/business-kits/BusinessKitCard";
 import { Link } from "@/i18n/navigation";
 import { getBusinessIndustryImage } from "@/lib/business-industry-images";
-import { isWooCommercePlaceholderImage } from "@/lib/business-kits";
 import { resolveIndustryProducts } from "@/lib/business-industries";
-import { formatProductPrice } from "@/lib/product-page";
 import {
   getAbsoluteUrl,
   getRobotsMetadata,
@@ -20,10 +19,8 @@ import {
 import {
   getIndustryTranslationSlugs,
   resolveBusinessIndustrySlug,
-  sanitizeWordPressContent,
   WordPressUnavailableError,
 } from "@/lib/wordpress";
-import type { WCProduct } from "@/lib/woocommerce";
 
 type IndustryDetailPageProps = {
   params: Promise<{ locale: string; industrySlug: string }>;
@@ -124,29 +121,18 @@ export default async function IndustryDetailPage({ params }: IndustryDetailPageP
   const industry = result.industry;
   const imageOverride = getBusinessIndustryImage(industry.slug);
   const products = await resolveIndustryProducts(industry, locale);
+  // German nouns stay capitalised; English headings read "… for cafés & bakeries".
+  const industryLabel = locale === "en" ? industry.title.toLocaleLowerCase("en") : industry.title;
 
   return (
     <main className="bg-page text-foreground">
-      <section className="border-b border-border bg-surface">
-        <div className="kk-container-full py-10 lg:py-14">
-          <nav aria-label={t("breadcrumbLabel")} className="flex flex-wrap gap-x-2 gap-y-1 text-sm text-muted">
-            <Link href="/" className="kk-link">{t("home")}</Link>
-            <span aria-hidden="true">/</span>
-            <Link href="/businesses" className="kk-link">{t("parent")}</Link>
-            <span aria-hidden="true">/</span>
-            <span aria-current="page">{industry.title}</span>
-          </nav>
-
-          <div className="mt-8 grid gap-8 lg:grid-cols-[0.48fr_0.52fr] lg:items-center lg:gap-12">
-            <div>
-              <p className="kk-eyebrow">{t("detail.eyebrow")}</p>
-              <h1 className="kk-page-intro-heading mt-3">{industry.title}</h1>
-              {industry.excerptText ? (
-                <p className="mt-5 max-w-2xl text-base leading-7 text-muted sm:text-lg">
-                  {industry.excerptText}
-                </p>
-              ) : null}
-            </div>
+      <PageHero
+        breadcrumbs={[{ label: t("parent"), href: "/businesses" }, { label: industry.title }]}
+        eyebrow={t("detail.eyebrow")}
+        title={industry.title}
+        intro={industry.excerptText || undefined}
+        media={
+          <figure>
             <IndustryMedia
               media={industry.featuredMedia}
               title={industry.title}
@@ -155,9 +141,42 @@ export default async function IndustryDetailPage({ params }: IndustryDetailPageP
               fallbackSrc={imageOverride}
               fallbackAlt={industry.title}
             />
+            {industry.featuredMedia?.source_url || imageOverride ? (
+              <figcaption className="mt-2 text-xs text-muted">{t("detail.imageNote")}</figcaption>
+            ) : null}
+          </figure>
+        }
+      />
+
+      {products.bundles.length > 0 ? (
+        <section aria-labelledby="industry-bundles-heading" className="kk-section border-b border-border bg-surface">
+          <div className="kk-container-full">
+            <h2 id="industry-bundles-heading" className="kk-heading-2">{t("detail.bundlesHeading", { industry: industryLabel })}</h2>
+            <p className="kk-body-large mt-4 max-w-3xl text-muted">{t("detail.bundlesIntro")}</p>
+            <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {products.bundles.map((product) => <BusinessKitCard key={product.id} product={product} locale={locale} />)}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
+
+      {products.unavailable || products.relatedProducts.length > 0 ? (
+        <section aria-labelledby="industry-products-heading" className="kk-section">
+          <div className="kk-container-full">
+            <h2 id="industry-products-heading" className="kk-heading-2">{t("detail.productsHeading", { industry: industryLabel })}</h2>
+            <p className="kk-body-large mt-4 max-w-3xl text-muted">{t("detail.productsIntro")}</p>
+            {products.unavailable ? (
+              <p className="mt-6 rounded-kubikart-md border border-border bg-surface p-5 text-muted" role="status">
+                {t("productsUnavailable")}
+              </p>
+            ) : (
+              <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {products.relatedProducts.map((product) => <ProductCard key={product.id} product={product} />)}
+              </div>
+            )}
+          </div>
+        </section>
+      ) : null}
 
       {industry.contentHtml ? (
         <section aria-labelledby="industry-content-heading" className="kk-section">
@@ -174,30 +193,6 @@ export default async function IndustryDetailPage({ params }: IndustryDetailPageP
         </section>
       ) : null}
 
-      {products.featuredKit ? (
-        <FeaturedIndustryKit product={products.featuredKit} />
-      ) : null}
-
-      {industry.relatedProductIds.length > 0 ? (
-        <section aria-labelledby="industry-products-heading" className="kk-section">
-          <div className="kk-container-full">
-            <p className="kk-eyebrow">{t("detail.productsEyebrow")}</p>
-            <h2 id="industry-products-heading" className="kk-heading-2 mt-3">{t("detail.productsHeading")}</h2>
-            {products.unavailable ? (
-              <p className="mt-6 rounded-kubikart-md border border-border bg-surface p-5 text-muted" role="status">
-                {t("productsUnavailable")}
-              </p>
-            ) : products.relatedProducts.length > 0 ? (
-              <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {products.relatedProducts.map((product) => <ProductCard key={product.id} product={product} />)}
-              </div>
-            ) : (
-              <p className="mt-6 text-muted">{t("detail.noProducts")}</p>
-            )}
-          </div>
-        </section>
-      ) : null}
-
       <section className="kk-container-full pb-20 lg:pb-24">
         <div className="rounded-kubikart-xl bg-brand px-6 py-10 text-white sm:px-10 lg:flex lg:items-center lg:justify-between lg:gap-10">
           <div className="max-w-2xl">
@@ -205,9 +200,9 @@ export default async function IndustryDetailPage({ params }: IndustryDetailPageP
             <p className="mt-4 leading-7 text-white/75">{t("cta.text")}</p>
           </div>
           <div className="mt-7 flex flex-wrap gap-3 lg:mt-0 lg:shrink-0">
-            <Link href="/kontakt" className="kk-button kk-button-primary">{t("cta.contact")}</Link>
-            <Link href="/services/brand-kit" className="kk-button border border-white/40 text-white hover:border-accent hover:text-accent">
-              {t("cta.kits")}
+            <Link href={`/sonderanfertigung?industry=${encodeURIComponent(industry.slug)}`} className="kk-button kk-button-primary">{t("cta.contact")}</Link>
+            <Link href="/shop" className="kk-button border border-white/40 text-white hover:border-accent hover:text-accent">
+              {t("cta.shop")}
             </Link>
           </div>
         </div>
@@ -220,51 +215,6 @@ export default async function IndustryDetailPage({ params }: IndustryDetailPageP
         homeLabel={t("home")}
       />
     </main>
-  );
-}
-
-function FeaturedIndustryKit({ product }: { product: WCProduct }) {
-  const t = useTranslations("businessIndustries");
-  const image = product.images.find((candidate) => !isWooCommercePlaceholderImage(candidate));
-  const price = Number.parseFloat(product.price);
-
-  return (
-    <section aria-labelledby="featured-industry-kit-heading" className="border-y border-border bg-surface">
-      <div className="kk-container-full grid gap-8 py-12 lg:grid-cols-2 lg:items-center lg:py-16">
-        <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-kubikart-lg border border-border bg-page">
-          {image ? (
-            <Image src={image.src} alt={image.alt || product.name} fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" unoptimized />
-          ) : (
-            <span className="text-sm text-muted" role="img" aria-label={t("missingProductImage", { title: product.name })}>
-              {t("missingProductImageText")}
-            </span>
-          )}
-        </div>
-        <div>
-          <p className="kk-eyebrow">{t("detail.kitEyebrow")}</p>
-          <h2 id="featured-industry-kit-heading" className="kk-heading-2 mt-3">{product.name}</h2>
-          {product.short_description ? (
-            <div
-              className="mt-4 leading-7 text-muted [&_a]:text-brand [&_a]:underline [&_p]:max-w-2xl"
-              dangerouslySetInnerHTML={{ __html: sanitizeWordPressContent(product.short_description) }}
-            />
-          ) : null}
-          {Number.isFinite(price) && product.purchasable !== false ? (
-            <p className="mt-5 font-heading text-xl font-semibold text-accent">
-              {formatProductPrice({ amount: price, currency: "EUR" })}
-            </p>
-          ) : null}
-          {product.stock_status ? (
-            <p className={`mt-2 text-sm font-semibold ${product.stock_status === "outofstock" ? "text-danger" : "text-muted"}`}>
-              {product.stock_status === "outofstock" ? t("outOfStock") : t("available")}
-            </p>
-          ) : null}
-          <Link href={`/shop/${product.slug}`} className="kk-button kk-button-primary mt-7">
-            {t("detail.viewKit")}
-          </Link>
-        </div>
-      </div>
-    </section>
   );
 }
 

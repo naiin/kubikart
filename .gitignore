@@ -6,6 +6,7 @@ __pycache__/
 *.py[cod]
 .DS_Store
 Thumbs.db
+creds
 
 # ============================================================
 # Frontend (Next.js)
@@ -69,6 +70,9 @@ backend/wordpress/wp-content/languages/
 # backend/wordpress/wp-config.php contains local Lando-only values.
 backend/.env.deploy.local
 
+# Local-only WordPress overrides/secrets (KUBIKART_REVALIDATE_SECRET, frontend URL)
+backend/.local-secrets.php
+
 # ============================================================
 # Backend — PHP dependencies
 # ============================================================
@@ -79,6 +83,7 @@ backend/.phpunit.result.cache
 backend/generated-media/
 backend/recovery/
 backend/backups/
+backend/storage/
 backend/backups/**
 backend/recovery/**
 backend/generated-media/**

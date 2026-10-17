@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import type { WCCategory } from "@/lib/woocommerce";
+import { isBusinessKitsCategorySlug } from "@/lib/business-kits";
 
 export function ActiveFilterChips({ categories }: { categories: WCCategory[] }) {
   const t = useTranslations("shopPage");
@@ -28,7 +29,10 @@ export function ActiveFilterChips({ categories }: { categories: WCCategory[] }) 
 
   if (activeCategory) {
     const category = categories.find((candidate) => String(candidate.id) === activeCategory);
-    chips.push({ label: category?.name || activeCategory, key: "category" });
+    chips.push({
+      label: category && isBusinessKitsCategorySlug(category.slug) ? t("businessKitsCategory") : category?.name || activeCategory,
+      key: "category",
+    });
   }
 
   if (activeSearch) {
