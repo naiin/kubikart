@@ -23,12 +23,12 @@ const contentSecurityPolicy = [
   "object-src 'none'",
   "frame-ancestors 'self'",
   "form-action 'self' https://www.paypal.com https://www.sandbox.paypal.com",
-  "script-src 'self' 'unsafe-inline' https://js.stripe.com https://www.paypal.com https://www.sandbox.paypal.com",
+  "script-src 'self' 'unsafe-inline' https://js.stripe.com https://www.paypal.com https://www.sandbox.paypal.com https://challenges.cloudflare.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://api.stripe.com https://*.paypal.com",
-  "frame-src https://js.stripe.com https://hooks.stripe.com https://www.paypal.com https://www.sandbox.paypal.com",
+  "connect-src 'self' https://api.stripe.com https://*.paypal.com https://challenges.cloudflare.com",
+  "frame-src https://js.stripe.com https://hooks.stripe.com https://www.paypal.com https://www.sandbox.paypal.com https://challenges.cloudflare.com",
   "upgrade-insecure-requests",
 ].join("; ");
 
@@ -36,6 +36,15 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: wordpressImagePatterns(),
   },
+  // Permanent redirects from product slugs that were renamed for SEO.
+  redirects: async () => [
+    { source: "/de/shop/qr-staender-3d-druck", destination: "/de/shop/personalisierter-qr-code-aufsteller-nfc", permanent: true },
+    { source: "/de/shop/qr-code-aufsteller-nfc-3d-druck", destination: "/de/shop/personalisierter-qr-code-aufsteller-nfc", permanent: true },
+    { source: "/en/shop/qr-stand-3d-printed", destination: "/en/shop/personalized-qr-code-stand-nfc", permanent: true },
+    { source: "/en/shop/qr-code-stand-nfc-3d-printed", destination: "/en/shop/personalized-qr-code-stand-nfc", permanent: true },
+    { source: "/de/shop/qr-staender-acryl", destination: "/de/shop/personalisierter-acryl-aufsteller-qr-code-nfc", permanent: true },
+    { source: "/en/shop/qr-stand-acrylic", destination: "/en/shop/personalized-acrylic-qr-code-nfc-stand", permanent: true },
+  ],
   headers: async () => [
     {
       source: "/(.*)",

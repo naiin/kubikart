@@ -3,11 +3,18 @@ import {
   getActiveNavigationItem,
   getNavigationHref,
   headerNavigation,
+  mobileUtilityNavigation,
   normalizeNavigationPath,
 } from "@/lib/header-navigation";
 
 function activeLabel(pathname: string) {
   return getActiveNavigationItem(pathname, headerNavigation)?.labelKey;
+}
+
+const forBusinesses = headerNavigation.find((item) => item.labelKey === "nav.forBusinesses");
+
+function activeChildLabel(pathname: string) {
+  return getActiveNavigationItem(pathname, forBusinesses?.children ?? [])?.labelKey;
 }
 
 describe("header navigation resolution", () => {
@@ -19,39 +26,47 @@ describe("header navigation resolution", () => {
     expect(normalizeNavigationPath("/de")).toBe("/");
   });
 
-  it("gives an exact child route priority over a broader parent prefix", () => {
-    expect(activeLabel("/de/services/brand-kit")).toBe("nav.businessKits");
-    expect(activeLabel("/en/services/brand-kit/")).toBe("nav.businessKits");
+  it("has the five approved primary items in order", () => {
+    expect(headerNavigation.map((item) => item.labelKey)).toEqual([
+      "nav.shop",
+      "nav.forBusinesses",
+      "nav.personalizedGifts",
+      "nav.about",
+      "nav.contact",
+    ]);
   });
 
-  it("uses Solutions as the gateway to the WordPress-managed Industry routes", () => {
-    const solutions = headerNavigation.find((item) => item.labelKey === "nav.services");
-
-    expect(solutions?.href).toBe("/businesses");
-    expect(activeLabel("/de/businesses")).toBe("nav.services");
-    expect(activeLabel("/en/businesses/driving-schools")).toBe("nav.services");
+  it("groups industries, Business Kits and the custom enquiry under For Businesses", () => {
+    expect(forBusinesses?.children?.map((child) => [child.labelKey, child.href])).toEqual([
+      ["nav.industries", "/businesses"],
+      ["nav.businessKits", "/services/brand-kit"],
+      ["nav.customEnquiry", "/sonderanfertigung"],
+    ]);
   });
 
-  it("keeps existing service routes in a distinct Services active group", () => {
-    expect(activeLabel("/de/services")).toBe("nav.productionServices");
-    expect(activeLabel("/de/services/custom-order")).toBe("nav.productionServices");
-    expect(activeLabel("/de/dienstleistungen")).toBe("nav.productionServices");
-    expect(activeLabel("/de/dienstleistungen/lasergravur")).toBe("nav.productionServices");
+  it("marks the For Businesses group and the matching child as active", () => {
+    for (const route of ["/de/businesses", "/en/businesses/driving-schools", "/de/services/brand-kit", "/de/sonderanfertigung"]) {
+      expect(activeLabel(route)).toBe("nav.forBusinesses");
+    }
+    expect(activeChildLabel("/de/businesses")).toBe("nav.industries");
+    expect(activeChildLabel("/en/businesses/driving-schools")).toBe("nav.industries");
+    expect(activeChildLabel("/en/services/brand-kit/")).toBe("nav.businessKits");
+    expect(activeChildLabel("/de/sonderanfertigung")).toBe("nav.customEnquiry");
   });
 
-  it("uses the localized service overview destination", () => {
-    const services = headerNavigation.find(
-      (item) => item.labelKey === "nav.productionServices",
-    );
+  it("keeps production services reachable from the utility links with localized hrefs", () => {
+    const services = mobileUtilityNavigation.find((item) => item.labelKey === "mobile.productionServices");
 
     expect(services).toBeDefined();
     expect(getNavigationHref(services!, "de")).toBe("/dienstleistungen");
     expect(getNavigationHref(services!, "en")).toBe("/services");
+    expect(getActiveNavigationItem("/de/dienstleistungen/lasergravur", mobileUtilityNavigation)).toBe(services);
   });
 
-  it("keeps shop descendants assigned to Shop", () => {
+  it("keeps shop descendants assigned to Shop and gifts to their own item", () => {
     expect(activeLabel("/de/shop")).toBe("nav.shop");
     expect(activeLabel("/de/shop/example-product")).toBe("nav.shop");
+    expect(activeLabel("/de/personalisierte-geschenke")).toBe("nav.personalizedGifts");
   });
 
   it("respects path-segment boundaries", () => {
@@ -68,9 +83,9 @@ describe("header navigation resolution", () => {
     const routes = [
       "/de/businesses",
       "/en/businesses/restaurants-takeaways",
-      "/de/services/custom-order",
       "/de/services/brand-kit",
       "/en/services/brand-kit",
+      "/de/sonderanfertigung",
       "/de/shop",
       "/de/shop/example-product",
     ];

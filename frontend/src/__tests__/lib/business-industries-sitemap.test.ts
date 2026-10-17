@@ -20,6 +20,7 @@ function industry(
     excerptHtml: "",
     excerptText: "",
     contentHtml: "",
+    bundleIds: [],
     relatedProductIds: [],
   };
 }

@@ -6,6 +6,34 @@
 **Live domain:** `kubikart.de` · **Business location:** Ulm / Neu-Ulm / Augsburg, Germany
 ---
 
+## Documentation map
+
+This file is the entry point. Everything else lives in [`docs/`](docs/) and reads as one flow, from "what is this" to
+"how do we launch it". Open the document that matches your question:
+
+| # | Document | Read it when you want to... |
+|---|---|---|
+| 1 | [Business master](docs/01-business-master.md) | understand the business, brand, product strategy and equipment plan |
+| 2 | [Owner handbook](docs/02-owner-handbook.md) | do daily work in WordPress/WooCommerce: products, options, bundles, industries, images, prices, publishing |
+| 3 | [Design system](docs/03-design-system.md) | build or review any UI (tokens, components, rules; authoritative for visuals) |
+| 4 | [Homepage layout](docs/04-homepage-layout.md) | change the homepage and its entry points |
+| 5 | [Header and footer](docs/05-header-footer.md) | change navigation, header, footer, mobile menu |
+| 6 | [Content model and industries](docs/06-content-model.md) | know what data lives where; edit industry pages and their product lists |
+| 7 | [Products and bundles](docs/07-products-and-bundles.md) | understand purchase modes, bundles, QR stands, sticker products, drafts, and the transfer scripts |
+| 8 | [Commerce and payments](docs/08-commerce-and-payments.md) | follow cart, checkout, Stripe/PayPal webhooks, order state, file uploads, test evidence |
+| 9 | [E-mail](docs/09-email.md) | configure Mailtrap, templates, owner enquiry notifications |
+| 10 | [Revalidation](docs/10-revalidation.md) | understand how WordPress changes refresh the storefront cache |
+| 11 | [SEO](docs/11-seo.md) | keywords, structured data, launch checklist, measurement |
+| 12 | [Production launch](docs/12-production-launch.md) | deploy: sequence, environment variables, accounts, legal/privacy review, Strato reference, open decisions |
+
+Related: [`AGENTS.md`](AGENTS.md) (rules for coding agents, sources of truth), [`backend/DEPLOYMENT.md`](backend/DEPLOYMENT.md)
+(guarded backend release), [`docs/references/`](docs/references/) (secondary visual reference images).
+
+**Suggested paths:** new developer: sections 2-6 and 19 below, then docs 6-8. Content editor: doc 2. Launching: docs 12, 8,
+9, 10, 11. Design work: docs 3-5.
+
+---
+
 ## Table of Contents
 
 1. [Business Overview](#1-business-overview)
@@ -101,7 +129,7 @@ Browser / Mobile
 | Shipping           | DHL Business API                    | v2      |
 | Testing (FE)       | Vitest + jsdom                      | 4.x     |
 | Testing (BE)       | PHPUnit                             | –       |
-| Deployment (FE)    | Vercel                              | –       |
+| Deployment (FE)    | Not decided (hosting is not assumed; see docs/12) | –       |
 
 ---
 
@@ -114,16 +142,16 @@ website/                              ← monorepo root
 ├── package.json                      ← root scripts
 ├── AGENTS.md                         ← GitHub Copilot agent instructions
 │
-├── docs/                             ← current design, operations, SEO, and owner documentation
-│   ├── Business.md                   ← business strategy and brand guide
-│   ├── KUBIKART-OWNER-HANDBOOK.md    ← routine WordPress/WooCommerce administration
-│   ├── MAILTRAP-SETUP.md             ← transactional email setup
-│   ├── redesign/                     ← authoritative design and content specifications
-│   └── seo/                          ← SEO audit, implementation, and launch checks
+├── docs/                             ← numbered documentation, one flow (see "Documentation map" above)
+│   ├── 01-business-master.md … 12-production-launch.md
+│   └── references/                   ← secondary visual reference images
 │
 ├── backend/
 │   ├── .lando.yml                    ← Lando config (Nginx + PHP 8.3 + MySQL 8.0)
 │   ├── DEPLOYMENT.md                 ← guarded local-only backend deployment procedure
+│   ├── deploy-backend.py             ← guarded backend release script (used by CI syntax check)
+│   ├── deploy/                       ← server config examples (private customer-files nginx rule)
+│   ├── scripts/                      ← WP-CLI content transfer scripts (dry run by default; see docs/07)
 │   ├── phpunit.xml                   ← PHPUnit config
 │   ├── composer.json                 ← PHP dependencies
 │   ├── tests/                        ← PHPUnit test suite
@@ -131,14 +159,18 @@ website/                              ← monorepo root
 │   │   └── plugins/                  ← plugin unit tests
 │   └── wordpress/
 │       └── wp-content/
+│           ├── mu-plugins/           ← kubikart-* must-use plugins (see §18)
 │           └── plugins/
 │               ├── kubikart-newsletter/  ← DSGVO double opt-in newsletter
 │               ├── kubikart-security/    ← security hardening + password reset
+│               ├── kubikart-business-industries/ ← industry landing pages (docs/06)
 │               ├── woocommerce/
-│               └── polylang-pro/
+│               ├── polylang-pro/ and polylang-wc/
+│               └── (akismet, contact-form-7, two-factor)
 │
 └── frontend/
-    ├── next.config.ts                ← Next.js config (security headers, image domains)
+    ├── next.config.ts                ← Next.js config (security headers, image domains, slug redirects)
+    ├── scripts/                      ← create-mailtrap-templates.mjs, generate-widerruf-pdf.cjs (docs/09)
     ├── vitest.config.ts              ← Vitest test config
     ├── .env.local                    ← local environment variables (not committed)
     ├── .env.local.example            ← env template
@@ -147,8 +179,7 @@ website/                              ← monorepo root
     │   ├── home-hero.png
     │   └── hero-shop.png
     └── src/
-        ├── middleware.ts             ← rate limiting + i18n routing (runs on Edge)
-        ├── proxy.ts                  ← (legacy, removed — replaced by middleware.ts)
+        ├── proxy.ts                  ← Next.js 16 proxy: rate limiting, CSRF/origin checks, signed machine endpoints, i18n routing
         ├── app/
         │   ├── globals.css           ← Tailwind v4 theme + CSS custom properties
         │   ├── robots.ts             ← robots.txt generation
@@ -185,6 +216,7 @@ website/                              ← monorepo root
         │   │   ├── sonderanfertigung/page.tsx
         │   │   ├── personalisierte-geschenke/page.tsx
         │   │   ├── search/page.tsx
+        │   │   ├── businesses/       ← industries overview + [industrySlug]
         │   │   └── legal/
         │   │       ├── impressum/page.tsx
         │   │       ├── datenschutz/page.tsx
@@ -215,7 +247,11 @@ website/                              ← monorepo root
         │       ├── webhooks/
         │       │   ├── stripe/route.ts
         │       │   └── paypal/route.ts
-        │       └── revalidate/route.ts ← WC webhook → ISR cache purge
+        │       ├── enquiries/retry/route.ts ← signed retry of owner enquiry notifications
+        │       ├── uploads/customer-file/route.ts ← private customer file upload
+        │       ├── cart/availability/route.ts
+        │       ├── withdrawal/route.ts
+        │       └── revalidate/route.ts ← signed WordPress/WooCommerce event → cache purge
         ├── components/
         │   ├── Header.tsx
         │   ├── Footer.tsx
@@ -737,15 +773,25 @@ Mailtrap's Sandbox mode lets you receive test emails without sending to real inb
 
 ## 14. Security Architecture
 
-### Middleware (`src/middleware.ts`)
+### Proxy (`src/proxy.ts`)
 
-Runs on the Vercel Edge for every request:
+Runs for every request (Next.js 16 proxy; the former `middleware.ts` no longer exists):
 
-| Check              | Config                                            |
-| ------------------ | ------------------------------------------------- |
-| API rate limiting  | 30 req / 60s per IP                               |
-| Method enforcement | Only POST on `/api/contact` and `/api/newsletter` |
-| i18n routing       | next-intl, default locale `de`                    |
+| Check | Config |
+| ----- | ------ |
+| API rate limiting | Distributed (Upstash/Redis); production fails closed when unavailable; client IP from trusted proxy hops only (`TRUSTED_PROXY_HOPS`) |
+| CSRF / origin | Same-origin check (`Origin`, `Sec-Fetch-Site`) on state-changing API routes |
+| Signed machine endpoints | `/api/revalidate`, `/api/enquiries/retry`, `/api/webhooks/*`, `/api/shipping/label` skip the browser checks and verify their own signature or secret |
+| i18n routing | next-intl, default locale `de` |
+
+### Signed server-to-server requests
+
+WordPress calls two frontend endpoints. Both use `frontend/src/lib/signed-request.ts`: the sender sets
+`X-Kubikart-Timestamp` (Unix seconds) and a base64 HMAC-SHA256 of `"<timestamp>.<raw body>"`; requests outside a
+five-minute window are rejected, so captured requests cannot be replayed later. `/api/revalidate` uses
+`REVALIDATE_SECRET`, `/api/enquiries/retry` uses its own `ENQUIRY_RETRY_SECRET` (no fallback). Password-reset links are
+built only from the server-side `KUBIKART_FRONTEND_URL`, never from a request parameter. The WordPress REST gate in
+`kubikart-security` matches the parsed REST route, not the raw URL.
 
 ### Bot detection (contact + newsletter forms)
 
@@ -907,6 +953,22 @@ Sitemap: https://kubikart.de/sitemap.xml
 ---
 
 ## 18. Custom WordPress Plugins
+
+Plugins (`wp-content/plugins/`): `kubikart-newsletter`, `kubikart-security`, `kubikart-business-industries` (industry pages;
+[docs/06](docs/06-content-model.md)). Must-use plugins (`wp-content/mu-plugins/`, always active):
+
+| mu-plugin | Purpose | Documentation |
+|---|---|---|
+| `kubikart-custom-product-fields` | Personalisation fields editor (text, textarea, URL, select, checkbox, file, "visible when") | [docs/02](docs/02-owner-handbook.md) |
+| `kubikart-business-kit-contents` | Display-only bundle contents and order mode | [docs/06](docs/06-content-model.md) |
+| `kubikart-purchase-mode` | Buy-vs-enquiry rule enforced in WooCommerce and REST | [docs/07](docs/07-products-and-bundles.md) |
+| `kubikart-customer-files` | Private storage and authorised download of customer uploads | [docs/08](docs/08-commerce-and-payments.md) |
+| `kubikart-enquiries` | Enquiry meta, notification status column and retry action | [docs/09](docs/09-email.md) |
+| `kubikart-frontend-revalidation` | Signed cache-refresh events to the frontend | [docs/10](docs/10-revalidation.md) |
+| `kubikart-payment-gateway` | Stripe/PayPal refunds and webhook bookkeeping | [docs/08](docs/08-commerce-and-payments.md) |
+| `kubikart-dhl-shipping` | DHL label metabox (WordPress proxy to the frontend route) | [docs/08](docs/08-commerce-and-payments.md) |
+| `kubikart-localised-attributes`, `kubikart-localised-media-text` | German/English attribute labels, option order, image text in the REST API | [docs/07](docs/07-products-and-bundles.md) |
+| `kubikart-rating-sync` | Keeps rating data in step between translations | – |
 
 ### `kubikart-newsletter`
 
@@ -1343,25 +1405,21 @@ Before going live, verify:
 
 ## 24. Remaining Work
 
-| Priority    | Item                                  | Notes                                          |
-| ----------- | ------------------------------------- | ---------------------------------------------- |
-| 🔴 Critical | Production deployment                 | Vercel + WP hosting setup (§21)                |
-| 🔴 Critical | SMTP/Mailtrap sending domain verified | Configure DNS records, create templates        |
-| 🔴 Critical | Real product catalog in WooCommerce   | Photos, descriptions, pricing, variants        |
-| 🟡 High     | Analytics / GA4                       | Consent-aware, cookie banner integration       |
-| 🟡 High     | HMAC-signed auth tokens               | Replace Base64(id:email:ts) with signed JWT    |
-| 🟡 High     | Redis/Upstash rate limiting           | Replace in-memory Maps for multi-instance prod |
-| 🟡 High     | CDN for WordPress media               | Cloudflare or AWS CloudFront in front of WP    |
-| 🟡 High     | GDPR data deletion endpoint           | `/api/gdpr/delete-account`                     |
-| 🟠 Medium   | Order tracking emails                 | Send when WooCommerce status → `completed`     |
-| 🟠 Medium   | Sentry error tracking                 | Frontend + WordPress                           |
-| 🟠 Medium   | hreflang in `<head>`                  | Already in sitemap; add to layout metadata     |
-| 🟠 Medium   | E2E tests (Playwright)                | Cover full checkout + auth flows               |
-| 🟠 Medium   | DHL return label flow                 | Customer-facing return process                 |
-| 🔵 Low      | Wishlist / saved items                | Nice-to-have feature                           |
-| 🔵 Low      | Product reviews submission            | Currently read-only from WooCommerce           |
-| 🔵 Low      | Discount code field in checkout       | WooCommerce coupon integration                 |
-| 🔵 Low      | A/B testing framework                 | CTA optimisation                               |
+The authoritative launch list (deployment sequence, credentials, owner decisions) is
+[docs/12-production-launch.md](docs/12-production-launch.md) and the open catalogue inputs are in
+[docs/07-products-and-bundles.md](docs/07-products-and-bundles.md#6-open-owner-inputs). Not yet built or decided:
+
+| Priority | Item | Notes |
+|---|---|---|
+| Critical | Production deployment and hosting decision | Nothing is deployed; see docs/12 |
+| Critical | Verified Mailtrap sending domain and owner address | docs/09 |
+| Critical | Real product catalogue, images, prices, weights | docs/07 |
+| High | Analytics (consent-aware) | The cookie banner records a choice but no analytics consumes it |
+| High | CDN for WordPress media | |
+| High | GDPR account-deletion endpoint | |
+| Medium | Error tracking (Sentry or similar), monitoring | docs/12 |
+| Medium | End-to-end tests (Playwright) | checkout and auth flows |
+| Low | Wishlist, review submission, coupon field in checkout, A/B tests | |
 
 ---
 
@@ -1401,4 +1459,4 @@ lando wp cache flush                   # Clear object cache
 
 ---
 
-_Last updated: June 2026_
+_Last updated: October 2026_

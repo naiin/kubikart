@@ -150,6 +150,112 @@ class KubikartSecurityTest extends TestCase
         $this->assertStringContainsString('key-xyz', $capturedBody);
     }
 
+    public function test_forgot_password_link_ignores_a_caller_supplied_site_url(): void
+    {
+        $mockUser = $this->createMockUser(1, 'user@test.de', 'Anna');
+        $GLOBALS['_wp_mock_get_user_by'] = fn() => $mockUser;
+        $GLOBALS['_wp_mock_get_password_reset_key'] = fn() => 'key-xyz';
+        $GLOBALS['_wp_options']['kubikart_frontend_url'] = 'https://www.kubikart.de';
+
+        $capturedBody = '';
+        $GLOBALS['_wp_mock_wp_mail'] = function ($to, $subject, $body) use (&$capturedBody) {
+            $capturedBody = $body;
+            return true;
+        };
+
+        $callback = $this->getRouteCallback('kubikart/v1/forgot-password');
+        $callback(new WP_REST_Request(['email' => 'user@test.de', 'locale' => 'de', 'site_url' => 'https://evil.example']));
+
+        $base = kubikart_reset_link_base_url();
+        $this->assertStringNotContainsString('evil.example', $capturedBody);
+        $this->assertNotSame('', $base);
+        $this->assertStringContainsString($base . '/de/account/reset-password', $capturedBody);
+    }
+
+    public function test_forgot_password_locale_is_limited_to_de_and_en(): void
+    {
+        $mockUser = $this->createMockUser(1, 'user@test.de', 'Anna');
+        $GLOBALS['_wp_mock_get_user_by'] = fn() => $mockUser;
+        $GLOBALS['_wp_mock_get_password_reset_key'] = fn() => 'key-xyz';
+        $GLOBALS['_wp_options']['kubikart_frontend_url'] = 'https://www.kubikart.de';
+
+        $capturedBody = '';
+        $GLOBALS['_wp_mock_wp_mail'] = function ($to, $subject, $body) use (&$capturedBody) {
+            $capturedBody = $body;
+            return true;
+        };
+
+        $callback = $this->getRouteCallback('kubikart/v1/forgot-password');
+        $callback(new WP_REST_Request(['email' => 'user@test.de', 'locale' => '../evil']));
+
+        $this->assertStringContainsString(kubikart_reset_link_base_url() . '/de/account/reset-password', $capturedBody);
+        $this->assertStringNotContainsString('../evil', $capturedBody);
+    }
+
+    public function test_reset_link_base_comes_from_server_configuration(): void
+    {
+        if (defined('KUBIKART_FRONTEND_URL')) {
+            $this->assertSame(rtrim((string) KUBIKART_FRONTEND_URL, '/'), kubikart_reset_link_base_url());
+            return;
+        }
+
+        $GLOBALS['_wp_options']['kubikart_frontend_url'] = 'https://www.kubikart.de/';
+        $this->assertSame('https://www.kubikart.de', kubikart_reset_link_base_url());
+    }
+
+    public function test_reset_email_escapes_the_recipient_name(): void
+    {
+        $html = kubikart_reset_email_html('<script>alert(1)</script>', 'https://www.kubikart.de/de/account/reset-password?key=a&login=b');
+
+        $this->assertStringNotContainsString('<script>', $html);
+    }
+
+    // ── REST authentication gate ──────────────────────────────────────────────
+
+    public function test_public_rest_routes_are_matched_on_the_parsed_route_only(): void
+    {
+        $this->assertTrue(kubikart_rest_route_is_public('/wc/v3/products'));
+        $this->assertTrue(kubikart_rest_route_is_public('/contact-form-7/v1/contact-forms'));
+        $this->assertFalse(kubikart_rest_route_is_public('/kubikart/v1/forgot-password'));
+        $this->assertFalse(kubikart_rest_route_is_public('/kubikart/v1/reset-password'));
+        $this->assertFalse(kubikart_rest_route_is_public('/wp/v2/posts'));
+        $this->assertFalse(kubikart_rest_route_is_public('/wp/v2/users/wc/'));
+        $this->assertFalse(kubikart_rest_route_is_public('/kubikart/v1/forgot-password/extra'));
+    }
+
+    public function test_anonymous_request_is_rejected_even_with_an_allowed_route_in_the_query_string(): void
+    {
+        $GLOBALS['wp'] = (object) ['query_vars' => ['rest_route' => '/wp/v2/posts']];
+        $_SERVER['REQUEST_URI'] = '/wp-json/wp/v2/posts?x=/wp-json/wc/';
+        unset($_SERVER['HTTP_AUTHORIZATION']);
+        $GLOBALS['_wp_mock_logged_in'] = false;
+
+        $result = apply_filters('rest_authentication_errors', null);
+
+        $this->assertInstanceOf(WP_Error::class, $result);
+    }
+
+    public function test_a_bare_authorization_header_does_not_pass_the_gate(): void
+    {
+        $GLOBALS['wp'] = (object) ['query_vars' => ['rest_route' => '/wp/v2/posts']];
+        $_SERVER['HTTP_AUTHORIZATION'] = 'Basic bm90OnZhbGlk';
+        $GLOBALS['_wp_mock_logged_in'] = false;
+
+        $this->assertInstanceOf(WP_Error::class, apply_filters('rest_authentication_errors', null));
+        unset($_SERVER['HTTP_AUTHORIZATION']);
+    }
+
+    public function test_authenticated_users_and_public_routes_pass_the_gate(): void
+    {
+        $GLOBALS['wp'] = (object) ['query_vars' => ['rest_route' => '/wp/v2/posts']];
+        $GLOBALS['_wp_mock_logged_in'] = true;
+        $this->assertNull(apply_filters('rest_authentication_errors', null));
+
+        $GLOBALS['_wp_mock_logged_in'] = false;
+        $GLOBALS['wp'] = (object) ['query_vars' => ['rest_route' => '/wc/v3/orders']];
+        $this->assertNull(apply_filters('rest_authentication_errors', null));
+    }
+
     // ── reset-password callback ───────────────────────────────────────────────
 
     public function test_reset_password_returns_error_for_short_password(): void
@@ -258,6 +364,40 @@ class KubikartSecurityTest extends TestCase
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    public function test_private_customer_login_checks_the_customer_password(): void
+    {
+        $GLOBALS['_wp_mock_wp_authenticate'] = function ($email, $password) {
+            $this->assertSame('payments@test.de', $email);
+            $this->assertSame('customer-password', $password);
+            return $this->createMockUser(42, $email, 'Audit');
+        };
+        $response = ($this->getRouteCallback('kubikart/v1/customer-login'))(new WP_REST_Request(['email' => 'payments@test.de', 'password' => 'customer-password']));
+        $this->assertSame(['id' => 42], $response->get_data());
+    }
+
+    public function test_private_customer_login_does_not_accept_invalid_credentials(): void
+    {
+        $response = ($this->getRouteCallback('kubikart/v1/customer-login'))(new WP_REST_Request(['email' => 'payments@test.de', 'password' => 'wrong']));
+        $this->assertInstanceOf(WP_Error::class, $response);
+        $this->assertSame(401, $response->get_error_data()['status']);
+    }
+
+    public function test_password_endpoints_reject_a_regular_customer_identity(): void
+    {
+        $GLOBALS['_wp_mock_current_user_can'] = fn($capability) => $capability === 'read';
+        foreach (['customer-login', 'forgot-password', 'reset-password'] as $route) {
+            $this->assertFalse(($GLOBALS['_wp_rest_routes']['kubikart/v1/' . $route]['permission_callback'])());
+        }
+    }
+
+    public function test_reset_email_uses_english_content_when_requested(): void
+    {
+        $html = kubikart_reset_email_html('Audit', 'https://kubikart.de/en/account/reset-password?key=test&login=a', 'en');
+        $this->assertStringContainsString('lang="en"', $html);
+        $this->assertStringContainsString('Set a new password', $html);
+        $this->assertStringNotContainsString('Neues Passwort', $html);
+    }
 
     private function createMockUser(int $id, string $email, string $firstName): object
     {

@@ -91,8 +91,47 @@ if ( ! defined( 'WP_DEBUG' ) ) {
 	define( 'WP_DEBUG', false );
 }
 
-/** Kubikart frontend URL for DHL label API calls */
-define( 'KUBIKART_FRONTEND_URL', 'http://localhost:3000' );
+/**
+ * Kubikart frontend URL (DHL label API calls + cache revalidation) and the
+ * shared revalidation secret. Local-only overrides, highest priority first:
+ *   1. the process environment (getenv), e.g. KUBIKART_FRONTEND_URL=...
+ *   2. the untracked backend/.local-secrets.php (return array of constants)
+ * The secret is never stored in this tracked file. It must equal
+ * REVALIDATE_SECRET in frontend/.env.local; see docs/redesign/11-revalidation.md.
+ */
+$kubikart_local_overrides = array();
+$kubikart_local_secrets_file = dirname( __DIR__ ) . '/.local-secrets.php';
+if ( is_readable( $kubikart_local_secrets_file ) ) {
+	$kubikart_loaded_overrides = include $kubikart_local_secrets_file;
+	if ( is_array( $kubikart_loaded_overrides ) ) {
+		$kubikart_local_overrides = $kubikart_loaded_overrides;
+	}
+}
+foreach ( array( 'KUBIKART_FRONTEND_URL', 'KUBIKART_REVALIDATE_SECRET', 'KUBIKART_ENQUIRY_RETRY_SECRET' ) as $kubikart_constant ) {
+	$kubikart_value = getenv( $kubikart_constant );
+	if ( ( false === $kubikart_value || '' === $kubikart_value ) && ! empty( $kubikart_local_overrides[ $kubikart_constant ] ) ) {
+		$kubikart_value = $kubikart_local_overrides[ $kubikart_constant ];
+	}
+	if ( is_string( $kubikart_value ) && '' !== $kubikart_value && ! defined( $kubikart_constant ) ) {
+		define( $kubikart_constant, $kubikart_value );
+	}
+}
+unset( $kubikart_local_overrides, $kubikart_local_secrets_file, $kubikart_loaded_overrides, $kubikart_constant, $kubikart_value );
+
+/** Kubikart frontend URL for DHL label API calls and cache revalidation */
+if ( ! defined( 'KUBIKART_FRONTEND_URL' ) ) {
+	define( 'KUBIKART_FRONTEND_URL', 'http://localhost:3000' );
+}
+
+/**
+ * Local (Lando) only: keep customer-supplied logos/artwork outside the web
+ * root (backend/storage), so they can never be requested by URL. Production
+ * needs its own private path or an Nginx deny rule; see
+ * docs/redesign/09-business-kit-packages.md.
+ */
+if ( getenv( 'LANDO' ) === 'ON' && ! defined( 'KUBIKART_CUSTOMER_FILES_DIR' ) ) {
+	define( 'KUBIKART_CUSTOMER_FILES_DIR', dirname( __DIR__ ) . '/storage/customer-files' );
+}
 
 /* That's all, stop editing! Happy publishing. */
 

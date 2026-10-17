@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useProtectedFetch } from "@/components/CaptchaProvider";
 
 export interface User {
   id: number;
@@ -28,6 +29,7 @@ interface RegisterData {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const protectedFetch = useProtectedFetch();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -57,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     try {
-      const response = await fetch("/api/auth/login", {
+      const response = await protectedFetch("/api/auth/login", {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
@@ -71,11 +73,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       return { success: false, error: "Network error" };
     }
-  }, []);
+  }, [protectedFetch]);
 
   const register = useCallback(async (registration: RegisterData) => {
     try {
-      const response = await fetch("/api/auth/register", {
+      const response = await protectedFetch("/api/auth/register", {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
@@ -89,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       return { success: false, error: "Network error" };
     }
-  }, []);
+  }, [protectedFetch]);
 
   const logout = useCallback(async () => {
     try {

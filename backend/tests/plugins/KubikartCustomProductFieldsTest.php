@@ -161,6 +161,76 @@ class KubikartCustomProductFieldsTest extends TestCase
         $this->assertFalse($entries[0]['value']['requires_review']);
     }
 
+    public function test_file_type_is_supported_sanitized_and_round_trips(): void
+    {
+        $this->assertContains('file', kubikart_custom_field_types());
+
+        $result = kubikart_sanitize_custom_fields_payload([[
+            'id' => 'logo_upload',
+            'label' => 'Logo hochladen',
+            'type' => 'file',
+            'required' => '1',
+            'helperText' => 'PNG, JPG, WebP oder PDF',
+            'price' => '3.50',
+            'placeholder' => 'stale',
+            'maxLength' => '10',
+            'options' => 'stale|Stale',
+            'defaultValue' => 'stale',
+        ]]);
+
+        $this->assertTrue($result['valid']);
+        $field = $result['payload']['fields'][0];
+        $this->assertSame('file', $field['type']);
+        $this->assertTrue($field['required']);
+        $this->assertSame('PNG, JPG, WebP oder PDF', $field['helperText']);
+        $this->assertSame(3.5, $field['price']);
+        foreach (['placeholder', 'maxLength', 'options', 'defaultValue'] as $stale) {
+            $this->assertArrayNotHasKey($stale, $field);
+        }
+
+        $reloaded = kubikart_normalize_custom_fields_payload($result['payload']);
+        $this->assertFalse($reloaded['requires_review']);
+        $this->assertSame(3, $reloaded['schema_version']);
+    }
+
+    public function test_url_type_is_supported_and_keeps_text_settings(): void
+    {
+        $this->assertContains('url', kubikart_custom_field_types());
+
+        $result = kubikart_sanitize_custom_fields_payload([[
+            'id' => 'qr1_url',
+            'label' => 'QR-Code 1: Ziel-Link',
+            'type' => 'url',
+            'required' => '1',
+            'placeholder' => 'https://g.page/r/…',
+            'maxLength' => '300',
+        ]]);
+
+        $this->assertTrue($result['valid']);
+        $field = $result['payload']['fields'][0];
+        $this->assertSame('url', $field['type']);
+        $this->assertSame('https://g.page/r/…', $field['placeholder']);
+        $this->assertSame(300, $field['maxLength']);
+        $this->assertFalse(kubikart_normalize_custom_fields_payload($result['payload'])['requires_review']);
+    }
+
+    public function test_file_type_renders_selected_without_review_flag(): void
+    {
+        ob_start();
+        kubikart_render_custom_field_row(0, ['id' => 'logo', 'label' => 'Logo', 'type' => 'file']);
+        $html = ob_get_clean();
+
+        $this->assertMatchesRegularExpression('/<option value="file"[^>]*selected="selected"/', $html);
+        $this->assertStringNotContainsString('data-requires-review', $html);
+    }
+
+    public function test_file_type_does_not_change_unknown_type_rejection(): void
+    {
+        $this->assertFalse(kubikart_sanitize_custom_fields_payload([
+            ['id' => 'x', 'label' => 'X', 'type' => 'upload'],
+        ])['valid']);
+    }
+
     private function completeSubmittedFields(): array
     {
         return [

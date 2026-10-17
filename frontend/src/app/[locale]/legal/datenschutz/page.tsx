@@ -14,10 +14,12 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   });
 }
 
-export default function DatenschutzPage() {
+export default async function DatenschutzPage({ params }: { params: Promise<{ locale: string }> }) {
+  const locale = normalizeLocale((await params).locale);
+
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Datenschutzerklärung</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-8 break-words">Datenschutzerklärung</h1>
 
       <div className="prose prose-gray max-w-none">
         <h2>1. Datenschutz auf einen Blick</h2>
@@ -87,6 +89,40 @@ export default function DatenschutzPage() {
           Wir erheben, verarbeiten und nutzen personenbezogene Kunden- und Vertragsdaten zur Begründung, inhaltlichen Ausgestaltung und Änderung unserer
           Vertragsbeziehungen. Rechtsgrundlage hierfür ist Art. 6 Abs. 1 lit. b DSGVO.
         </p>
+
+        <h3 id="kundendateien">Hochgeladene Dateien (Logos, Speisekarten, Entwürfe)</h3>
+        <p>
+          Bei manchen Produkten, insbesondere bei den Business-Paketen, können Sie bei der Bestellung Dateien hochladen, zum Beispiel Ihr Logo oder eine
+          druckfertige Speisekarte (zulässig sind PNG-, JPG-, WebP- und PDF-Dateien bis 4 MB). Wir verwenden diese Dateien ausschließlich, um Ihren Auftrag
+          zu gestalten und zu fertigen sowie Ihnen einen digitalen Entwurf vorzulegen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Durchführung des
+          Vertrags). Bitte laden Sie keine Dateien mit besonderen Kategorien personenbezogener Daten hoch und nur Inhalte, an denen Sie die erforderlichen
+          Rechte besitzen.
+        </p>
+        <p>
+          <strong>Speicherung und Zugriff:</strong> Die Datei wird über unsere Website an unser Shop-System übertragen und dort in einem nicht öffentlich
+          erreichbaren Speicherbereich abgelegt, nicht in der öffentlichen Mediathek. Sie erhält eine zufällige Kennung. Zugriff haben nur angemeldete
+          Shop-Verwalter, die die Datei in der jeweiligen Bestellung herunterladen können. In Bestätigungs-E-Mails erscheint nur der Dateiname.
+        </p>
+        <p>
+          <strong>Löschung:</strong> Dateien, die nicht innerhalb von 7 Tagen einer Bestellung zugeordnet werden (zum Beispiel weil der Bestellvorgang
+          abgebrochen wurde), werden automatisch gelöscht. Dateien, die einer Bestellung zugeordnet sind, bleiben zusammen mit der Bestellung gespeichert.
+          Eine automatische Löschung dieser Dateien ist derzeit nicht eingerichtet; wir löschen sie auf Ihre Anfrage (Art. 17 DSGVO), soweit keine
+          gesetzlichen Aufbewahrungspflichten entgegenstehen. Schreiben Sie uns dazu an info@kubikart.de.
+        </p>
+        {locale === "en" && (
+          <p lang="en">
+            <em>
+              Courtesy translation (the German text above is authoritative): Where a product allows it, in particular the Business Kits, you can upload files
+              with your order, for example your logo or a print-ready menu (PNG, JPG, WebP or PDF up to 4 MB). We use them only to design and produce your
+              order and to send you a digital proof (Art. 6(1)(b) GDPR). Do not upload special categories of personal data and only content you have the
+              rights to. The file is transferred through our website to our shop system and stored in a non-public storage area, not in the public media
+              library, under a random identifier. Only logged-in shop managers can download it from the order; confirmation e-mails show the file name only.
+              Files that are not attached to an order within 7 days (for example after an abandoned checkout) are deleted automatically. Files attached to an
+              order stay with the order. Automatic deletion of those files is not currently set up; we delete them on request (Art. 17 GDPR) unless statutory
+              retention duties apply. Write to info@kubikart.de.
+            </em>
+          </p>
+        )}
 
         <h2>6. Ihre Rechte</h2>
         <p>Sie haben jederzeit das Recht:</p>

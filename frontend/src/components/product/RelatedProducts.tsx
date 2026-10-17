@@ -1,7 +1,8 @@
+import { ProductPriceText } from "./ProductPriceText";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
-import { formatProductPrice, type ProductPageProduct } from "@/lib/product-page";
+import { type ProductPageProduct } from "@/lib/product-page";
 
 export function RelatedProducts({ products }: { products: ProductPageProduct[] }) {
   const t = useTranslations("productPage");
@@ -45,7 +46,7 @@ export function RelatedProducts({ products }: { products: ProductPageProduct[] }
                 <h3 className="mt-3 text-lg font-bold leading-7 text-navy-900">{product.name}</h3>
                 <p className="mt-2 text-sm leading-6 text-gray-500 line-clamp-2">{product.subtitle}</p>
                 <div className="mt-5 flex items-center justify-between gap-3">
-                  <span className="text-base font-extrabold text-navy-900">{formatProductPrice(product.price)}</span>
+                  <ProductPriceText price={product.price} className="text-base font-extrabold text-navy-900" regularClassName="text-sm font-medium text-gray-500" />
                   <span className="text-sm font-semibold text-navy-900 transition group-hover:text-accent-600">{t("relatedView")}</span>
                 </div>
               </div>

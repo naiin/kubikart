@@ -41,7 +41,7 @@ export function checkForSpam(body: Record<string, unknown>, request: Request, mi
   }
 
   // 2. Timestamp check: if form was submitted too quickly, it's likely a bot
-  if (body._t) {
+  if (body._t && !request.headers.get("x-kubikart-captcha-verified")) {
     const submittedAt = Number(body._t);
     const now = Date.now();
     if (!isNaN(submittedAt) && now - submittedAt < minTime) {

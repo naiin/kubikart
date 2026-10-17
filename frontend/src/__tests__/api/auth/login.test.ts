@@ -52,7 +52,7 @@ describe("POST /api/auth/login", () => {
       vi
         .fn()
         .mockResolvedValueOnce({ ok: true, json: async () => [{ id: 5, email: "user@test.com", first_name: "Max", last_name: "M", username: "max" }] })
-        .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 5 }) })
     );
     const { POST } = await import("@/app/api/auth/login/route");
     const res = await POST(makeLoginRequest({ email: "user@test.com", password: "correct" }) as never);
@@ -71,5 +71,15 @@ describe("POST /api/auth/login", () => {
     const { POST } = await import("@/app/api/auth/login/route");
     const res = await POST(makeLoginRequest({ email: "user@test.com", password: "pass" }) as never);
     expect(res.status).toBe(500);
+  });
+
+  it("rejects a verified identity that does not match the WooCommerce customer", async () => {
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ id: 5, email: "user@test.com" }] })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 7 }) }));
+    const { POST } = await import("@/app/api/auth/login/route");
+    const res = await POST(makeLoginRequest({ email: "user@test.com", password: "correct" }) as never);
+    expect(res.status).toBe(401);
+    expect(res.headers.get("set-cookie")).toBeNull();
   });
 });

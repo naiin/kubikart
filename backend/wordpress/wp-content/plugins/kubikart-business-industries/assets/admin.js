@@ -3,51 +3,49 @@
 
   const normalize = (value) => value.toLocaleLowerCase().trim();
 
-  document.querySelectorAll(".kubikart-product-search").forEach((input) => {
-    const list = document.getElementById(input.dataset.target);
-    if (!list) return;
+  document.querySelectorAll(".kubikart-picker").forEach((picker) => {
+    const selected = picker.querySelector(".kubikart-selected");
+    const available = picker.querySelector(".kubikart-available");
+    const empty = picker.querySelector(".kubikart-empty");
+    const search = picker.querySelector(".kubikart-product-search");
+    if (!selected || !available) return;
 
-    input.addEventListener("input", () => {
-      const query = normalize(input.value);
-      list.querySelectorAll(".kubikart-product-row").forEach((row) => {
-        const searchValue = normalize(row.dataset.productSearch || row.textContent || "");
-        row.hidden = query !== "" && !searchValue.includes(query);
+    const refresh = () => {
+      if (empty) empty.hidden = selected.children.length > 0;
+    };
+
+    const applySearch = () => {
+      const query = normalize(search?.value || "");
+      available.querySelectorAll(".kubikart-product-row").forEach((row) => {
+        row.hidden = query !== "" && !normalize(row.dataset.productSearch || row.textContent || "").includes(query);
       });
-    });
-  });
+    };
 
-  document.querySelectorAll(".kubikart-sortable-products").forEach((list) => {
-    let draggedRow = null;
+    search?.addEventListener("input", applySearch);
 
-    list.addEventListener("change", (event) => {
-      const row = event.target.closest(".kubikart-product-row");
-      if (row) row.classList.toggle("is-selected", event.target.checked);
-    });
+    picker.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-action]");
+      if (!button) return;
+      const row = button.closest(".kubikart-product-row");
+      if (!row) return;
+      const action = button.dataset.action;
 
-    list.addEventListener("dragstart", (event) => {
-      const row = event.target.closest(".kubikart-product-row");
-      if (!row || !row.querySelector('input[type="checkbox"]:checked')) {
-        event.preventDefault();
-        return;
+      if (action === "add") {
+        row.querySelector('input[type="hidden"]').disabled = false;
+        row.hidden = false;
+        selected.appendChild(row);
+      } else if (action === "remove") {
+        row.querySelector('input[type="hidden"]').disabled = true;
+        available.insertBefore(row, available.firstChild);
+        applySearch();
+      } else if (action === "up" && row.previousElementSibling) {
+        selected.insertBefore(row, row.previousElementSibling);
+        button.focus();
+      } else if (action === "down" && row.nextElementSibling) {
+        selected.insertBefore(row.nextElementSibling, row);
+        button.focus();
       }
-      draggedRow = row;
-      row.classList.add("is-dragging");
-      event.dataTransfer.effectAllowed = "move";
-    });
-
-    list.addEventListener("dragover", (event) => {
-      if (!draggedRow) return;
-      const target = event.target.closest(".kubikart-product-row");
-      if (!target || target === draggedRow) return;
-      event.preventDefault();
-      const bounds = target.getBoundingClientRect();
-      list.insertBefore(draggedRow, event.clientY < bounds.top + bounds.height / 2 ? target : target.nextSibling);
-    });
-
-    list.addEventListener("dragend", () => {
-      draggedRow?.classList.remove("is-dragging");
-      draggedRow = null;
+      refresh();
     });
   });
 })();
-

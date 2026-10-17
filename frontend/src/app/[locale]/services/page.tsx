@@ -12,12 +12,12 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       ? {
           title: "Services for laser work, 3D printing and custom production | Kubikart",
           description:
-            "Explore Kubikart services for laser engraving, laser cutting, 3D printing, brand kits and printed menus for businesses and custom projects.",
+            "Explore Kubikart services for laser engraving, laser cutting, 3D printing, Business Bundles and printed menus for businesses and custom projects.",
         }
       : {
           title: "Dienstleistungen für Lasergravur, Laserschnitt & 3D-Druck | Kubikart",
           description:
-            "Entdecke die Kubikart Dienstleistungen für Lasergravur, Laserschnitt, 3D-Druck, Brand Kits und Drucklösungen für individuelle Projekte.",
+            "Entdecke die Kubikart Dienstleistungen für Lasergravur, Laserschnitt, 3D-Druck, Business-Pakete und Drucklösungen für individuelle Projekte.",
         };
 
   return buildPageMetadata({

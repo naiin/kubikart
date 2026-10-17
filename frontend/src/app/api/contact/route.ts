@@ -1,5 +1,9 @@
+import { getClientIp } from "@/lib/client-ip";
 import { checkForSpam } from "@/lib/security";
 import { sendContactConfirmation } from "@/lib/email";
+import { resolveEnquiryProduct, type EnquiryProduct } from "@/lib/enquiry-context";
+import { resolveEnquiryConfiguration, EnquiryConfigurationError } from "@/lib/enquiry-configuration";
+import { ENQUIRY_META, newEnquiryReference, notifyOwner, storeNotificationState, type EnquiryRecord } from "@/lib/enquiry-notification";
 
 const WP_URL = process.env.NEXT_PUBLIC_WORDPRESS_URL?.replace(/\/+$/, "");
 const WP_APP_USER = process.env.WP_APP_USER;
@@ -19,7 +23,7 @@ function isRateLimited(ip: string): boolean {
 }
 
 export async function POST(request: Request) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const ip = getClientIp(request.headers);
 
   if (isRateLimited(ip)) {
     return Response.json({ error: "Too many requests" }, { status: 429 });
@@ -39,10 +43,21 @@ export async function POST(request: Request) {
     return Response.json({ success: true });
   }
 
-  const { name, email, phone, type, message } = body;
+  const { name, email, phone, type, message, context, company, details } = body;
 
-  // Validate required fields
-  if (!name || !email || !message) {
+  // A product/bundle enquiry is validated against WooCommerce: the identity
+  // (id, name, URL) comes from the server, not from the browser.
+  const acceptLanguage = request.headers.get("accept-language") ?? "";
+  const requestLocale: "de" | "en" = body.locale === "en" || (body.locale !== "de" && acceptLanguage.startsWith("en")) ? "en" : "de";
+  let enquiryProduct: EnquiryProduct | null = null;
+  if (context && typeof context === "object" && context.kind === "product") {
+    enquiryProduct = await resolveEnquiryProduct(String(context.slug ?? "").trim().toLowerCase(), requestLocale);
+    if (!enquiryProduct) return Response.json({ error: "Unknown product" }, { status: 400 });
+    if (body.privacy !== true) return Response.json({ error: "Privacy acknowledgement required" }, { status: 400 });
+  }
+
+  // Validate required fields (the message is optional for product enquiries)
+  if (!name || !email || (!message && !enquiryProduct)) {
     return Response.json({ error: "Missing required fields" }, { status: 400 });
   }
 
@@ -58,12 +73,70 @@ export async function POST(request: Request) {
       .trim()
       .slice(0, 2000);
 
+  const contextLabel = enquiryProduct
+    ? [
+        `Produkt/Paket: ${enquiryProduct.name} (ID ${enquiryProduct.id}, ${enquiryProduct.slug})`,
+        `Seite: ${enquiryProduct.url}`,
+        `Sprache: ${requestLocale}`,
+        `Bestellart: ${enquiryProduct.mode === "enquiry" ? "Nur auf Anfrage" : "Direktkauf"}`,
+      ].join("\n")
+    : context && typeof context === "object" && context.kind === "industry" && sanitize(context.slug)
+      ? `Branche: ${sanitize(context.name).slice(0, 120)} (${sanitize(context.slug).slice(0, 120)})`
+      : "";
+  const companyLine = sanitize(company).slice(0, 120);
+
+  // "Request custom size" on a product page: both measures are required and plausible (centimetres).
+  let customSizeLine = "";
+  if (enquiryProduct && details && typeof details === "object" && details.customSize && typeof details.customSize === "object") {
+    const width = Number(details.customSize.width);
+    const height = Number(details.customSize.height);
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width < 1 || width > 500 || height < 1 || height > 500) {
+      return Response.json({ error: "Invalid custom size" }, { status: 400 });
+    }
+    customSizeLine =
+      details.customSize.kind === "film"
+        ? `Wunschmaß-Anfrage: gewünschte Folienbreite ${width} cm, gewünschte Folienhöhe ${height} cm`
+        : details.customSize.kind === "format"
+          ? `Wunschformat-Anfrage: gewünschte fertige Breite ${width} cm, gewünschte fertige Höhe ${height} cm`
+          : `Wunschmaß-Anfrage: gewünschte Gesamtbreite ${width} cm, maximal verfügbare Höhe ${height} cm`;
+  }
+
+  // The customer's choices on an enquiry-only product page (and the files they uploaded for it).
+  let configuration = { text: "", fileTokens: [] as string[] };
+  if (enquiryProduct && details && typeof details === "object" && details.configuration) {
+    try {
+      configuration = await resolveEnquiryConfiguration(details.configuration);
+    } catch (error) {
+      if (error instanceof EnquiryConfigurationError) return Response.json({ error: error.message }, { status: error.status });
+      throw error;
+    }
+  }
+  const enquiryMessage = [customSizeLine, configuration.text, sanitize(message)].filter(Boolean).join("\n\n");
+
   const sanitizedData = {
     name: sanitize(name),
     email: sanitize(email),
     phone: sanitize(phone || ""),
-    type: sanitize(type || "personal"),
-    message: sanitize(message),
+    type: enquiryProduct ? "paketanfrage" : sanitize(type || "personal"),
+    message: `${enquiryMessage}${companyLine ? `\n\nUnternehmen: ${companyLine}` : ""}${contextLabel ? `\n\nAnfrage-Kontext\n${contextLabel}` : ""}`.trim(),
+  };
+
+  const reference = newEnquiryReference();
+  const industryContext = !enquiryProduct && context && typeof context === "object" && context.kind === "industry" && sanitize(context.slug)
+    ? { name: sanitize(context.name).slice(0, 120), slug: sanitize(context.slug).slice(0, 120) }
+    : undefined;
+  const record: EnquiryRecord = {
+    reference,
+    receivedAt: new Date().toISOString(),
+    locale: requestLocale,
+    kind: enquiryProduct ? "product" : industryContext ? "industry" : "contact",
+    name: sanitizedData.name,
+    email: sanitizedData.email,
+    ...(sanitizedData.phone ? { phone: sanitizedData.phone } : {}),
+    ...(companyLine ? { company: companyLine } : {}),
+    ...(enquiryMessage ? { message: enquiryMessage } : {}),
+    ...(enquiryProduct ? { product: { id: enquiryProduct.id, name: enquiryProduct.name, slug: enquiryProduct.slug, url: enquiryProduct.url, mode: enquiryProduct.mode } } : {}),
+    ...(industryContext ? { industry: industryContext } : {}),
   };
 
   if (!WP_URL || !WP_APP_USER || !WP_APP_PASSWORD) {
@@ -91,8 +164,7 @@ export async function POST(request: Request) {
         if (result.status === "mail_sent") {
           // Send confirmation email to customer
           try {
-            const acceptLang = request.headers.get("accept-language") ?? "";
-            const locale = acceptLang.startsWith("en") ? "en" : "de";
+            const locale = requestLocale;
             await sendContactConfirmation(sanitizedData.email, sanitizedData, locale);
           } catch (err) {
             console.error("Failed to send contact confirmation email:", err);
@@ -107,16 +179,25 @@ export async function POST(request: Request) {
   }
 
   // Fallback: create a private WP post to store the inquiry
+  let storedPostId = 0;
   try {
     const postBody = {
-      title: `Kontaktanfrage: ${sanitizedData.name} (${sanitizedData.type})`,
-      content: `<p><strong>Name:</strong> ${sanitizedData.name}</p>
+      title: enquiryProduct ? `Anfrage ${reference}: ${enquiryProduct.name} – ${sanitizedData.name}` : `Kontaktanfrage ${reference}: ${sanitizedData.name} (${sanitizedData.type})`,
+      content: `<p><strong>Referenz:</strong> ${reference}</p>
+<p><strong>Name:</strong> ${sanitizedData.name}</p>
 <p><strong>E-Mail:</strong> ${sanitizedData.email}</p>
 <p><strong>Telefon:</strong> ${sanitizedData.phone || "–"}</p>
 <p><strong>Typ:</strong> ${sanitizedData.type}</p>
 <p><strong>Nachricht:</strong></p>
-<p>${sanitizedData.message}</p>`,
+<p>${sanitizedData.message.replace(/\n/g, "<br>")}</p>`,
       status: "private",
+      meta: {
+        [ENQUIRY_META.record]: JSON.stringify(record),
+        [ENQUIRY_META.reference]: reference,
+        [ENQUIRY_META.status]: "pending",
+        [ENQUIRY_META.attempts]: 0,
+        ...(configuration.fileTokens.length ? { [ENQUIRY_META.files]: JSON.stringify(configuration.fileTokens) } : {}),
+      },
     };
 
     const wpRes = await fetch(`${WP_URL}/wp-json/wp/v2/posts`, {
@@ -132,20 +213,27 @@ export async function POST(request: Request) {
       console.error("Failed to save contact form to WP.", { status: wpRes.status });
       return Response.json({ error: "Unable to save inquiry" }, { status: 503 });
     }
+    storedPostId = Number((await wpRes.json().catch(() => null))?.id) || 0;
   } catch (err) {
     console.error("Contact form WP submission error:", err);
     return Response.json({ error: "Unable to save inquiry" }, { status: 503 });
   }
 
+  // Notify the owner. The enquiry is already stored; a failure here only records
+  // a "failed" status that can be retried without creating the enquiry again.
+  if (storedPostId) {
+    const state = await notifyOwner(record, storedPostId);
+    await storeNotificationState(storedPostId, state);
+  }
+
   // Send confirmation email to customer
   try {
-    const acceptLang = request.headers.get("accept-language") ?? "";
-    const locale = acceptLang.startsWith("en") ? "en" : "de";
+    const locale = requestLocale;
     await sendContactConfirmation(sanitizedData.email, sanitizedData, locale);
   } catch (err) {
     console.error("Failed to send contact confirmation email:", err);
     // Don't fail the request if email fails
   }
 
-  return Response.json({ success: true });
+  return Response.json({ success: true, reference });
 }

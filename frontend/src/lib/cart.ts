@@ -12,6 +12,9 @@ export interface CartItem {
   slug?: string;
   customizationSummary?: string[];
   customizations?: Record<string, string>;
+  /** Products sold in fixed sets: the quantity counts sets, each holding this many units. */
+  unitsPerSet?: number;
+  unitLabel?: string;
   weight?: number; // kg
   dimensions?: { length: number; width: number; height: number }; // cm
 }

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { ContactForm } from "@/components/ContactForm";
+import { ProductEnquiryForm } from "@/components/ProductEnquiryForm";
+import { resolveEnquiryContext } from "@/lib/enquiry-context";
 import { buildPageMetadata, normalizeLocale, SEO_ROUTE_SEGMENTS } from "@/lib/seo";
 
 const copy = {
@@ -25,6 +27,8 @@ const copy = {
     primaryCta: "E-Mail schreiben",
     secondaryCta: "Zum Shop",
     note: "Beschreibe am besten Material, Stückzahl, Maße und Wunschmotiv direkt in deiner Nachricht.",
+    enquiryTitle: "Deine Anfrage",
+    enquiryIntro: "Beschreibe kurz, was du brauchst. Alles Weitere besprechen wir danach persönlich mit dir.",
   },
   en: {
     eyebrow: "Contact",
@@ -47,6 +51,8 @@ const copy = {
     primaryCta: "Send an Email",
     secondaryCta: "Go to Shop",
     note: "It helps if you include material, quantity, dimensions, and your desired motif in the first message.",
+    enquiryTitle: "Your enquiry",
+    enquiryIntro: "Tell us briefly what you need. We will discuss everything else with you personally afterwards.",
   },
 } as const;
 
@@ -75,9 +81,16 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   });
 }
 
-export default async function ContactPage({ params }: { params: Promise<{ locale: "de" | "en" }> }) {
+export default async function ContactPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: "de" | "en" }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { locale } = await params;
   const content = copy[locale] ?? copy.de;
+  const context = await resolveEnquiryContext((await searchParams) ?? {}, locale);
 
   return (
     <section className="bg-cream-50 py-16 sm:py-20">
@@ -85,9 +98,9 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
         <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent-600">{content.eyebrow}</p>
-            <h1 className="mt-4 text-4xl font-bold tracking-[-0.04em] text-navy-900 sm:text-5xl">{content.title}</h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-gray-700">{content.intro}</p>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-gray-500">{content.note}</p>
+            <h1 className="mt-4 text-4xl font-bold tracking-[-0.04em] text-navy-900 sm:text-5xl">{context?.kind === "product" ? content.enquiryTitle : content.title}</h1>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-gray-700">{context?.kind === "product" ? content.enquiryIntro : content.intro}</p>
+            {context?.kind === "product" ? null : <p className="mt-4 max-w-2xl text-sm leading-7 text-gray-500">{content.note}</p>}
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
@@ -111,7 +124,11 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
 
         {/* Contact Form */}
         <div className="mt-16 max-w-3xl">
-          <ContactForm />
+          {context?.kind === "product" ? (
+            <ProductEnquiryForm product={{ id: context.id, slug: context.slug, name: context.name }} />
+          ) : (
+            <ContactForm context={context?.kind === "industry" ? context : null} />
+          )}
         </div>
       </div>
     </section>

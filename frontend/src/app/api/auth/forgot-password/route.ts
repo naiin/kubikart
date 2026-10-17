@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const WP_URL = process.env.NEXT_PUBLIC_WORDPRESS_URL!;
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL!;
+const WP_AUTH = `Basic ${Buffer.from(`${process.env.WP_APP_USER}:${process.env.WP_APP_PASSWORD}`).toString("base64")}`;
 
 // Rate limiting — max 3 requests per 10 min per IP
 const attempts = new Map<string, number[]>();
@@ -39,11 +39,11 @@ export async function POST(request: NextRequest) {
   const acceptLang = request.headers.get("accept-language") ?? "";
   const locale = acceptLang.startsWith("en") ? "en" : "de";
 
-  // Proxy to the endpoint in kubikart-security.php (unauthenticated, public)
+  // Only the CAPTCHA-protected storefront may call this integration endpoint.
   await fetch(`${WP_URL}/wp-json/kubikart/v1/forgot-password`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, locale, site_url: SITE_URL }),
+    headers: { "Content-Type": "application/json", Authorization: WP_AUTH },
+    body: JSON.stringify({ email, locale }),
   }).catch(() => {
     // Silent failure — user still gets success response to prevent enumeration
   });

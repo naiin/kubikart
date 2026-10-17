@@ -1,4 +1,5 @@
 import { getCategories, getProducts, type WCCategory, type WCProduct } from "@/lib/woocommerce";
+import { getPurchaseMode } from "@/lib/purchase-mode";
 import type { SiteLocale } from "@/lib/seo";
 
 type ProductWithCategories = {
@@ -30,6 +31,176 @@ export function resolveBusinessKitsCategory(categories: WCCategory[], locale: Si
 export function isBusinessKitProduct(product: ProductWithCategories, locale: SiteLocale) {
   const canonicalSlug = BUSINESS_KITS_CATEGORY_SLUGS[locale];
   return product.categories.some((category) => category.slug === canonicalSlug);
+}
+
+export function isBusinessKitsCategorySlug(slug: string) {
+  return Object.values(BUSINESS_KITS_CATEGORY_SLUGS).includes(slug);
+}
+
+export type BusinessKitOrderMode = "purchase" | "enquiry";
+
+export const BUSINESS_KIT_ICONS = [
+  "stand",
+  "table-stand",
+  "sheet",
+  "decal-logo",
+  "decal-hours",
+  "decal-text",
+  "mirror-decal",
+  "sign",
+  "plaque",
+  "guide",
+  "design",
+] as const;
+
+export type BusinessKitIcon = (typeof BUSINESS_KIT_ICONS)[number];
+
+export type BusinessKitContentItem = {
+  id: string;
+  icon: BusinessKitIcon | "";
+  quantity: number;
+  title: string;
+  description: string;
+  image: { src: string; alt: string } | null;
+  linkState: "linked" | "unlinked" | "unavailable" | "language_mismatch";
+  product: { id: number; variationId: number; name: string; slug: string; image: { src: string; alt: string } | null } | null;
+};
+
+export type BusinessKitData = {
+  orderMode: BusinessKitOrderMode;
+  orderModeExplicit: boolean;
+  needsContents: boolean;
+  scopeSummary: string;
+  items: BusinessKitContentItem[];
+};
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+}
+
+function parseImage(value: unknown, fallbackAlt: string) {
+  const image = asRecord(value);
+  const src = typeof image?.src === "string" ? image.src : "";
+  if (!src || isWooCommercePlaceholderImage({ src })) return null;
+  return { src, alt: typeof image?.alt === "string" && image.alt ? image.alt : fallbackAlt };
+}
+
+/**
+ * Reads the `_kubikart_kit` entry exposed by the WordPress Business Kit
+ * contents plugin. A missing or unreadable entry is treated as enquiry-only
+ * so a kit is never offered for purchase without an explicit owner decision.
+ */
+export function parseBusinessKitData(metaData: { key: string; value: unknown }[] | undefined): BusinessKitData {
+  const entry = metaData?.find((item) => item.key === "_kubikart_kit");
+  let value: unknown = entry?.value;
+  if (typeof value === "string") {
+    try {
+      value = JSON.parse(value);
+    } catch {
+      value = null;
+    }
+  }
+  const record = asRecord(value);
+  const orderMode: BusinessKitOrderMode = record?.order_mode === "purchase" ? "purchase" : "enquiry";
+  const rawItems = Array.isArray(record?.items) ? record.items : [];
+
+  const items = rawItems.flatMap((raw): BusinessKitContentItem[] => {
+    const item = asRecord(raw);
+    if (!item) return [];
+    const title = typeof item.title === "string" ? item.title.trim() : "";
+    const productRecord = asRecord(item.product);
+    const linkState = ["linked", "unlinked", "unavailable", "language_mismatch"].includes(String(item.link_state))
+      ? (item.link_state as BusinessKitContentItem["linkState"])
+      : "unlinked";
+    const product =
+      linkState === "linked" &&
+      productRecord &&
+      Number.isInteger(productRecord.id) &&
+      typeof productRecord.slug === "string" &&
+      productRecord.slug &&
+      typeof productRecord.name === "string"
+        ? {
+            id: Number(productRecord.id),
+            variationId: Number.isInteger(productRecord.variation_id) ? Number(productRecord.variation_id) : 0,
+            name: productRecord.name,
+            slug: productRecord.slug,
+            image: parseImage(productRecord.image, productRecord.name),
+          }
+        : null;
+    if (!title && !product) return [];
+    const quantity = Number(item.quantity);
+
+    return [
+      {
+        id: String(item.id || ""),
+        icon: (BUSINESS_KIT_ICONS as readonly string[]).includes(String(item.icon)) ? (item.icon as BusinessKitIcon) : "",
+        quantity: Number.isInteger(quantity) && quantity > 0 ? quantity : 1,
+        title,
+        description: typeof item.description === "string" ? item.description.trim() : "",
+        image: parseImage(item.image, title || product?.name || ""),
+        linkState: product ? "linked" : linkState === "linked" ? "unlinked" : linkState,
+        product,
+      },
+    ];
+  });
+
+  return {
+    orderMode,
+    orderModeExplicit: record?.order_mode_explicit === true,
+    needsContents: items.length === 0,
+    scopeSummary: typeof record?.scope_summary === "string" ? record.scope_summary.trim().slice(0, 200) : "",
+    items,
+  };
+}
+
+export type BusinessKitCommercialState =
+  | { kind: "purchasable"; price: number }
+  | { kind: "enquiry"; startingPrice?: number }
+  | { kind: "outOfStock"; price: number }
+  | { kind: "unavailable" };
+
+type KitProductLike = {
+  meta_data?: { key: string; value: unknown }[];
+  purchasable?: boolean;
+  price?: string;
+  stock_status?: string;
+};
+
+/**
+ * Distinguishes the four customer-facing offer states of a kit from real
+ * WooCommerce data and the owner's explicit purchase/enquiry decision.
+ * Price, stock and purchasability always come from WooCommerce; an
+ * enquiry-only product shows at most a "from" price and never an add-to-cart
+ * control. Works for any product, not only bundles.
+ */
+export function getBusinessKitCommercialState(product: KitProductLike): BusinessKitCommercialState {
+  const price = Number.parseFloat(product.price ?? "");
+
+  // An enquiry-only product shows its WooCommerce price only as a "from" price.
+  if (getPurchaseMode(product, "enquiry") === "enquiry") {
+    return Number.isFinite(price) && price > 0 ? { kind: "enquiry", startingPrice: price } : { kind: "enquiry" };
+  }
+
+  if (product.purchasable === false || !Number.isFinite(price) || price <= 0) {
+    return { kind: "unavailable" };
+  }
+
+  return product.stock_status === "outofstock" ? { kind: "outOfStock", price } : { kind: "purchasable", price };
+}
+
+export const getProductCommercialState = getBusinessKitCommercialState;
+
+/**
+ * Once a kit has structured contents, a prose contents list in the product
+ * description would duplicate (and could contradict) it. Removes lists and the
+ * line that introduces them; all other description text is kept untouched.
+ */
+export function removeProseContentLists(html: string) {
+  return html
+    .replace(/(^|\n)(?:<p[^>]*>)?[^<\n]*:[ \t]*(?:<\/p>)?\s*<(ul|ol)\b[^>]*>[\s\S]*?<\/\2>/gi, "$1")
+    .replace(/<(ul|ol)\b[^>]*>[\s\S]*?<\/\1>/gi, "")
+    .replace(/<p[^>]*>\s*<\/p>/gi, "")
+    .trim();
 }
 
 export function isWooCommercePlaceholderImage(image: ProductImageLike) {

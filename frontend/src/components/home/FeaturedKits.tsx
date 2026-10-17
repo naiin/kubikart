@@ -9,13 +9,16 @@ export async function FeaturedKits() {
   const [t, rawLocale] = await Promise.all([getTranslations("homeRedesign.kits"), getLocale()]);
   const locale = normalizeLocale(rawLocale);
   let kits: WCProduct[] = [];
+  let failed = false;
 
   try {
     const result = await getBusinessKits(locale);
     kits = result.products.slice(0, 3);
   } catch {
-    kits = [];
+    failed = true;
   }
+
+  if (!failed && kits.length === 0) return null;
 
   return (
     <section className="kk-section-major">
@@ -27,7 +30,7 @@ export async function FeaturedKits() {
         </div>
 
         {kits.length > 0 ? (
-          <div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {kits.map((kit) => <BusinessKitCard key={kit.id} product={kit} locale={locale} />)}
           </div>
         ) : (

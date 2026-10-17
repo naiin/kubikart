@@ -239,6 +239,16 @@ function get_option(string $option, mixed $default = false): mixed {
 }
 
 function sanitize_email(string $email): string { return strtolower(trim($email)); }
+function is_email(string $email): string|false { return filter_var($email, FILTER_VALIDATE_EMAIL); }
+function wp_authenticate(string $username, string $password): mixed {
+    return wp_mock_fn('wp_authenticate', [$username, $password]) ?? new WP_Error('invalid_credentials', 'Invalid credentials');
+}
+function update_option(string $key, mixed $value, mixed $autoload = null): bool {
+    $GLOBALS['_wp_options'][$key] = $value;
+    return true;
+}
+function wp_remote_retrieve_body(array $response): string { return $response['body'] ?? ''; }
+function wp_remote_retrieve_response_code(array $response): int { return $response['response']['code'] ?? 0; }
 function sanitize_text_field(string $text): string { return trim(strip_tags($text)); }
 function sanitize_textarea_field(string $text): string { return trim(strip_tags($text)); }
 function sanitize_key(string $key): string { return preg_replace('/[^a-z0-9_\\-]/', '', strtolower($key)) ?? ''; }
@@ -271,7 +281,7 @@ function home_url(string $path = ''): string { return 'https://test.local' . $pa
 function site_url(string $path = ''): string { return 'https://test.local' . $path; }
 function trailingslashit(string $url): string { return rtrim($url, '/') . '/'; }
 function is_author(): bool { return false; }
-function is_admin(): bool { return false; }
+function is_admin(): bool { return (bool) ($GLOBALS['_wp_mock_is_admin'] ?? false); }
 function register_post_type(string $slug, array $args): void {
     $GLOBALS['_wp_post_types'][$slug] = $args;
 }
@@ -336,11 +346,33 @@ function has_term(string|int $term, string $taxonomy, int $post_id): bool {
     $terms = $GLOBALS['_wp_product_terms'][$post_id][$taxonomy] ?? [];
     return in_array($term, $terms, true);
 }
+function esc_url(string $url): string { return htmlspecialchars($url, ENT_QUOTES); }
+function wc_get_product(mixed $product = false): mixed {
+    return wp_mock_fn('wc_get_product', [$product]) ?: false;
+}
+function wp_attachment_is_image(int $post_id = 0): bool {
+    return !empty($GLOBALS['_wp_attachments'][$post_id]['is_image']);
+}
+function wp_get_attachment_image_url(int $attachment_id, string $size = 'thumbnail'): string|false {
+    return $GLOBALS['_wp_attachments'][$attachment_id]['url'] ?? false;
+}
+function wp_generate_uuid4(): string {
+    $data = random_bytes(16);
+    $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
+    $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
+    return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+}
+function pll_get_post_language(int $post_id, string $field = 'slug'): string|false {
+    return $GLOBALS['_wp_post_languages'][$post_id] ?? false;
+}
+function pll_get_post(int $post_id, string $language = ''): int|false {
+    return $GLOBALS['_wp_post_translations'][$post_id][$language] ?? false;
+}
 function get_current_user_id(): int { return 1; }
 function admin_url(string $path = ''): string { return 'https://test.local/wp-admin/' . ltrim($path, '/'); }
 function wp_remote_post(string $url, array $args = []): array|WP_Error {
     $GLOBALS['_wp_remote_posts'][] = compact('url', 'args');
-    return ['response' => ['code' => 202]];
+    return $GLOBALS['_wp_remote_post_response'] ?? ['response' => ['code' => 202]];
 }
 function wp_enqueue_script(string $handle, string $src = '', array $deps = [], string|bool|null $ver = false, bool $in_footer = false): void {
     $GLOBALS['_wp_scripts'][$handle] = compact('src', 'deps', 'ver', 'in_footer');
@@ -356,6 +388,43 @@ function __return_false(): bool { return false; }
 function __return_true(): bool  { return true; }
 function __return_empty_string(): string { return ''; }
 function __(string $text, ?string $domain = null): string { return $text; }
+
+// Stubs used by kubikart-customer-files.php (guarded so they stay additive).
+if (!function_exists('sanitize_file_name')) {
+    function sanitize_file_name(string $name): string {
+        $name = preg_replace('/[^A-Za-z0-9._-]+/', '-', $name) ?? '';
+        return ltrim($name, '.-');
+    }
+}
+if (!function_exists('wp_upload_dir')) {
+    function wp_upload_dir($time = null, bool $create_dir = true, bool $refresh_cache = false): array {
+        return ['basedir' => $GLOBALS['_wp_mock_upload_basedir'] ?? __DIR__ . '/.tmp-uploads', 'error' => false];
+    }
+}
+if (!function_exists('wp_mkdir_p')) {
+    function wp_mkdir_p(string $dir): bool { return is_dir($dir) || mkdir($dir, 0775, true); }
+}
+if (!function_exists('add_query_arg')) {
+    function add_query_arg(array $args, string $url): string { return $url . '?' . http_build_query($args); }
+}
+if (!function_exists('wp_create_nonce')) {
+    function wp_create_nonce(string $action): string { return 'test-nonce'; }
+}
+if (!function_exists('esc_url')) {
+    function esc_url(string $url): string { return htmlspecialchars($url, ENT_QUOTES); }
+}
+if (!function_exists('size_format')) {
+    function size_format(int $bytes): string { return $bytes . ' B'; }
+}
+if (!function_exists('wp_next_scheduled')) {
+    function wp_next_scheduled(string $hook): int|false { return $GLOBALS['_wp_cron'][$hook] ?? false; }
+}
+if (!function_exists('wp_schedule_event')) {
+    function wp_schedule_event(int $timestamp, string $recurrence, string $hook): bool {
+        $GLOBALS['_wp_cron'][$hook] = $timestamp;
+        return true;
+    }
+}
 
 if (!function_exists('mb_strlen')) {
     function mb_strlen(string $s, ?string $enc = null): int { return strlen($s); }
@@ -381,4 +450,5 @@ function wp_reset_mocks(): void {
     $GLOBALS['_wp_post_meta']  = [];
     $GLOBALS['_wp_options']    = [];
     $GLOBALS['_wp_rest_routes'] = [];
+    $GLOBALS['kubikart_revalidate_queue'] = []; // frontend-revalidation mu-plugin queue
 }

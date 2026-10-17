@@ -9,6 +9,7 @@ export function IndustryMedia({
   priority = false,
   fallbackSrc,
   fallbackAlt,
+  compact = false,
 }: {
   media?: WordPressFeaturedMedia;
   title: string;
@@ -16,11 +17,12 @@ export function IndustryMedia({
   priority?: boolean;
   fallbackSrc?: string;
   fallbackAlt?: string;
+  compact?: boolean;
 }) {
   const t = useTranslations("businessIndustries");
 
   return (
-    <div className="relative flex aspect-[4/3] min-h-52 items-center justify-center overflow-hidden rounded-kubikart-lg border border-border bg-surface">
+    <div className={`relative flex items-center justify-center overflow-hidden bg-surface ${compact ? "aspect-[16/10]" : "aspect-[4/3] min-h-52 rounded-kubikart-lg border border-border"}`}>
       {media?.source_url || fallbackSrc ? (
         <Image
           src={media?.source_url || fallbackSrc!}

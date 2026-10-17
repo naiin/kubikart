@@ -7,6 +7,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { CookieBanner } from "@/components/CookieBanner";
 import { AuthProvider } from "@/lib/auth";
+import { CaptchaProvider } from "@/components/CaptchaProvider";
 import { getRobotsMetadata, getSiteUrl } from "@/lib/seo";
 import "../globals.css";
 
@@ -29,7 +30,7 @@ const montserrat = localFont({
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: "Kubikart | Sichtbarkeit für lokale Unternehmen",
-  description: "Kubikart gestaltet QR- und NFC-Aufsteller, Aufkleber, Menüs, Sichtbarkeits-Kits und ausgewählte personalisierte Produkte.",
+  description: "Kubikart gestaltet QR- und NFC-Aufsteller, Aufkleber, Menüs, Business-Pakete und ausgewählte personalisierte Produkte.",
   icons: {
     icon: [{ url: "/web-app-manifest-192x192.png", sizes: "192x192", type: "image/png" }],
     apple: [{ url: "/web-app-manifest-192x192.png", sizes: "192x192", type: "image/png" }],
@@ -55,12 +56,14 @@ export default async function LocaleLayout({ children, params }: { children: Rea
     <html lang={locale} className={`${inter.variable} ${montserrat.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-white text-gray-900">
         <NextIntlClientProvider locale={locale} messages={messages}>
+          <CaptchaProvider siteKey={process.env.CLOUDFLARE_TURNSTILE_SITEKEY?.trim() || ""}>
           <AuthProvider>
             <Header />
             <main className="flex-1">{children}</main>
             <Footer />
             <CookieBanner />
           </AuthProvider>
+          </CaptchaProvider>
         </NextIntlClientProvider>
       </body>
     </html>

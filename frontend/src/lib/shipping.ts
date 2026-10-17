@@ -54,6 +54,11 @@ const SHIPPING_PRICES = {
   FREE_SHIPPING_THRESHOLD: parseFloat(process.env.FREE_SHIPPING_THRESHOLD || "50"),
 };
 
+/** Domestic order value from which the existing shipping rules charge no shipping. */
+export function getFreeShippingThreshold() {
+  return SHIPPING_PRICES.FREE_SHIPPING_THRESHOLD;
+}
+
 /**
  * Determines which DHL product fits the given package
  */

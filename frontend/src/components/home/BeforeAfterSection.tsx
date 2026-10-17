@@ -2,8 +2,8 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 
 const images = {
-  before: "/images/home/business-visibility-before.png",
-  after: "/images/home/business-visibility-after.png",
+  before: "/images/home/cafe-counter-before-personalisation.webp",
+  after: "/images/home/cafe-qr-stand-printed-packaging-after.webp",
 } as const;
 
 export function BeforeAfterSection() {

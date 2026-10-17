@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { readCart, writeCart } from "@/lib/cart";
-import { formatProductPrice, type ProductPageProduct, type ProductPersonalizationOption } from "@/lib/product-page";
+import { formatProductPrice, shouldRenderSelectAsButtons, type ProductPageProduct, type ProductPersonalizationOption } from "@/lib/product-page";
 import { getCustomizationExtrasTotal } from "@/lib/product-configuration";
 
 function getOptionLabel(option: ProductPersonalizationOption, value: string) {
@@ -126,7 +126,7 @@ export function ProductPurchaseForm({
 
       <div className="space-y-5">
         {product.personalizationOptions.map((option) => {
-          if (option.type === "select" && option.options && option.options.length <= 5) {
+          if (shouldRenderSelectAsButtons(option)) {
             return <SelectOptionGroup key={option.id} option={option} />;
           }
 

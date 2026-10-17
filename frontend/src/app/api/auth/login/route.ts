@@ -20,12 +20,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
 
-    // Verify password via WordPress REST API
+    // Customer passwords cannot authenticate WordPress REST Basic requests.
+    // Verify through the private, integration-authenticated credential endpoint.
     const wpUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL!;
-    const authRes = await fetch(`${wpUrl}/wp-json/wp/v2/users/me`, {
+    const authRes = await fetch(`${wpUrl}/wp-json/kubikart/v1/customer-login`, {
+      method: "POST",
       headers: {
-        Authorization: `Basic ${Buffer.from(`${email}:${password}`).toString("base64")}`,
+        "Content-Type": "application/json",
+        Authorization: `Basic ${Buffer.from(`${process.env.WP_APP_USER}:${process.env.WP_APP_PASSWORD}`).toString("base64")}`,
       },
+      body: JSON.stringify({ email, password }),
+      cache: "no-store",
     });
 
     if (!authRes.ok) {
@@ -33,6 +38,10 @@ export async function POST(request: NextRequest) {
     }
 
     const customer = customers[0];
+    const identity = await authRes.json() as { id?: number };
+    if (identity.id !== customer.id) {
+      return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
+    }
     const user: SessionUser = {
       id: customer.id,
       email: customer.email,

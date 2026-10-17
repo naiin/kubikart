@@ -1,21 +1,18 @@
 import { useTranslations } from "next-intl";
 
-export function ProductHowItWorks() {
+/** `enquiry` swaps the cart-based steps for the quotation flow of enquiry-only products. */
+export function ProductHowItWorks({ enquiry = false }: { enquiry?: boolean }) {
   const t = useTranslations("productPage");
 
-  const steps = [
-    { title: t("step1_title"), text: t("step1_text") },
-    { title: t("step2_title"), text: t("step2_text") },
-    { title: t("step3_title"), text: t("step3_text") },
-    { title: t("step4_title"), text: t("step4_text") },
-  ];
+  const prefix = enquiry ? "enquiryStep" : "step";
+  const steps = [1, 2, 3, 4].map((number) => ({ title: t(`${prefix}${number}_title`), text: t(`${prefix}${number}_text`) }));
 
   return (
     <section aria-labelledby="bestellablauf">
       <div className="mb-8">
         <p className="text-sm font-semibold uppercase tracking-[0.14em] text-accent-600">{t("orderLabel")}</p>
         <h2 id="bestellablauf" className="mt-3 text-[30px] font-extrabold tracking-[-0.03em] text-navy-900 sm:text-[38px]">
-          {t("orderTitle")}
+          {t(enquiry ? "enquiryOrderTitle" : "orderTitle")}
         </h2>
       </div>
 

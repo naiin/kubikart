@@ -5,6 +5,7 @@ export type HeaderLinkItem = {
   href: string;
   localizedHrefs?: Partial<Record<(typeof routing.locales)[number], string>>;
   activePrefixes?: string[];
+  children?: HeaderLinkItem[];
 };
 
 const localeSegments = new Set<string>(routing.locales);
@@ -83,15 +84,25 @@ export function getNavigationHref(
 }
 
 export const headerNavigation: HeaderLinkItem[] = [
-  { labelKey: "nav.shop", href: "/shop", activePrefixes: ["/shop", "/search", "/personalisierte-geschenke"] },
-  { labelKey: "nav.businessKits", href: "/services/brand-kit", activePrefixes: ["/services/brand-kit"] },
+  { labelKey: "nav.shop", href: "/shop", activePrefixes: ["/shop", "/search"] },
   {
-    labelKey: "nav.services",
+    labelKey: "nav.forBusinesses",
     href: "/businesses",
-    activePrefixes: ["/businesses"],
+    activePrefixes: ["/businesses", "/services/brand-kit", "/sonderanfertigung"],
+    children: [
+      { labelKey: "nav.industries", href: "/businesses", activePrefixes: ["/businesses"] },
+      { labelKey: "nav.businessKits", href: "/services/brand-kit", activePrefixes: ["/services/brand-kit"] },
+      { labelKey: "nav.customEnquiry", href: "/sonderanfertigung", activePrefixes: ["/sonderanfertigung"] },
+    ],
   },
+  { labelKey: "nav.personalizedGifts", href: "/personalisierte-geschenke", activePrefixes: ["/personalisierte-geschenke"] },
+  { labelKey: "nav.about", href: "/ueber-uns", activePrefixes: ["/ueber-uns"] },
+  { labelKey: "nav.contact", href: "/kontakt", activePrefixes: ["/kontakt"] },
+];
+
+export const mobileUtilityNavigation: HeaderLinkItem[] = [
   {
-    labelKey: "nav.productionServices",
+    labelKey: "mobile.productionServices",
     href: "/services",
     localizedHrefs: {
       de: "/dienstleistungen",
@@ -99,13 +110,6 @@ export const headerNavigation: HeaderLinkItem[] = [
     },
     activePrefixes: ["/services", "/dienstleistungen"],
   },
-  { labelKey: "nav.about", href: "/ueber-uns", activePrefixes: ["/ueber-uns"] },
-  { labelKey: "nav.contact", href: "/kontakt", activePrefixes: ["/kontakt"] },
-];
-
-export const mobileUtilityNavigation: HeaderLinkItem[] = [
-  { labelKey: "mobile.personalizedGifts", href: "/personalisierte-geschenke" },
-  { labelKey: "mobile.customRequest", href: "/sonderanfertigung" },
   { labelKey: "mobile.search", href: "/search" },
   { labelKey: "mobile.account", href: "/account" },
   { labelKey: "mobile.faq", href: "/faq" },

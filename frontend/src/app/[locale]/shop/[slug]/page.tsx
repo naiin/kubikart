@@ -16,6 +16,7 @@ import {
 } from "@/lib/product-page";
 import { getProduct, getProductReviews, type WCProduct, type WCReview } from "@/lib/woocommerce";
 import { getRobotsMetadata } from "@/lib/seo";
+import { getFreeShippingThreshold } from "@/lib/shipping";
 
 type ProductPageProps = {
   params: Promise<{
@@ -149,6 +150,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         relatedProducts={relatedProducts}
         presentation={businessKit ? "business-kit" : "standard"}
         otherBusinessKits={otherBusinessKits}
+        freeShippingThreshold={getFreeShippingThreshold()}
       />
     </>
   );

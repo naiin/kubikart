@@ -1,5 +1,6 @@
 import { checkForSpam } from "@/lib/security";
 import { sendWithdrawalConfirmation } from "@/lib/email";
+import { ENQUIRY_META, notifyOwner, storeNotificationState, type EnquiryRecord } from "@/lib/enquiry-notification";
 
 type WithdrawalRequest = {
   name?: unknown;
@@ -63,6 +64,10 @@ export async function POST(request: Request) {
 
   const receivedAt = new Date();
   const receiptId = crypto.randomUUID();
+  const record: EnquiryRecord = {
+    reference: receiptId, receivedAt: receivedAt.toISOString(), locale, kind: "withdrawal", name, email,
+    message: `Vertrag / contract: ${contractReference}\nUmfang / scope: ${scope || "Entire contract"}`,
+  };
   const content = [
     `<p><strong>Reference:</strong> ${escapeHtml(receiptId)}</p>`,
     `<p><strong>Received:</strong> ${escapeHtml(receivedAt.toISOString())}</p>`,
@@ -84,6 +89,7 @@ export async function POST(request: Request) {
         title: `Widerruf ${receiptId}`,
         content,
         status: "private",
+        meta: { [ENQUIRY_META.record]: JSON.stringify(record), [ENQUIRY_META.reference]: receiptId, [ENQUIRY_META.status]: "pending" },
       }),
       cache: "no-store",
     });
@@ -94,6 +100,8 @@ export async function POST(request: Request) {
       });
       return Response.json({ error: "unavailable" }, { status: 503 });
     }
+    const saved = await wordpressResponse.json() as { id: number };
+    if (saved.id) await storeNotificationState(saved.id, await notifyOwner(record, saved.id));
   } catch (error) {
     console.error("Withdrawal storage failed.", error);
     return Response.json({ error: "unavailable" }, { status: 503 });

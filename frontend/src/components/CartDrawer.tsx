@@ -6,11 +6,15 @@ import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { getCartLineId, readCart, useCart, useHasMounted, writeCart } from "@/lib/cart";
+import { CartAvailabilityNotice } from "@/components/CartAvailabilityNotice";
+import { CartSetSummary } from "@/components/CartSetSummary";
+import { useCartAvailability } from "@/lib/use-cart-availability";
 
 export function CartDrawer() {
   const t = useTranslations("common");
   const [open, setOpen] = useState(false);
   const cart = useCart();
+  const availability = useCartAvailability(cart);
   const hasMounted = useHasMounted();
   const triggerButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -157,7 +161,7 @@ export function CartDrawer() {
                       />
                     </svg>
                     <p className="mt-4 text-gray-500">{t("emptyCart")}</p>
-                    <button onClick={() => setOpen(false)} className="mt-4 text-sm font-medium text-navy-900 hover:underline">
+                    <button onClick={() => setOpen(false)} className="mt-4 inline-flex min-h-11 items-center text-sm font-medium text-navy-900 hover:underline">
                       {t("continueShopping")}
                     </button>
                   </div>
@@ -177,6 +181,7 @@ export function CartDrawer() {
                         {/* Details */}
                         <div className="flex flex-1 flex-col min-w-0">
                           <p className="text-sm font-medium text-gray-900 truncate pr-6">{item.name}</p>
+                          <CartSetSummary item={item} />
                           {item.customizationSummary?.length ? (
                             <div className="mt-1 space-y-0.5">
                               {item.customizationSummary.map((line, i) => (
@@ -230,13 +235,24 @@ export function CartDrawer() {
                     <span>€{subtotal.toFixed(2)}</span>
                   </div>
                   <p className="mb-4 text-[11px] text-gray-500">Alle Preise gem. § 19 UStG ohne MwSt. · zzgl. Versandkosten</p>
-                  <Link
-                    href="/checkout"
-                    onClick={() => setOpen(false)}
-                    className="block w-full rounded-lg bg-accent-600 py-3 text-center text-sm font-semibold text-white hover:bg-accent-500 transition-colors"
-                  >
-                    {t("proceedToCheckout")}
-                  </Link>
+                  {availability.hasBlocked ? (
+                    <div className="mb-3">
+                      <CartAvailabilityNotice blocked={availability.blocked} />
+                    </div>
+                  ) : null}
+                  {availability.hasBlocked ? (
+                    <span aria-disabled="true" role="link" className="block w-full cursor-not-allowed rounded-lg bg-gray-300 py-3 text-center text-sm font-semibold text-white">
+                      {t("proceedToCheckout")}
+                    </span>
+                  ) : (
+                    <Link
+                      href="/checkout"
+                      onClick={() => setOpen(false)}
+                      className="block w-full rounded-lg bg-accent-600 py-3 text-center text-sm font-semibold text-white hover:bg-accent-500 transition-colors"
+                    >
+                      {t("proceedToCheckout")}
+                    </Link>
+                  )}
                   <Link
                     href="/cart"
                     onClick={() => setOpen(false)}

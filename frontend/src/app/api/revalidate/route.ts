@@ -2,41 +2,34 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { CACHE_TAGS } from "@/lib/woocommerce";
 import { WORDPRESS_CACHE_TAGS } from "@/lib/wordpress";
-import { createHmac, timingSafeEqual } from "crypto";
+import { SIGNATURE_TIMESTAMP_HEADER, verifySignedRequest } from "@/lib/signed-request";
 
 const EXPIRE_IMMEDIATELY = { expire: 0 };
 
 /**
- * On-demand revalidation endpoint for WooCommerce webhooks.
+ * On-demand revalidation endpoint.
  *
- * WooCommerce sends an HMAC-SHA256 signature in the X-WC-Webhook-Signature header.
- * The signature is a base64-encoded hash of the raw request body using the webhook secret.
+ * The kubikart-frontend-revalidation mu-plugin signs `"<unix seconds>.<raw body>"` (base64 HMAC-SHA256 with
+ * REVALIDATE_SECRET) into X-WC-Webhook-Signature and sends the time in X-Kubikart-Timestamp; requests outside a
+ * five-minute window are rejected, so a captured request cannot be replayed later.
  *
- * WooCommerce webhook setup:
- *   Topic: Product created / Product updated / Product deleted
- *   Delivery URL: https://your-domain.com/api/revalidate
- *   Secret: same as REVALIDATE_SECRET env var
- *   API Version: WP REST API Integration v3
+ * Native WooCommerce webhooks cannot add a timestamp and sign the body only. They are accepted only when
+ * REVALIDATE_ALLOW_UNTIMED_WEBHOOKS=true (off by default); prefer the mu-plugin.
  */
-
-async function verifyWooCommerceSignature(request: NextRequest, body: string): Promise<boolean> {
-  const signature = request.headers.get("x-wc-webhook-signature");
-  const secret = process.env.REVALIDATE_SECRET;
-
-  if (!secret || !signature) return false;
-
-  const expectedSignature = createHmac("sha256", secret).update(body).digest("base64");
-
-  const supplied = Buffer.from(signature);
-  const expected = Buffer.from(expectedSignature);
-  return supplied.length === expected.length && timingSafeEqual(supplied, expected);
+function verifyRequest(request: NextRequest, body: string): boolean {
+  return verifySignedRequest({
+    secret: process.env.REVALIDATE_SECRET,
+    signature: request.headers.get("x-wc-webhook-signature"),
+    timestamp: request.headers.get(SIGNATURE_TIMESTAMP_HEADER),
+    body,
+    allowUntimed: process.env.REVALIDATE_ALLOW_UNTIMED_WEBHOOKS === "true",
+  });
 }
 
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
 
-  const isValid = await verifyWooCommerceSignature(request, rawBody);
-  if (!isValid) {
+  if (!verifyRequest(request, rawBody)) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
@@ -50,12 +43,27 @@ export async function POST(request: NextRequest) {
     const revalidated: string[] = [];
 
     if (topic.startsWith("product.")) {
-      if (slug) {
-        revalidateTag(CACHE_TAGS.product(slug), EXPIRE_IMMEDIATELY);
-        revalidated.push(CACHE_TAGS.product(slug));
+      // Polylang sends every translation; the English product has its own slug and cache tag.
+      const slugs = new Set<string>();
+      if (typeof slug === "string" && slug) slugs.add(slug);
+      if (body.translations && typeof body.translations === "object") {
+        for (const translation of Object.values(body.translations as Record<string, { slug?: unknown }>)) {
+          if (typeof translation?.slug === "string" && translation.slug) slugs.add(translation.slug);
+        }
       }
+      for (const productSlug of slugs) {
+        revalidateTag(CACHE_TAGS.product(productSlug), EXPIRE_IMMEDIATELY);
+        revalidated.push(CACHE_TAGS.product(productSlug));
+      }
+      // Category product counts change when products are created, published or deleted.
       revalidateTag(CACHE_TAGS.products, EXPIRE_IMMEDIATELY);
-      revalidated.push(CACHE_TAGS.products);
+      revalidateTag(CACHE_TAGS.categories, EXPIRE_IMMEDIATELY);
+      revalidated.push(CACHE_TAGS.products, CACHE_TAGS.categories);
+    } else if (topic.startsWith("category.") || topic.startsWith("product_cat.")) {
+      // Renamed categories are embedded in product payloads as well as the category list.
+      revalidateTag(CACHE_TAGS.products, EXPIRE_IMMEDIATELY);
+      revalidateTag(CACHE_TAGS.categories, EXPIRE_IMMEDIATELY);
+      revalidated.push(CACHE_TAGS.products, CACHE_TAGS.categories);
     } else if (topic.startsWith("industry.")) {
       const id = Number(body.id);
       const translations =

@@ -1,5 +1,6 @@
+import { ProductPriceText } from "./ProductPriceText";
 import { useTranslations } from "next-intl";
-import { formatProductPrice, type ProductPageProduct } from "@/lib/product-page";
+import { type ProductPageProduct } from "@/lib/product-page";
 
 export function StickyMobileCTA({ product, formId }: { product: ProductPageProduct; formId: string }) {
   const t = useTranslations("productPage");
@@ -10,7 +11,7 @@ export function StickyMobileCTA({ product, formId }: { product: ProductPageProdu
       <div className="mx-auto flex max-w-7xl items-center gap-3">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">{t("price")}</p>
-          <p className="truncate text-lg font-extrabold tracking-[-0.03em] text-navy-900">{formatProductPrice(product.price)}</p>
+          <ProductPriceText price={product.price} className="truncate text-lg font-extrabold tracking-[-0.03em] text-navy-900" regularClassName="text-sm font-medium text-gray-500" />
         </div>
         <button
           type="submit"

@@ -12,6 +12,99 @@ export function isChargeableSelectValue(value: string | undefined) {
   return Boolean(value && !NEUTRAL_SELECT_VALUES.has(value.trim().toLowerCase()));
 }
 
+/** True when a conditional field applies to the current selections (fields without a condition always apply). */
+export function isFieldVisible(showWhen: ProductPersonalizationOption["showWhen"], values: Record<string, string | undefined>) {
+  return !showWhen || values[showWhen.field] === showWhen.equals;
+}
+
+/**
+ * Keeps the items whose condition holds. A condition refers to a select field (`equals` is the chosen value) or to a
+ * checkbox (`equals: "true"` while ticked) and only counts while the field it refers to is itself visible, so a hidden
+ * parent never keeps its children alive.
+ */
+export function resolveVisibleItems<T extends { id: string; showWhen?: { field: string; equals: string } }>(
+  items: T[],
+  values: Record<string, string | undefined>,
+): T[] {
+  const visible = new Set<string>();
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const item of items) {
+      if (visible.has(item.id)) continue;
+      const condition = item.showWhen;
+      if (!condition || (visible.has(condition.field) && values[condition.field] === condition.equals)) {
+        visible.add(item.id);
+        changed = true;
+      }
+    }
+  }
+  return items.filter((item) => visible.has(item.id));
+}
+
+export function getVisibleOptions(
+  options: ProductPersonalizationOption[],
+  selectedOptions: Record<string, string>,
+  checkboxValues: Record<string, boolean> = {},
+) {
+  const values: Record<string, string | undefined> = { ...selectedOptions };
+  for (const [id, checked] of Object.entries(checkboxValues)) {
+    if (checked) values[id] = "true";
+  }
+  return resolveVisibleItems(options, values);
+}
+
+type VariationAttributes = { attributes: Record<string, string> }[];
+
+/**
+ * Cascades variation attributes left to right: an attribute offers only the values that exist together with the
+ * selections of the attributes before it (for example only the sizes that exist for the chosen shape).
+ */
+export function getVariationOptionAvailability(
+  variations: VariationAttributes | undefined,
+  attributeIds: string[],
+  selectedOptions: Record<string, string>,
+) {
+  const available: Record<string, Set<string>> = {};
+  if (!variations?.length) return available;
+
+  attributeIds.forEach((id, index) => {
+    const earlier = attributeIds.slice(0, index);
+    available[id] = new Set(
+      variations
+        .filter((variation) => earlier.every((earlierId) => variation.attributes[earlierId] === selectedOptions[earlierId]))
+        .map((variation) => variation.attributes[id])
+        .filter((value): value is string => Boolean(value)),
+    );
+  });
+
+  return available;
+}
+
+/** Replaces variation selections that no longer exist for the shape/size above them with the first valid value. */
+export function normalizeVariationSelections(
+  variations: VariationAttributes | undefined,
+  attributes: { id: string; options?: { value: string }[] }[],
+  selectedOptions: Record<string, string>,
+) {
+  if (!variations?.length) return selectedOptions;
+
+  const next = { ...selectedOptions };
+  const ids = attributes.map((attribute) => attribute.id);
+  for (const attribute of attributes) {
+    const available = getVariationOptionAvailability(variations, ids, next)[attribute.id];
+    if (!available || available.has(next[attribute.id])) continue;
+    const first = attribute.options?.find((option) => available.has(option.value))?.value ?? Array.from(available)[0];
+    if (first) next[attribute.id] = first;
+  }
+
+  return changed(selectedOptions, next) ? next : selectedOptions;
+}
+
+function changed(left: Record<string, string>, right: Record<string, string>) {
+  return Object.keys(right).some((key) => left[key] !== right[key]);
+}
+
 export function createProductSubmissionLock() {
   let locked = false;
 
@@ -77,7 +170,7 @@ export function getProductFieldPresentation(
 
   return {
     control: option.type,
-    showCounter: (option.type === "text" || option.type === "textarea") && Boolean(option.maxLength),
+    showCounter: (option.type === "text" || option.type === "textarea" || option.type === "url") && Boolean(option.maxLength),
     label: `${option.label}${shouldAppendOptionalMarker(option) ? ` ${optionalMarker}` : ""}`,
     helperText: getMeaningfulFieldHelperText(option.helperText),
     extraPriceLabel:
@@ -97,22 +190,38 @@ export function limitProductFieldValue(value: string, maxLength?: number) {
   return Array.from(value).slice(0, maxLength).join("");
 }
 
+export function isValidHttpUrl(value: string) {
+  try {
+    const url = new URL(value.trim());
+    return (url.protocol === "https:" || url.protocol === "http:") && Boolean(url.hostname.includes("."));
+  } catch {
+    return false;
+  }
+}
+
 export function validateProductConfiguration(
   options: ProductPersonalizationOption[],
   state: ProductConfigurationState,
   requiredMessage: (label: string) => string,
   maxLengthMessage: (label: string, maxLength: number) => string,
+  invalidUrlMessage: (label: string) => string = requiredMessage,
 ) {
   const errors: Record<string, string> = {};
 
-  for (const option of options) {
-    if (option.type === "text" || option.type === "textarea") {
+  for (const option of getVisibleOptions(options, state.selectedOptions, state.checkboxValues)) {
+    if (option.type === "text" || option.type === "textarea" || option.type === "url") {
       const value = state.textInputs[option.id] || "";
 
       if (option.required && !value.trim()) {
         errors[option.id] = requiredMessage(option.label);
       } else if (option.maxLength && countProductFieldCharacters(value) > option.maxLength) {
         errors[option.id] = maxLengthMessage(option.label, option.maxLength);
+      } else if (option.type === "url" && value.trim() && !isValidHttpUrl(value)) {
+        errors[option.id] = invalidUrlMessage(option.label);
+      }
+    } else if (option.type === "file") {
+      if (option.required && !state.textInputs[option.id]) {
+        errors[option.id] = requiredMessage(option.label);
       }
     } else if (option.type === "select") {
       if (option.required && !state.selectedOptions[option.id]) {
@@ -127,7 +236,7 @@ export function validateProductConfiguration(
 }
 
 export function getSelectedExtrasTotal(options: ProductPersonalizationOption[], state: ProductConfigurationState) {
-  return options.reduce((total, option) => {
+  return getVisibleOptions(options, state.selectedOptions, state.checkboxValues).reduce((total, option) => {
     const selected = option.type === "checkbox"
       ? Boolean(state.checkboxValues[option.id])
       : option.type === "select"
@@ -173,11 +282,12 @@ export function buildProductCustomization(
   options: ProductPersonalizationOption[],
   state: ProductConfigurationState,
   selectedLabel: string,
+  fileNames: Record<string, string> = {},
 ) {
   const customizations: Record<string, string> = {};
   const customizationSummary: string[] = [];
 
-  for (const option of options) {
+  for (const option of getVisibleOptions(options, state.selectedOptions, state.checkboxValues)) {
     if (option.type === "select") {
       const value = state.selectedOptions[option.id];
       if (!value) {
@@ -201,7 +311,7 @@ export function buildProductCustomization(
       }
 
       customizations[option.id] = value;
-      customizationSummary.push(`${option.label}: ${value}`);
+      customizationSummary.push(`${option.label}: ${option.type === "file" ? fileNames[option.id] || value : value}`);
     }
   }
 

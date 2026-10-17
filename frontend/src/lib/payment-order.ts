@@ -23,7 +23,8 @@ export async function verifyPendingPaymentOrder(reference: PendingOrderReference
 
   const order = await wcApi<WCPaymentOrder>(`orders/${reference.orderId}`, { revalidate: 0 });
   if (order.order_key !== reference.orderKey) throw new ServerCartError("Invalid pending order reference", 403);
-  if (order.status !== "pending") throw new ServerCartError("Order is no longer awaiting payment", 409);
+  // A declined attempt leaves the order `failed`; the customer must be able to retry or switch method.
+  if (order.status !== "pending" && order.status !== "failed") throw new ServerCartError("Order is no longer awaiting payment", 409);
   const totalCents = Math.round(Number(order.total) * 100);
   if (!/^[A-Z]{3}$/.test(order.currency) || !Number.isSafeInteger(totalCents) || totalCents <= 0) {
     throw new ServerCartError("WooCommerce order has an invalid total or currency", 409);

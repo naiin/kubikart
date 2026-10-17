@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { useProtectedFetch } from "@/components/CaptchaProvider";
 
 const socialLinks = [
   {
@@ -55,10 +56,10 @@ function FooterLinkGroup({ title, links, ariaLabel }: { title: string; links: Fo
   return (
     <nav aria-label={ariaLabel}>
       <h2 className="text-sm font-semibold text-white">{title}</h2>
-      <ul className="mt-4 space-y-3">
+      <ul className="mt-3">
         {links.map((link) => (
           <li key={`${link.href}-${link.label}`}>
-            <Link href={link.href} className="text-sm leading-6 text-white/70 underline-offset-4 transition-colors hover:text-white hover:underline">
+            <Link href={link.href} className="inline-flex min-h-9 items-center text-sm leading-6 text-white/70 underline-offset-4 transition-colors hover:text-white hover:underline">
               {link.label}
             </Link>
           </li>
@@ -69,6 +70,7 @@ function FooterLinkGroup({ title, links, ariaLabel }: { title: string; links: Fo
 }
 
 function NewsletterForm() {
+  const protectedFetch = useProtectedFetch();
   const t = useTranslations("footer");
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
@@ -85,7 +87,7 @@ function NewsletterForm() {
     setStatus("sending");
 
     try {
-      const response = await fetch("/api/newsletter", {
+      const response = await protectedFetch("/api/newsletter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), _hp: hp, _t: loadedAt.current }),

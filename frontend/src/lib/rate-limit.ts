@@ -19,6 +19,7 @@ export function getApiRateLimitPolicy(pathname: string): RateLimitPolicy {
   if (pathname.startsWith("/api/auth/") || pathname === "/api/orders/create") return { limit: 10, windowMs: 60_000 };
   if (pathname.startsWith("/api/stripe/") || pathname.startsWith("/api/paypal/")) return { limit: 20, windowMs: 60_000 };
   if (["/api/contact", "/api/newsletter", "/api/withdrawal"].includes(pathname)) return { limit: 5, windowMs: 10 * 60_000 };
+  if (pathname === "/api/uploads/customer-file") return { limit: 10, windowMs: 10 * 60_000 };
   return { limit: 60, windowMs: 60_000 };
 }
 
@@ -60,3 +61,21 @@ export function resetLocalRateLimitsForTests() {
   localCounters.clear();
 }
 import { isProductionRuntime } from "@/lib/runtime-config";
+
+export function inferRequestLocale(headers: Pick<Headers, "get">): "de" | "en" {
+  const referer = headers.get("referer") ?? "";
+  try {
+    const first = new URL(referer).pathname.split("/").filter(Boolean)[0];
+    if (first === "en" || first === "de") return first;
+  } catch {
+    // fall through to Accept-Language
+  }
+  return (headers.get("accept-language") ?? "").toLowerCase().startsWith("en") ? "en" : "de";
+}
+
+export function getRateLimitMessage(locale: "de" | "en", retryAfterSeconds: number) {
+  const minutes = Math.max(1, Math.ceil(retryAfterSeconds / 60));
+  return locale === "en"
+    ? `Too many attempts. Please try again in about ${minutes} ${minutes === 1 ? "minute" : "minutes"}.`
+    : `Zu viele Versuche. Bitte versuche es in etwa ${minutes} ${minutes === 1 ? "Minute" : "Minuten"} erneut.`;
+}
