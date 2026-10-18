@@ -32,6 +32,11 @@ sets a price it shows "Ab €…" / "From €…". A starting price is informati
 (IDs are those of the local database; other environments get their own IDs because the script resolves products by slug
 and Polylang translation.) German and English share one SKU. Public URL pattern: `/{de|en}/shop/{slug}`.
 
+**Shop listing.** The six bundles are **not shown in the unfiltered "All products" list** of `/shop` (a short note links to
+the Business Bundles category instead). They still appear in the Business Bundles category, in the Business Products
+parent category, in search results, on `/services/brand-kit`, on the homepage and on the industry pages, and their
+product pages stay indexable.
+
 **Contents.** Each bundle stores two kinds of rows in `_kubikart_kit_contents`: *included* base items (with quantity,
 link to the real source product, and the owner's specification text) and *optional* upgrades. An optional row has an
 `operation`: `add` (additional), `replace` / `replace_format` (replaces a named base item, e.g. acrylic stand instead of

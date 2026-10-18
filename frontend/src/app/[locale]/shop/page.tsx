@@ -10,6 +10,8 @@ import { ShopCategoryFilters } from "@/components/shop/ShopFilters";
 import { ShopHero } from "@/components/shop/ShopHero";
 import { ShopJsonLd } from "@/components/shop/ShopJsonLd";
 import { ShopToolbar } from "@/components/shop/ShopToolbar";
+import { Link } from "@/i18n/navigation";
+import { isBusinessKitProduct, resolveBusinessKitsCategory } from "@/lib/business-kits";
 import { buildPageMetadata, normalizeLocale, SEO_ROUTE_SEGMENTS } from "@/lib/seo";
 import { getCategories, getProducts, type WCCategory, type WCProduct } from "@/lib/woocommerce";
 
@@ -92,8 +94,15 @@ export default async function ShopPage({
     getCategories(locale),
   ]);
 
-  const products: WCProduct[] = productsResult.status === "fulfilled" ? productsResult.value : [];
+  const fetchedProducts: WCProduct[] = productsResult.status === "fulfilled" ? productsResult.value : [];
   const categories: WCCategory[] = categoriesResult.status === "fulfilled" ? categoriesResult.value : [];
+  const siteLocale = normalizeLocale(locale);
+  // Enquiry-only Business Bundles are not mixed into the unfiltered list; they stay in their category, in search and in
+  // the Business Products category.
+  const hideBundles = !categoryId && !searchQuery;
+  const products = hideBundles ? fetchedProducts.filter((product) => !isBusinessKitProduct(product, siteLocale)) : fetchedProducts;
+  const bundlesCategory = resolveBusinessKitsCategory(categories, siteLocale);
+  const showBundlesHint = hideBundles && Boolean(bundlesCategory) && products.length < fetchedProducts.length;
   const productsUnavailable = productsResult.status === "rejected";
 
   return (
@@ -112,6 +121,14 @@ export default async function ShopPage({
             </h2>
             <ShopToolbar productCount={products.length} />
             <ActiveFilterChips categories={categories} />
+            {showBundlesHint && bundlesCategory ? (
+              <p className="mt-4 rounded-kubikart-md border border-border bg-surface px-4 py-3 text-sm leading-6 text-muted">
+                {t("bundlesSeparate")}{" "}
+                <Link href={`/shop?category=${bundlesCategory.id}#products`} className="kk-link inline-flex min-h-11 items-center font-semibold">
+                  {t("bundlesSeparateLink")}
+                </Link>
+              </p>
+            ) : null}
           </div>
 
           <div className="mt-8">
