@@ -3,7 +3,6 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getBusinessKitCommercialState, parseBusinessKitData } from "@/lib/business-kits";
 import { KitIllustrationForProduct } from "@/components/business-kits/KitIllustration";
-import { IllustrativeImageBadge } from "@/components/business-kits/IllustrativeImageBadge";
 import type { WCProduct } from "@/lib/woocommerce";
 import type { SiteLocale } from "@/lib/seo";
 
@@ -65,7 +64,6 @@ export async function BusinessKitCard({ product, locale }: { product: WCProduct;
             {t("imagePending")}
           </span>
         )}
-        {image ? <IllustrativeImageBadge /> : null}
       </Link>
 
       <div className="flex flex-1 flex-col p-5 sm:p-6">

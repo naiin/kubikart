@@ -36,6 +36,8 @@ import {
   BusinessKitContents,
   BusinessKitCustomisation,
   BusinessKitDetails,
+  BusinessKitEnquiryProcess,
+  BusinessKitFaq,
   BusinessKitEnquiryPanel,
   BusinessKitFinalCta,
   BusinessKitProcess,
@@ -959,7 +961,6 @@ function ProductPageClientContent({
                   images={visibleImages}
                   activeIndex={selectedImage}
                   onSelect={setSelectedImage}
-                  illustrative={isBusinessKit}
                   note={isBusinessKit ? kitT("imageNote") : undefined}
                 />
                 <ProductVideos videos={product.videos ?? []} poster={product.images[0]?.src} />
@@ -1146,7 +1147,8 @@ function ProductPageClientContent({
           {kitState ? <BusinessKitContents items={product.kit?.items ?? []} state={kitState} /> : null}
           <BusinessKitDetails product={product} reviews={reviews} hasStructuredContents={Boolean(product.kit?.items.length)} />
           {!kitEnquiry ? <BusinessKitCustomisation product={product} /> : null}
-          {!kitEnquiry ? <BusinessKitProcess /> : null}
+          {!kitEnquiry ? <BusinessKitProcess /> : <BusinessKitEnquiryProcess />}
+          {kitEnquiry && kitState?.kind === "enquiry" ? <BusinessKitFaq /> : null}
           <OtherBusinessKits products={otherBusinessKits} />
           <BusinessKitFinalCta />
         </>

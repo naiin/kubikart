@@ -138,6 +138,39 @@ describe("parseBusinessKitData", () => {
     expect(data.items[0].description).toBe("Acryl, 10 cm");
   });
 
+  it("reads optional upgrades with their operation and replaced product, and the owner's SEO text", () => {
+    const data = parseBusinessKitData(
+      kitMeta({
+        seo: { title: "Barber & Hair Salon Bundle | KubiKart", description: "Opening hours, stand and menus." },
+        items: [
+          { id: "a", quantity: 1, title: "QR stand", kind: "included", link_state: "unlinked", product: null },
+          { id: "b", quantity: 1, title: "Acrylic stand", kind: "optional", operation: "replace", replaces: { id: 507, name: "QR stand", slug: "qr" }, link_state: "unlinked", product: null },
+          { id: "c", quantity: 1, title: "Frosted film", kind: "optional", operation: "bogus", replaces: { id: 5, name: "x", slug: "x" }, link_state: "unlinked", product: null },
+          { id: "d", quantity: 1, title: "Legacy row", link_state: "unlinked", product: null },
+        ],
+      }),
+    );
+
+    expect(data.items.map((item) => [item.id, item.kind, item.operation, item.replaces?.id ?? null])).toEqual([
+      ["a", "included", "", null],
+      ["b", "optional", "replace", 507],
+      ["c", "optional", "", 5],
+      ["d", "included", "", null],
+    ]);
+    expect(data.seo).toEqual({ title: "Barber & Hair Salon Bundle | KubiKart", description: "Opening hours, stand and menus." });
+    expect(parseBusinessKitData(undefined).seo).toEqual({ title: "", description: "" });
+  });
+
+  it("needs contents when only optional upgrades are saved", () => {
+    const data = parseBusinessKitData(kitMeta({ items: [{ id: "b", quantity: 1, title: "Acrylic", kind: "optional", operation: "add", link_state: "unlinked", product: null }] }));
+    expect(data.needsContents).toBe(true);
+  });
+
+  it("never invents a price for an enquiry bundle without a WooCommerce price", () => {
+    expect(getBusinessKitCommercialState({ price: "", purchasable: false, meta_data: kitMeta({ order_mode: "enquiry" }) })).toEqual({ kind: "enquiry" });
+    expect(getBusinessKitCommercialState({ price: "0", meta_data: kitMeta({ order_mode: "enquiry" }) })).toEqual({ kind: "enquiry" });
+  });
+
   it("ignores WooCommerce placeholder images", () => {
     const data = parseBusinessKitData(
       kitMeta({

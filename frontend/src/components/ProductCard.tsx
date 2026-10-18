@@ -5,7 +5,6 @@ import { Link } from "@/i18n/navigation";
 import { getBusinessKitCommercialState, isBusinessKitProduct, parseBusinessKitData } from "@/lib/business-kits";
 import { isEnquiryOnly } from "@/lib/purchase-mode";
 import { KitIllustrationForProduct } from "@/components/business-kits/KitIllustration";
-import { IllustrativeImageBadge } from "@/components/business-kits/IllustrativeImageBadge";
 import { normalizeLocale } from "@/lib/seo";
 import type { WCProduct } from "@/lib/woocommerce";
 
@@ -67,7 +66,6 @@ export function ProductCard({ product }: { product: WCProduct }) {
           </span>
         )}
 
-        {kitState && image ? <IllustrativeImageBadge /> : null}
 
         {product.on_sale ? (
           <span className="absolute top-3 left-3 rounded-full bg-accent px-3 py-1 text-xs font-semibold text-white">{t("sale")}</span>

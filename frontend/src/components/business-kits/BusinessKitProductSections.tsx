@@ -1,11 +1,13 @@
 "use client";
 
+import { useRef, useState } from "react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { getBusinessKitCommercialState, isWooCommercePlaceholderImage, parseBusinessKitData, removeProseContentLists, type BusinessKitCommercialState, type BusinessKitContentItem } from "@/lib/business-kits";
+import { ProductEnquiryForm } from "@/components/ProductEnquiryForm";
+import { ProductFAQ } from "@/components/product/ProductFAQ";
 import { KitIllustrationForProduct } from "@/components/business-kits/KitIllustration";
-import { IllustrativeImageBadge } from "@/components/business-kits/IllustrativeImageBadge";
 import { formatProductPrice, type ProductPageProduct } from "@/lib/product-page";
 import type { WCProduct, WCReview } from "@/lib/woocommerce";
 
@@ -31,6 +33,53 @@ export function BusinessKitSupportStrip({ orderable = true }: { orderable?: bool
   );
 }
 
+function KitItemCard({ item }: { item: BusinessKitContentItem }) {
+  const t = useTranslations("businessKitProduct");
+  const name = item.title || item.product?.name || "";
+  const image = item.image || item.product?.image || null;
+  const optional = item.kind === "optional";
+  const operationLabel =
+    item.operation === "replace"
+      ? item.replaces ? t("operationReplace", { name: item.replaces.name }) : t("operationReplaceGeneric")
+      : item.operation === "replace_format"
+        ? t("operationReplaceFormat")
+        : item.operation === "quote_dependent"
+          ? t("operationQuote")
+          : item.operation === "add"
+            ? t("operationAdd")
+            : "";
+
+  return (
+    <li className="flex min-w-0 gap-4 rounded-kubikart-lg border border-border bg-surface-white p-4 sm:p-5">
+      {image ? (
+        <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-kubikart-md bg-surface sm:h-24 sm:w-24">
+          <Image src={image.src} alt={image.alt || name} fill sizes="96px" className="object-cover" unoptimized />
+        </div>
+      ) : null}
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+          <h3 className="min-w-0 font-heading text-base leading-6 font-bold text-brand break-words">{name}</h3>
+          {optional ? (
+            operationLabel ? (
+              <span className="max-w-full rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs font-semibold text-brand break-words">{operationLabel}</span>
+            ) : null
+          ) : (
+            <span className="shrink-0 rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs font-semibold text-brand">
+              {t("contentsQuantity", { count: item.quantity })}
+            </span>
+          )}
+        </div>
+        {item.description ? <p className="mt-2 text-sm leading-6 whitespace-pre-line text-muted">{item.description}</p> : null}
+        {item.product ? (
+          <Link href={`/shop/${item.product.slug}`} className="kk-link mt-2 inline-flex min-h-11 items-center text-sm font-semibold">
+            {t("contentsViewProduct", { name: item.product.name })}
+          </Link>
+        ) : null}
+      </div>
+    </li>
+  );
+}
+
 export function BusinessKitContents({
   items,
   state,
@@ -40,49 +89,43 @@ export function BusinessKitContents({
 }) {
   const t = useTranslations("businessKitProduct");
   if (items.length === 0) return null;
+  const included = items.filter((item) => item.kind !== "optional");
+  const optional = items.filter((item) => item.kind === "optional");
 
   return (
     <section aria-labelledby="kit-contents-heading" className="kk-container-full pt-16 lg:pt-20">
-      <div className="max-w-3xl">
-        <p className="kk-eyebrow">{t("contentsEyebrow")}</p>
-        <h2 id="kit-contents-heading" className="kk-heading-2 mt-3">{t("contentsTitle")}</h2>
-        <p className="mt-4 leading-7 text-muted">
-          {state.kind === "enquiry" ? t("contentsIntroEnquiry") : t("contentsIntro")}
-        </p>
-      </div>
+      {included.length > 0 ? (
+        <>
+          <div className="max-w-3xl">
+            <p className="kk-eyebrow">{t("contentsEyebrow")}</p>
+            <h2 id="kit-contents-heading" className="kk-heading-2 mt-3">{t("contentsTitle")}</h2>
+            <p className="mt-4 leading-7 text-muted">
+              {state.kind === "enquiry" ? t("contentsIntroEnquiry") : t("contentsIntro")}
+            </p>
+          </div>
+          <ul className="mt-8 grid gap-4 md:grid-cols-2">
+            {included.map((item, index) => (
+              <KitItemCard key={item.id || `${item.title}-${index}`} item={item} />
+            ))}
+          </ul>
+        </>
+      ) : null}
 
-      <ul className="mt-8 grid gap-4 md:grid-cols-2">
-        {items.map((item) => {
-          const name = item.title || item.product?.name || "";
-          const image = item.image || item.product?.image || null;
+      {optional.length > 0 ? (
+        <div className={included.length > 0 ? "mt-14" : ""}>
+          <div className="max-w-3xl">
+            <p className="kk-eyebrow">{t("optionalEyebrow")}</p>
+            <h2 id={included.length > 0 ? "kit-optional-heading" : "kit-contents-heading"} className="kk-heading-2 mt-3">{t("optionalTitle")}</h2>
+            <p className="mt-4 leading-7 text-muted">{t("optionalIntro")}</p>
+          </div>
+          <ul className="mt-8 grid gap-4 md:grid-cols-2">
+            {optional.map((item, index) => (
+              <KitItemCard key={item.id || `${item.title}-${index}`} item={item} />
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
-          return (
-            <li key={item.id || name} className="flex min-w-0 gap-4 rounded-kubikart-lg border border-border bg-surface-white p-4 sm:p-5">
-              {image ? (
-                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-kubikart-md bg-surface sm:h-24 sm:w-24">
-                  <Image src={image.src} alt={image.alt || name} fill sizes="96px" className="object-cover" unoptimized />
-                </div>
-              ) : null}
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                  <h3 className="min-w-0 font-heading text-base leading-6 font-bold text-brand break-words">{name}</h3>
-                  <span className="shrink-0 rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs font-semibold text-brand">
-                    {t("contentsQuantity", { count: item.quantity })}
-                  </span>
-                </div>
-                {item.description ? (
-                  <p className="mt-2 text-sm leading-6 whitespace-pre-line text-muted">{item.description}</p>
-                ) : null}
-                {item.product ? (
-                  <Link href={`/shop/${item.product.slug}`} className="kk-link mt-2 inline-flex min-h-11 items-center text-sm font-semibold">
-                    {t("contentsViewProduct", { name: item.product.name })}
-                  </Link>
-                ) : null}
-              </div>
-            </li>
-          );
-        })}
-      </ul>
       <p className="mt-5 text-sm text-muted">
         {t("contentsNote")}
         {items.some((item) => item.product) ? ` ${t("contentsNoteLinked")}` : ""}
@@ -101,14 +144,28 @@ export function BusinessKitEnquiryPanel({
   bundle?: boolean;
 }) {
   const t = useTranslations("businessKitProduct");
+  const [open, setOpen] = useState(false);
+  const formHeading = useRef<HTMLHeadingElement>(null);
   const unavailable = state.kind === "unavailable";
   const startingPrice = state.kind === "enquiry" ? state.startingPrice : undefined;
+  // A bundle opens the enquiry form in place; other enquiry-only products keep the contact page link.
+  const inline = bundle && !unavailable;
+
+  function toggleForm() {
+    const next = !open;
+    setOpen(next);
+    if (next) requestAnimationFrame(() => formHeading.current?.focus());
+  }
 
   return (
     <div className="rounded-kubikart-lg border border-border bg-surface p-5 sm:p-6" role="region" aria-labelledby="kit-enquiry-heading">
       {!unavailable ? (
-        <p className="font-heading text-[30px] font-bold tracking-[-0.03em] text-accent sm:text-[34px]">
-          {startingPrice ? t("startingPrice", { price: formatProductPrice({ amount: startingPrice, currency: "EUR" }) }) : t("priceOnRequest")}
+        <p className={startingPrice || !bundle ? "font-heading text-[30px] font-bold tracking-[-0.03em] text-accent sm:text-[34px]" : "font-heading text-lg font-bold text-accent"}>
+          {startingPrice
+            ? t("startingPrice", { price: formatProductPrice({ amount: startingPrice, currency: "EUR" }) })
+            : bundle
+              ? t("priceToBeConfirmed")
+              : t("priceOnRequest")}
         </p>
       ) : null}
       <h2 id="kit-enquiry-heading" className="mt-2 font-heading text-xl font-bold text-brand">
@@ -116,11 +173,29 @@ export function BusinessKitEnquiryPanel({
       </h2>
       <p className="mt-3 text-sm leading-6 text-muted">{unavailable ? t("unavailableText") : t("enquiryText")}</p>
       <div className="mt-5 flex flex-wrap gap-3">
-        <Link href={`/kontakt?product=${encodeURIComponent(product.slug)}`} className="kk-button kk-button-primary">
-          {bundle ? t("enquiryCta") : t("enquiryCtaGeneric")}
-        </Link>
+        {inline ? (
+          <button type="button" onClick={toggleForm} aria-expanded={open} aria-controls="kit-enquiry-form" className="kk-button kk-button-primary">
+            {open ? t("enquiryFormHide") : t("enquiryCta")}
+          </button>
+        ) : (
+          <Link href={`/kontakt?product=${encodeURIComponent(product.slug)}`} className="kk-button kk-button-primary">
+            {bundle ? t("enquiryCta") : t("enquiryCtaGeneric")}
+          </Link>
+        )}
         <Link href="/shop" className="kk-button kk-button-secondary">{t("enquiryShop")}</Link>
       </div>
+      {inline ? (
+        <div id="kit-enquiry-form" hidden={!open} className="mt-6 border-t border-border pt-6">
+          {open ? (
+            <>
+              <h3 ref={formHeading} tabIndex={-1} className="mb-3 font-heading text-lg font-bold text-brand focus:outline-none">
+                {t("enquiryFormTitle")}
+              </h3>
+              <ProductEnquiryForm product={{ id: product.id, slug: product.slug, name: product.name }} compact bundle />
+            </>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -281,6 +356,38 @@ export function BusinessKitProcess() {
   );
 }
 
+export function BusinessKitEnquiryProcess() {
+  const t = useTranslations("businessKitProduct");
+
+  return (
+    <section aria-labelledby="kit-enquiry-process-heading" className="bg-surface">
+      <div className="kk-container-full py-16 lg:py-20">
+        <p className="kk-eyebrow">{t("enquiryProcessEyebrow")}</p>
+        <h2 id="kit-enquiry-process-heading" className="kk-heading-2 mt-3">{t("enquiryProcessTitle")}</h2>
+        <ol className="mt-9 grid gap-6 md:grid-cols-3">
+          {[1, 2, 3].map((number) => (
+            <li key={number} className="relative border-l border-border pl-5 md:border-l-0 md:border-t md:pt-6 md:pl-0">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand font-heading text-sm font-bold text-white">{number}</span>
+              <h3 className="mt-4 font-heading text-base font-bold text-brand">{t(`enquiryProcess${number}`)}</h3>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  );
+}
+
+export function BusinessKitFaq() {
+  const t = useTranslations("businessKitProduct");
+  const faqs = [1, 2, 3, 4].map((number) => ({ question: t(`faq${number}Question`), answer: t(`faq${number}Answer`) }));
+
+  return (
+    <div className="kk-container-full py-16 lg:py-20">
+      <ProductFAQ faqs={faqs} title={t("faqTitle")} />
+    </div>
+  );
+}
+
 function getKitImage(product: WCProduct) {
   const image = product.images[0];
   return image && !isWooCommercePlaceholderImage(image) ? image : undefined;
@@ -316,7 +423,6 @@ export function OtherBusinessKits({ products }: { products: WCProduct[] }) {
                     {t("imagePending")}
                   </span>
                 )}
-                {image ? <IllustrativeImageBadge /> : null}
               </Link>
               <div className="flex flex-1 flex-col p-5">
                 <h3 className="font-heading text-lg font-bold text-brand">

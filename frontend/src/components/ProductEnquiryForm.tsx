@@ -23,6 +23,7 @@ export function ProductEnquiryForm({
   customSizeKind = "overall",
   configuration,
   compact = false,
+  bundle = false,
 }: {
   product: { id: number; slug: string; name: string };
   /** Adds the width and maximum-height fields of a "Request custom size" enquiry. */
@@ -36,6 +37,8 @@ export function ProductEnquiryForm({
   configuration?: { lines: string[]; fileTokens: string[]; validate: () => boolean; busy?: boolean; fileNames?: string[] };
   /** Embedded in the product page: no intro box and no link back to the same page. */
   compact?: boolean;
+  /** Business Bundle enquiry: contact details only; sizes, artwork and the quote are discussed afterwards. */
+  bundle?: boolean;
 }) {
   const t = useTranslations("enquiryForm");
   const protectedFetch = useProtectedFetch();
@@ -124,7 +127,7 @@ export function ProductEnquiryForm({
           <strong>{product.name}</strong>
         </div>
       )}
-      <p className="text-sm leading-6 text-gray-600">{customSize ? t(CUSTOM_SIZE_TEXT[customSizeKind].intro) : configuration ? t("configurationIntro") : t("intro")}</p>
+      <p className="text-sm leading-6 text-gray-600">{customSize ? t(CUSTOM_SIZE_TEXT[customSizeKind].intro) : configuration ? t("configurationIntro") : bundle ? t("bundleIntro") : t("intro")}</p>
       {configuration?.fileNames?.length ? (
         <p className="rounded-xl border border-border bg-surface-white px-4 py-3 text-sm text-navy-900">
           {t("attachedFiles", { names: configuration.fileNames.join(", ") })}

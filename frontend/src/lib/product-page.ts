@@ -424,6 +424,7 @@ function mapWooProductToProductPageProduct(
 
   const priceAmount = parsePriceAmount(product.price || product.regular_price || product.sale_price, 0);
   const isKit = product.categories.some((category) => isBusinessKitsCategorySlug(category.slug));
+  const kitData = isKit ? parseBusinessKitData(product.meta_data) : undefined;
   const mappedVariations = mapWooVariations(variations, "in_stock");
   const estimatedPackage = product.meta_data?.some((meta) =>
     meta.key === "_kubikart_shipping_dimensions_estimate" &&
@@ -452,8 +453,8 @@ function mapWooProductToProductPageProduct(
     shortDescription: plainShortDescription,
     description: plainDescription,
     descriptionHtml: sanitizeWooCommerceHtml(product.description || product.short_description || ""),
-    seoTitle: `${product.name} | Kubikart`,
-    seoDescription: plainShortDescription || labels.genericSeoDescription(product.name),
+    seoTitle: kitData?.seo.title || `${product.name} | Kubikart`,
+    seoDescription: kitData?.seo.description || plainShortDescription || labels.genericSeoDescription(product.name),
     category: primaryCategory,
     categories: product.categories.length
         ? product.categories.map((category) => ({
@@ -535,7 +536,7 @@ function mapWooProductToProductPageProduct(
       priceAmount > 0 &&
       !isEnquiryOnly(product) &&
       (!isKit || ["purchasable", "outOfStock"].includes(getBusinessKitCommercialState(product).kind)),
-    ...(isKit ? { kit: parseBusinessKitData(product.meta_data) } : {}),
+    ...(kitData ? { kit: kitData } : {}),
     ...(isKit || isEnquiryOnly(product) ? { kitCommercialState: getBusinessKitCommercialState(product) } : {}),
     ...(parseSetConfig(product.meta_data) ? { setConfig: parseSetConfig(product.meta_data) as SetConfig } : {}),
     weight: !estimatedWeight ? parseFloat(product.weight) || undefined : undefined,

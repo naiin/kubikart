@@ -35,6 +35,14 @@ describe("server cart for Business Kits and uploads", () => {
     await expect(calculateServerCart({ items: [{ productId: 164, quantity: 1 }] })).rejects.toMatchObject({ status: 409 });
   });
 
+  it("refuses a Business Bundle that is enquiry-only and has no price, so it cannot be ordered through the cart API", async () => {
+    const bundle = product({ id: 1487, price: "", purchasable: false, meta_data: [{ key: "_kubikart_purchase_mode", value: "enquiry" }, kitMeta("enquiry")] });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => bundle }));
+    const { calculateServerCart } = await import("@/lib/server-cart");
+
+    await expect(calculateServerCart({ items: [{ productId: 1487, quantity: 1 }] })).rejects.toMatchObject({ status: 409, code: "enquiry_only" });
+  });
+
   it("prices a kit that the owner explicitly set to direct purchase", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => product({ meta_data: [kitMeta("purchase")] }) }));
     const { calculateServerCart } = await import("@/lib/server-cart");

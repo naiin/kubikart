@@ -12,6 +12,8 @@ const KUBIKART_KIT_VERSION = '1.0.0';
 const KUBIKART_KIT_SCHEMA_VERSION = 1;
 const KUBIKART_KIT_ORDER_MODE_META_KEY = '_kubikart_kit_order_mode';
 const KUBIKART_KIT_SCOPE_SUMMARY_META_KEY = '_kubikart_kit_scope_summary';
+const KUBIKART_KIT_SEO_TITLE_META_KEY = '_kubikart_seo_title';
+const KUBIKART_KIT_SEO_DESCRIPTION_META_KEY = '_kubikart_seo_description';
 const KUBIKART_KIT_CONTENTS_META_KEY = '_kubikart_kit_contents';
 const KUBIKART_KIT_REST_META_KEY = '_kubikart_kit';
 const KUBIKART_KIT_NONCE_ACTION = 'kubikart_kit_contents_save';
@@ -117,6 +119,39 @@ function kubikart_kit_sanitize_icon($value): string {
     return array_key_exists($value, kubikart_kit_icon_options()) ? $value : '';
 }
 
+/** An entry is part of the base package or an optional upgrade that is quoted separately. */
+function kubikart_kit_kinds(): array {
+    return [
+        'included' => 'Im Basispaket enthalten',
+        'optional' => 'Optionales Upgrade (separat angeboten)',
+    ];
+}
+
+/**
+ * What an optional entry does to the base package. `replace` swaps one base product for another (no second item is
+ * added), `replace_format` changes the format/size of a base product, `add` adds quantity or a new product and
+ * `quote_dependent` is agreed in the quote (for example to avoid charging the same artwork twice).
+ */
+function kubikart_kit_operations(): array {
+    return [
+        '' => 'Nicht angegeben',
+        'add' => 'Zusätzlich hinzufügen',
+        'replace' => 'Ersetzt ein Produkt des Basispakets',
+        'replace_format' => 'Ändert Format/Größe eines Basisprodukts',
+        'quote_dependent' => 'Nach Angebot abstimmen',
+    ];
+}
+
+function kubikart_kit_sanitize_kind($value): string {
+    $value = is_string($value) ? sanitize_key($value) : '';
+    return array_key_exists($value, kubikart_kit_kinds()) ? $value : 'included';
+}
+
+function kubikart_kit_sanitize_operation($value): string {
+    $value = is_string($value) ? sanitize_key($value) : '';
+    return array_key_exists($value, kubikart_kit_operations()) ? $value : '';
+}
+
 function kubikart_kit_normalize_contents($raw): array {
     if (!is_array($raw) || !isset($raw['items']) || !is_array($raw['items'])) {
         return [];
@@ -136,6 +171,9 @@ function kubikart_kit_normalize_contents($raw): array {
             'description' => kubikart_kit_plain_text($item['description'] ?? '', true),
             'image_id' => absint($item['image_id'] ?? 0),
             'icon' => kubikart_kit_sanitize_icon($item['icon'] ?? ''),
+            'kind' => kubikart_kit_sanitize_kind($item['kind'] ?? ''),
+            'operation' => kubikart_kit_sanitize_operation($item['operation'] ?? ''),
+            'replaces_product_id' => absint($item['replaces_product_id'] ?? 0),
         ];
     }
     return $items;
@@ -190,7 +228,7 @@ function kubikart_kit_map_language(int $product_id, int $variation_id, string $k
 function kubikart_kit_validate_content_row(int $number, array $row, int $kit_id, array &$errors): ?array {
     $label = sprintf('Eintrag %d', $number);
 
-    foreach (['id', 'product_id', 'variation_id', 'quantity', 'title', 'description', 'image_id', 'icon'] as $key) {
+    foreach (['id', 'product_id', 'variation_id', 'quantity', 'title', 'description', 'image_id', 'icon', 'kind', 'operation', 'replaces_product_id'] as $key) {
         if (isset($row[$key]) && !is_scalar($row[$key])) {
             $errors[] = sprintf('%s: Ungültige Daten im Feld „%s“.', $label, $key);
             return null;
@@ -283,6 +321,30 @@ function kubikart_kit_validate_content_row(int $number, array $row, int $kit_id,
         $valid = false;
     }
 
+    $kind = kubikart_kit_sanitize_kind($row['kind'] ?? '');
+    $operation = kubikart_kit_sanitize_operation($row['operation'] ?? '');
+    $replaces_raw = trim((string) ($row['replaces_product_id'] ?? ''));
+    $replaces_id = ctype_digit($replaces_raw) ? (int) $replaces_raw : 0;
+    if ($replaces_raw !== '' && !ctype_digit($replaces_raw)) {
+        $errors[] = sprintf('%s: Ungültige ID des ersetzten Produkts.', $label);
+        $valid = false;
+    }
+    if ($kind === 'included') {
+        // A base item never carries an upgrade operation.
+        $operation = '';
+        $replaces_id = 0;
+    } elseif (in_array($operation, ['replace', 'replace_format'], true)) {
+        if ($replaces_id === 0) {
+            $errors[] = sprintf('%s: Bei „Ersetzt“ bzw. „Ändert Format“ muss das betroffene Produkt des Basispakets gewählt werden.', $label);
+            $valid = false;
+        } elseif (get_post_type($replaces_id) !== 'product') {
+            $errors[] = sprintf('%s: Das ersetzte Produkt (ID %d) existiert nicht.', $label, $replaces_id);
+            $valid = false;
+        }
+    } else {
+        $replaces_id = 0;
+    }
+
     if (!$valid) {
         return null;
     }
@@ -297,6 +359,9 @@ function kubikart_kit_validate_content_row(int $number, array $row, int $kit_id,
         'description' => $description,
         'image_id' => $image_id,
         'icon' => kubikart_kit_sanitize_icon($row['icon'] ?? ''),
+        'kind' => $kind,
+        'operation' => $operation,
+        'replaces_product_id' => $replaces_id,
     ];
 }
 
@@ -368,11 +433,37 @@ function kubikart_kit_sanitize_contents_payload($raw_items, $raw_mode, $kit_id =
             }
         }
 
+        if ($item['replaces_product_id'] > 0) {
+            $target = kubikart_kit_map_language($item['replaces_product_id'], 0, $kit_language);
+            if ($target === null) {
+                $errors[] = sprintf('Eintrag %d: Das ersetzte Produkt hat keine Übersetzung in der Sprache des Pakets (%s).', $number, $kit_language);
+                continue;
+            }
+            $item['replaces_product_id'] = $target['product_id'];
+        }
+
         if ($item['id'] === '' || isset($seen_ids[$item['id']])) {
             $item['id'] = function_exists('wp_generate_uuid4') ? wp_generate_uuid4() : bin2hex(random_bytes(16));
         }
         $seen_ids[$item['id']] = true;
         $items[] = $item;
+    }
+
+    // An upgrade that replaces or reformats a base product must point at a product that is really in the base package.
+    $base_products = [];
+    foreach ($items as $candidate) {
+        if ($candidate['kind'] === 'included' && $candidate['product_id'] > 0) {
+            $base_products[$candidate['product_id']] = true;
+        }
+    }
+    foreach ($items as $position => $candidate) {
+        if (
+            $candidate['kind'] === 'optional'
+            && in_array($candidate['operation'], ['replace', 'replace_format'], true)
+            && !isset($base_products[$candidate['replaces_product_id']])
+        ) {
+            $errors[] = sprintf('Eintrag %d: Das ersetzte Produkt (ID %d) gehört nicht zum Basispaket dieser Sprache.', $position + 1, $candidate['replaces_product_id']);
+        }
     }
 
     if (count($items) > KUBIKART_KIT_MAX_ITEMS) {
@@ -515,6 +606,12 @@ function kubikart_kit_build_rest_payload($post_id): ?array {
             $image = ['id' => $item['image_id'], 'src' => $image_data['src'], 'alt' => $image_data['alt']];
         }
 
+        $replaces = null;
+        if (($item['replaces_product_id'] ?? 0) > 0) {
+            $target = kubikart_kit_resolve_link(['product_id' => $item['replaces_product_id'], 'variation_id' => 0], $kit_language);
+            $replaces = $target['product'] ? ['id' => $target['product']['id'], 'name' => $target['product']['name'], 'slug' => $target['product']['slug']] : null;
+        }
+
         $items[] = [
             'id' => $item['id'],
             'quantity' => $item['quantity'],
@@ -522,6 +619,9 @@ function kubikart_kit_build_rest_payload($post_id): ?array {
             'description' => $item['description'],
             'image' => $image,
             'icon' => $item['icon'] ?? '',
+            'kind' => $item['kind'] ?? 'included',
+            'operation' => $item['operation'] ?? '',
+            'replaces' => $replaces,
             'link_state' => $link['state'],
             'product' => $link['product'],
         ];
@@ -534,6 +634,10 @@ function kubikart_kit_build_rest_payload($post_id): ?array {
         'order_mode_explicit' => $stored_mode === 'purchase' || $stored_mode === 'enquiry',
         'needs_contents' => empty($items),
         'scope_summary' => sanitize_text_field((string) get_post_meta($post_id, KUBIKART_KIT_SCOPE_SUMMARY_META_KEY, true)),
+        'seo' => [
+            'title' => sanitize_text_field((string) get_post_meta($post_id, KUBIKART_KIT_SEO_TITLE_META_KEY, true)),
+            'description' => sanitize_text_field((string) get_post_meta($post_id, KUBIKART_KIT_SEO_DESCRIPTION_META_KEY, true)),
+        ],
         'items' => $items,
         'skipped_items' => $skipped,
     ];
@@ -671,6 +775,34 @@ function kubikart_kit_render_item_row($index, array $item = [], string $kit_lang
                     </select>
                 </label>
             </div>
+            <div class="kubikart-kit-field">
+                <label>Art des Eintrags
+                    <select name="<?php echo esc_attr($name); ?>[kind]">
+                        <?php foreach (kubikart_kit_kinds() as $kind_value => $kind_label): ?>
+                            <option value="<?php echo esc_attr($kind_value); ?>" <?php selected($item['kind'] ?? 'included', $kind_value); ?>><?php echo esc_html($kind_label); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+            </div>
+            <div class="kubikart-kit-field">
+                <label>Aktion (nur bei optionalen Upgrades)
+                    <select name="<?php echo esc_attr($name); ?>[operation]">
+                        <?php foreach (kubikart_kit_operations() as $operation_value => $operation_label): ?>
+                            <option value="<?php echo esc_attr($operation_value); ?>" <?php selected($item['operation'] ?? '', $operation_value); ?>><?php echo esc_html($operation_label); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+            </div>
+            <div class="kubikart-kit-field kubikart-kit-field--wide">
+                <label>Betroffenes Produkt des Basispakets (bei „Ersetzt“ und „Ändert Format“)
+                    <select class="wc-product-search" style="width:100%" name="<?php echo esc_attr($name); ?>[replaces_product_id]" data-action="woocommerce_json_search_products" data-allow_clear="true" data-placeholder="Produkt des Basispakets suchen …">
+                        <?php if (absint($item['replaces_product_id'] ?? 0) > 0): ?>
+                            <option value="<?php echo esc_attr(absint($item['replaces_product_id'])); ?>" selected="selected"><?php echo esc_html(kubikart_kit_product_option_label(absint($item['replaces_product_id']), 0)); ?></option>
+                        <?php endif; ?>
+                    </select>
+                </label>
+                <p class="description">Ein Upgrade mit „Ersetzt“ tauscht dieses Produkt aus, statt ein zweites hinzuzufügen. Optionale Upgrades sind nicht im Basispreis enthalten.</p>
+            </div>
             <div class="kubikart-kit-field kubikart-kit-field--wide kubikart-kit-image" data-kit-image<?php echo $product_id > 0 ? ' hidden' : ''; ?>>
                 <span class="kubikart-kit-image__label">Bild (nur für Einträge ohne verknüpftes Produkt)</span>
                 <input type="hidden" name="<?php echo esc_attr($name); ?>[image_id]" value="<?php echo esc_attr($image_id ?: ''); ?>" data-kit-image-id />
@@ -728,6 +860,17 @@ function kubikart_kit_render_metabox($post) {
         </p>
         <p class="description">Wird direkt bei den Kaufbuttons angezeigt, z. B. „Mit vorhandenem Logo · digitaler Entwurf vor Fertigung · eine Korrekturrunde inklusive · ohne Montage“. Nur Leistungen nennen, die wirklich zugesagt sind.</p>
 
+        <h4>SEO</h4>
+        <p>
+            <label for="kubikart-kit-seo-title">SEO-Titel</label><br />
+            <input type="text" id="kubikart-kit-seo-title" class="large-text" maxlength="70" name="kubikart_kit_seo_title" value="<?php echo esc_attr((string) get_post_meta($post_id, KUBIKART_KIT_SEO_TITLE_META_KEY, true)); ?>" />
+        </p>
+        <p>
+            <label for="kubikart-kit-seo-description">SEO-Beschreibung</label><br />
+            <textarea id="kubikart-kit-seo-description" class="large-text" rows="2" maxlength="170" name="kubikart_kit_seo_description"><?php echo esc_textarea((string) get_post_meta($post_id, KUBIKART_KIT_SEO_DESCRIPTION_META_KEY, true)); ?></textarea>
+        </p>
+        <p class="description">Titel und Beschreibung für Suchmaschinen und Link-Vorschauen dieser Paketseite. Leer = Produkttitel bzw. Kurzbeschreibung.</p>
+
         <h4>Inhalt des Pakets</h4>
         <p class="description">Verknüpfte Produkte werden auf der Paketseite als „im Paketpreis enthalten“ dargestellt. Der Lagerbestand der Bestandteile wird <strong>nicht</strong> reduziert und beeinflusst die Verfügbarkeit des Pakets nicht. Die Reihenfolge entspricht der Anzeige.</p>
         <div id="kubikart-kit-items" class="kubikart-kit-items" data-next-index="<?php echo esc_attr(count($items)); ?>" data-max-items="<?php echo esc_attr(KUBIKART_KIT_MAX_ITEMS); ?>">
@@ -781,6 +924,21 @@ function kubikart_kit_handle_save($post_id) {
             delete_post_meta($post_id, KUBIKART_KIT_SCOPE_SUMMARY_META_KEY);
         } else {
             update_post_meta($post_id, KUBIKART_KIT_SCOPE_SUMMARY_META_KEY, $summary);
+        }
+    }
+
+    foreach ([
+        'kubikart_kit_seo_title' => [KUBIKART_KIT_SEO_TITLE_META_KEY, 70],
+        'kubikart_kit_seo_description' => [KUBIKART_KIT_SEO_DESCRIPTION_META_KEY, 170],
+    ] as $field => [$meta_key, $max]) {
+        if (!isset($_POST[$field])) {
+            continue;
+        }
+        $text = mb_substr(sanitize_text_field(wp_unslash($_POST[$field])), 0, $max);
+        if ($text === '') {
+            delete_post_meta($post_id, $meta_key);
+        } else {
+            update_post_meta($post_id, $meta_key, $text);
         }
     }
 

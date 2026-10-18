@@ -144,7 +144,7 @@ export function KitIllustration({
   variant?: "gallery" | "card";
 }) {
   const t = useTranslations("businessKitProduct");
-  const shown = items.filter((item) => item.title || item.product);
+  const shown = items.filter((item) => item.kind !== "optional" && (item.title || item.product));
   if (shown.length === 0) return null;
 
   const summary = shown.map((item) => t("illustrationItem", { count: item.quantity, name: item.title || item.product?.name || "" })).join(", ");

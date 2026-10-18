@@ -76,6 +76,7 @@ export async function POST(request: Request) {
   const contextLabel = enquiryProduct
     ? [
         `Produkt/Paket: ${enquiryProduct.name} (ID ${enquiryProduct.id}, ${enquiryProduct.slug})`,
+        ...(enquiryProduct.sku ? [`SKU: ${enquiryProduct.sku}`] : []),
         `Seite: ${enquiryProduct.url}`,
         `Sprache: ${requestLocale}`,
         `Bestellart: ${enquiryProduct.mode === "enquiry" ? "Nur auf Anfrage" : "Direktkauf"}`,
@@ -135,7 +136,7 @@ export async function POST(request: Request) {
     ...(sanitizedData.phone ? { phone: sanitizedData.phone } : {}),
     ...(companyLine ? { company: companyLine } : {}),
     ...(enquiryMessage ? { message: enquiryMessage } : {}),
-    ...(enquiryProduct ? { product: { id: enquiryProduct.id, name: enquiryProduct.name, slug: enquiryProduct.slug, url: enquiryProduct.url, mode: enquiryProduct.mode } } : {}),
+    ...(enquiryProduct ? { product: { id: enquiryProduct.id, name: enquiryProduct.name, slug: enquiryProduct.slug, ...(enquiryProduct.sku ? { sku: enquiryProduct.sku } : {}), url: enquiryProduct.url, mode: enquiryProduct.mode } } : {}),
     ...(industryContext ? { industry: industryContext } : {}),
   };
 

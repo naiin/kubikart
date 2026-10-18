@@ -13,7 +13,7 @@ vi.mock("next-intl", () => ({
 }));
 
 function item(overrides: Partial<BusinessKitContentItem>): BusinessKitContentItem {
-  return { id: "x", icon: "stand", quantity: 1, title: "Aufsteller", description: "", image: null, linkState: "unlinked", product: null, ...overrides };
+  return { id: "x", icon: "stand", quantity: 1, title: "Aufsteller", description: "", image: null, linkState: "unlinked", product: null, kind: "included", operation: "", replaces: null, ...overrides };
 }
 
 describe("KitIllustration", () => {

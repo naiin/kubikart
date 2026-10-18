@@ -55,6 +55,9 @@ export const BUSINESS_KIT_ICONS = [
 
 export type BusinessKitIcon = (typeof BUSINESS_KIT_ICONS)[number];
 
+export const BUSINESS_KIT_OPERATIONS = ["add", "replace", "replace_format", "quote_dependent"] as const;
+export type BusinessKitOperation = (typeof BUSINESS_KIT_OPERATIONS)[number];
+
 export type BusinessKitContentItem = {
   id: string;
   icon: BusinessKitIcon | "";
@@ -63,6 +66,11 @@ export type BusinessKitContentItem = {
   description: string;
   image: { src: string; alt: string } | null;
   linkState: "linked" | "unlinked" | "unavailable" | "language_mismatch";
+  /** "included" is part of the base package; "optional" is an upgrade or addition agreed in the quote. */
+  kind: "included" | "optional";
+  /** How an optional item relates to the package: an extra, a replacement, another format, or priced after review. */
+  operation: BusinessKitOperation | "";
+  replaces: { id: number; name: string; slug: string } | null;
   product: { id: number; variationId: number; name: string; slug: string; image: { src: string; alt: string } | null } | null;
 };
 
@@ -72,6 +80,8 @@ export type BusinessKitData = {
   needsContents: boolean;
   scopeSummary: string;
   items: BusinessKitContentItem[];
+  /** Owner-supplied search title and description; empty when not set. */
+  seo: { title: string; description: string };
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -103,6 +113,7 @@ export function parseBusinessKitData(metaData: { key: string; value: unknown }[]
   const record = asRecord(value);
   const orderMode: BusinessKitOrderMode = record?.order_mode === "purchase" ? "purchase" : "enquiry";
   const rawItems = Array.isArray(record?.items) ? record.items : [];
+  const seo = asRecord(record?.seo);
 
   const items = rawItems.flatMap((raw): BusinessKitContentItem[] => {
     const item = asRecord(raw);
@@ -129,9 +140,21 @@ export function parseBusinessKitData(metaData: { key: string; value: unknown }[]
         : null;
     if (!title && !product) return [];
     const quantity = Number(item.quantity);
+    const kind: BusinessKitContentItem["kind"] = item.kind === "optional" ? "optional" : "included";
+    const operation = (BUSINESS_KIT_OPERATIONS as readonly string[]).includes(String(item.operation))
+      ? (item.operation as BusinessKitOperation)
+      : "";
+    const replacesRecord = asRecord(item.replaces);
+    const replaces =
+      kind === "optional" && replacesRecord && Number.isInteger(replacesRecord.id) && typeof replacesRecord.name === "string"
+        ? { id: Number(replacesRecord.id), name: replacesRecord.name, slug: typeof replacesRecord.slug === "string" ? replacesRecord.slug : "" }
+        : null;
 
     return [
       {
+        kind,
+        operation: kind === "optional" ? operation : "",
+        replaces,
         id: String(item.id || ""),
         icon: (BUSINESS_KIT_ICONS as readonly string[]).includes(String(item.icon)) ? (item.icon as BusinessKitIcon) : "",
         quantity: Number.isInteger(quantity) && quantity > 0 ? quantity : 1,
@@ -147,9 +170,13 @@ export function parseBusinessKitData(metaData: { key: string; value: unknown }[]
   return {
     orderMode,
     orderModeExplicit: record?.order_mode_explicit === true,
-    needsContents: items.length === 0,
+    needsContents: items.filter((item) => item.kind === "included").length === 0,
     scopeSummary: typeof record?.scope_summary === "string" ? record.scope_summary.trim().slice(0, 200) : "",
     items,
+    seo: {
+      title: typeof seo?.title === "string" ? seo.title.trim().slice(0, 120) : "",
+      description: typeof seo?.description === "string" ? seo.description.trim().slice(0, 320) : "",
+    },
   };
 }
 
