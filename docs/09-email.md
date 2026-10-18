@@ -17,6 +17,8 @@ Which application sends which message, how the Mailtrap integration is configure
 
 Local WooCommerce inspection found customer processing and refunded emails enabled globally. The order marker/filter above is therefore required and must be deployed with the frontend.
 
+**Language and branding of WooCommerce's own e-mails (refunds, order notes).** Polylang for WooCommerce sends them in the *order's* language, so `POST /api/orders/create` sends `lang` (de/en, from the customer's language) with the order; without it every order counted as German. Verified locally: an English order's refund subject is "Your Kubikart order #… has been refunded", a German one "Deine Kubikart-Bestellung #… wurde erstattet". Orders created before this change keep their old (German) language. The `{site_title}` in those subjects is the WordPress **Site Title**, now "Kubikart" (it was "Kubikart Backend"); production gets it with the next backend deploy (the database is replaced).
+
 Legal attachments default to `frontend/public/legal/agb.pdf` and `frontend/public/legal/widerruf.pdf`; both exist and are readable. Optional localized paths may be set with `MAIL_PDF_AGB_PATH` and `MAIL_PDF_WIDERRUF_PATH`; missing localized files fall back to the two existing generic files.
 
 ## 2. Configuration, templates and testing

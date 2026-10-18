@@ -168,3 +168,18 @@ describe("request-only variations", () => {
     expect(quote).toMatchObject({ requestOnly: true, requestKind: "quote" });
   });
 });
+
+describe("email field validation", () => {
+  const option: ProductPersonalizationOption = { id: "mail", label: "E-Mail", type: "email", required: true };
+  const state = (value: string) => ({ selectedOptions: {}, textInputs: { mail: value }, checkboxValues: {} });
+  const run = (value: string) =>
+    validateProductConfiguration([option], state(value), (label) => `required:${label}`, () => "too long", () => "url", (label) => `email:${label}`);
+
+  it("accepts a plausible address and rejects anything else", () => {
+    expect(run("info@salon.de")).toEqual({});
+    expect(run("  info@salon.de ")).toEqual({});
+    expect(run("kein-email")).toEqual({ mail: "email:E-Mail" });
+    expect(run("a@b")).toEqual({ mail: "email:E-Mail" });
+    expect(run("")).toEqual({ mail: "required:E-Mail" });
+  });
+});

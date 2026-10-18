@@ -47,6 +47,7 @@ import { getSetSelection } from "@/lib/purchase-mode";
 import { KitIllustration } from "@/components/business-kits/KitIllustration";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { ProductGallery } from "@/components/product/ProductGallery";
+import { ProductVideos } from "@/components/product/ProductVideos";
 import { CUSTOMER_FILE_MAX_BYTES } from "@/lib/customer-file-limits";
 import type { WCProduct } from "@/lib/woocommerce";
 
@@ -237,7 +238,7 @@ function PersonalizationForm({
             );
           }
 
-          if (option.type === "text" || option.type === "url") {
+          if (option.type === "text" || option.type === "url" || option.type === "email") {
             const value = textInputs[option.id] || "";
             const error = validationErrors[option.id];
             return (
@@ -249,8 +250,8 @@ function PersonalizationForm({
                 <div className="relative mt-2">
                   <input
                     id={option.id}
-                    type={option.type === "url" ? "url" : "text"}
-                    inputMode={option.type === "url" ? "url" : undefined}
+                    type={option.type === "url" || option.type === "email" ? option.type : "text"}
+                    inputMode={option.type === "url" || option.type === "email" ? option.type : undefined}
                     autoComplete="off"
                     value={value}
                     onChange={(event) => onTextInput(option.id, limitProductFieldValue(event.target.value, option.maxLength))}
@@ -654,7 +655,7 @@ function ProductHeading({
   return (
     <div>
       {eyebrow ? <p className="text-xs font-semibold tracking-[0.08em] text-accent uppercase">{eyebrow}</p> : null}
-      <h1 className={`${eyebrow ? "mt-3 " : ""}font-heading text-[28px] leading-[1.15] font-bold tracking-[-0.035em] text-brand min-[400px]:text-[34px] sm:text-[44px]`}>
+      <h1 className={`${eyebrow ? "mt-3 " : ""}font-heading text-[28px] leading-[1.15] font-bold tracking-[-0.035em] text-brand [overflow-wrap:anywhere] hyphens-auto min-[400px]:text-[34px] sm:text-[44px] lg:text-[34px] xl:text-[44px]`}>
         {name}
       </h1>
       <div className="mt-3">
@@ -737,7 +738,7 @@ function ProductPageClientContent({
   const showKitEnquiryPanel = kitEnquiry && !enquiryConfigurator;
   const customSizeKind = getCustomSizeKind(variationAttributes.map((attribute) => attribute.id));
   const requestKind = selectedVariation?.requestKind === "quote" ? "quote" : customSizeKind;
-  const requestSelection = variationAttributes.flatMap((attribute) => {
+  const requestVariationLines = variationAttributes.flatMap((attribute) => {
     const label = attribute.options?.find((choice) => choice.value === selectedOptions[attribute.id])?.label;
     return label ? [`${attribute.label}: ${label}`] : [];
   });
@@ -748,6 +749,7 @@ function ProductPageClientContent({
     (label) => t("fieldRequired", { label }),
     (label, maxLength) => t("fieldTooLong", { label, maxLength }),
     (label) => t("fieldInvalidUrl", { label }),
+    (label) => t("fieldInvalidEmail", { label }),
   );
   const hasCompleteVariation = !product.variations?.length || Boolean(selectedVariation);
   const isUploading = Object.values(uploading).some(Boolean);
@@ -777,6 +779,8 @@ function ProductPageClientContent({
     () => buildProductCustomization(product.personalizationOptions, { selectedOptions, textInputs, checkboxValues }, t("selectedYes"), fileNames),
     [product.personalizationOptions, selectedOptions, textInputs, checkboxValues, t, fileNames],
   );
+  // Files uploaded before switching to a request-only variation travel with the enquiry (the server verifies each token).
+  const uploadedFiles = product.personalizationOptions.filter((option) => option.type === "file" && customizations[option.id]);
 
   async function handleFileSelect(optionId: string, file: File | undefined) {
     if (!file) return;
@@ -840,7 +844,8 @@ function ProductPageClientContent({
     price: 5.49,
   });
   useEffect(() => {
-    if (kitEnquiry || selectedVariation?.requestOnly) return;
+    // The estimate only feeds the express checkout button, which needs a complete configuration (the server rejects an incomplete one).
+    if (kitEnquiry || selectedVariation?.requestOnly || !canAddToCart) return;
     fetch("/api/shipping/calculate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -859,7 +864,7 @@ function ProductPageClientContent({
       .catch(() => {
         // keep default
       });
-  }, [product.id, quantity, selectedVariation, customizations, kitEnquiry]);
+  }, [product.id, quantity, selectedVariation, customizations, kitEnquiry, canAddToCart]);
 
   function validateForEnquiry() {
     if (Object.keys(currentValidationErrors).length === 0) {
@@ -957,6 +962,7 @@ function ProductPageClientContent({
                   illustrative={isBusinessKit}
                   note={isBusinessKit ? kitT("imageNote") : undefined}
                 />
+                <ProductVideos videos={product.videos ?? []} poster={product.images[0]?.src} />
               </>
             )}
           </div>
@@ -1090,7 +1096,11 @@ function ProductPageClientContent({
               setSummary={setSummary}
               customSizeRequest={
                 requestingCustomSize ? (
-                  <CustomSizeRequest product={{ id: product.id, slug: product.slug, name: product.name }} kind={requestKind} selection={requestSelection} />
+                  <CustomSizeRequest product={{ id: product.id, slug: product.slug, name: product.name }} kind={requestKind}
+                    selection={[...requestVariationLines, ...uploadedFiles.map((option) => `${option.label}: ${fileNames[option.id] || ""}`.trim())]}
+                    fileTokens={uploadedFiles.map((option) => textInputs[option.id])}
+                    fileNames={uploadedFiles.map((option) => fileNames[option.id]).filter(Boolean)}
+                  />
                 ) : enquiryConfigurator ? (
                   <ConfiguredEnquiry
                     product={{ id: product.id, slug: product.slug, name: product.name }}

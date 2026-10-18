@@ -13,6 +13,7 @@ import argparse
 import gzip
 import hashlib
 import os
+import posixpath
 import re
 import shlex
 import shutil
@@ -77,6 +78,7 @@ class Config:
     ssh_user: str
     ssh_key: str | None
     remote_app_dir: str
+    remote_customer_files_dir: str
     db_host: str
     db_name: str
     db_user: str
@@ -93,11 +95,16 @@ class Config:
 
 def read_config() -> Config:
     load_local_env(LOCAL_ENV_FILE)
+    remote_app_dir = os.environ.get("DEPLOY_REMOTE_APP_DIR", "/home/www/STRATO-apps/wordpress_01/app").rstrip("/")
     config = Config(
         ssh_host=required_env("DEPLOY_SSH_HOST"),
         ssh_user=required_env("DEPLOY_SSH_USER"),
         ssh_key=os.environ.get("DEPLOY_SSH_KEY", "").strip() or None,
-        remote_app_dir=os.environ.get("DEPLOY_REMOTE_APP_DIR", "/home/www/STRATO-apps/wordpress_01/app").rstrip("/"),
+        remote_app_dir=remote_app_dir,
+        # Private customer uploads: a sibling of the WordPress folder, never inside the web root.
+        remote_customer_files_dir=os.environ.get(
+            "DEPLOY_REMOTE_CUSTOMER_FILES_DIR", posixpath.join(posixpath.dirname(remote_app_dir), "customer-files")
+        ).rstrip("/"),
         db_host=required_env("REMOTE_DB_HOST"),
         db_name=required_env("REMOTE_DB_NAME"),
         db_user=required_env("REMOTE_DB_USER"),
@@ -109,6 +116,9 @@ def read_config() -> Config:
     )
     if not config.remote_app_dir.startswith(EXPECTED_REMOTE_ROOT) or config.remote_app_dir == EXPECTED_REMOTE_ROOT.rstrip("/"):
         raise DeployError(f"Refusing unsafe remote path: {config.remote_app_dir}")
+    files_dir = config.remote_customer_files_dir
+    if not files_dir.startswith(EXPECTED_REMOTE_ROOT) or files_dir == config.remote_app_dir or files_dir.startswith(config.remote_app_dir + "/"):
+        raise DeployError(f"DEPLOY_REMOTE_CUSTOMER_FILES_DIR must be inside {EXPECTED_REMOTE_ROOT} but outside the WordPress folder: {files_dir}")
     if not config.wordpress_url.startswith(("http://", "https://")):
         raise DeployError("PRODUCTION_WORDPRESS_URL must be an HTTP(S) URL")
     return config
@@ -248,6 +258,14 @@ def replace_php_define(content: str, name: str, value: str) -> str:
     return content.replace(marker, replacement + "\n\n" + marker, 1)
 
 
+def add_php_define(content: str, name: str, value: str) -> str:
+    """Adds an unconditional define before the stop-editing marker (replace_php_define would edit a conditional one)."""
+    marker = "/* That's all, stop editing!"
+    if marker not in content:
+        raise DeployError(f"Cannot add {name}: wp-config stop-editing marker is missing")
+    return content.replace(marker, f"define( '{name}', {php_quote(value)} );\n\n" + marker, 1)
+
+
 def prepare_remote_config(config: Config, destination: Path) -> None:
     log("Generating wp-config-remote.php without changing local wp-config.php")
     content = LOCAL_WORDPRESS_DIR.joinpath("wp-config.php").read_text(encoding="utf-8")
@@ -261,6 +279,8 @@ def prepare_remote_config(config: Config, destination: Path) -> None:
         ("KUBIKART_FRONTEND_URL", config.frontend_url),
     ):
         content = replace_php_define(content, name, value)
+    # The local file defines this only for Lando (`if ( getenv( 'LANDO' ) === 'ON' ... )`), which stays inactive on the server.
+    content = add_php_define(content, "KUBIKART_CUSTOMER_FILES_DIR", config.remote_customer_files_dir)
     content = replace_php_define(content, "DISALLOW_FILE_EDIT", "__KUBIKART_RAW_TRUE__")
     content = content.replace(
         "define( 'DISALLOW_FILE_EDIT', '__KUBIKART_RAW_TRUE__' );",
@@ -298,6 +318,8 @@ def replace_remote_content(config: Config) -> None:
 
 def install_remote_config(config: Config, prepared_config: Path) -> None:
     staged_config = f"{config.remote_app_dir}/wp-config-remote.php"
+    log("Creating the private customer-files folder (outside the web root)")
+    ssh(config, f"mkdir -p {shlex.quote(config.remote_customer_files_dir)} && chmod 700 {shlex.quote(config.remote_customer_files_dir)}")
     log("Uploading wp-config-remote.php and renaming it to wp-config.php")
     run([*scp_base(config), str(prepared_config), f"{config.ssh_target}:{staged_config}"])
     ssh(

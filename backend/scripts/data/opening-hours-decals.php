@@ -61,8 +61,8 @@ return [
             . '<p>Windows, doors and decorative props are not included. Screen colours may differ slightly from the actual vinyl.</p>',
     ],
     'categories' => [
-        'de' => ['oeffnungszeiten-aufkleber', 'fenster-glasaufkleber', 'business-produkte'],
-        'en' => ['opening-hours-stickers', 'window-glass-stickers', 'business-products'],
+        'de' => ['fenster-glasaufkleber', 'business-produkte'],
+        'en' => ['window-glass-stickers', 'business-products'],
     ],
     'tags' => [
         'de' => ['Öffnungszeiten', 'Fensterbeschriftung', 'Türbeschriftung', 'Geschäftszeiten', 'Schaufensterfolie', 'Öffnungszeiten Folie', 'Ladenbeschriftung', 'Salon Aufkleber', 'Café Beschriftung', 'Praxis Beschriftung', 'ORACAL Folie', 'Wunschtext Folie', 'Glasbeschriftung'],

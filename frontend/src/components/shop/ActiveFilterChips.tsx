@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import type { WCCategory } from "@/lib/woocommerce";
 import { isBusinessKitsCategorySlug } from "@/lib/business-kits";
+import { findShopCategory } from "@/lib/shop-categories";
 
 export function ActiveFilterChips({ categories }: { categories: WCCategory[] }) {
   const t = useTranslations("shopPage");
@@ -28,7 +29,7 @@ export function ActiveFilterChips({ categories }: { categories: WCCategory[] }) 
   const chips: { label: string; key: string }[] = [];
 
   if (activeCategory) {
-    const category = categories.find((candidate) => String(candidate.id) === activeCategory);
+    const category = findShopCategory(categories, activeCategory);
     chips.push({
       label: category && isBusinessKitsCategorySlug(category.slug) ? t("businessKitsCategory") : category?.name || activeCategory,
       key: "category",

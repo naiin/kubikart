@@ -170,7 +170,7 @@ export function getProductFieldPresentation(
 
   return {
     control: option.type,
-    showCounter: (option.type === "text" || option.type === "textarea" || option.type === "url") && Boolean(option.maxLength),
+    showCounter: (option.type === "text" || option.type === "textarea" || option.type === "url" || option.type === "email") && Boolean(option.maxLength),
     label: `${option.label}${shouldAppendOptionalMarker(option) ? ` ${optionalMarker}` : ""}`,
     helperText: getMeaningfulFieldHelperText(option.helperText),
     extraPriceLabel:
@@ -199,17 +199,23 @@ export function isValidHttpUrl(value: string) {
   }
 }
 
+/** A plausible e-mail address (one @, no spaces, a dot in the domain); the same rule the contact form uses. */
+export function isValidEmailAddress(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 export function validateProductConfiguration(
   options: ProductPersonalizationOption[],
   state: ProductConfigurationState,
   requiredMessage: (label: string) => string,
   maxLengthMessage: (label: string, maxLength: number) => string,
   invalidUrlMessage: (label: string) => string = requiredMessage,
+  invalidEmailMessage: (label: string) => string = requiredMessage,
 ) {
   const errors: Record<string, string> = {};
 
   for (const option of getVisibleOptions(options, state.selectedOptions, state.checkboxValues)) {
-    if (option.type === "text" || option.type === "textarea" || option.type === "url") {
+    if (option.type === "text" || option.type === "textarea" || option.type === "url" || option.type === "email") {
       const value = state.textInputs[option.id] || "";
 
       if (option.required && !value.trim()) {
@@ -218,6 +224,8 @@ export function validateProductConfiguration(
         errors[option.id] = maxLengthMessage(option.label, option.maxLength);
       } else if (option.type === "url" && value.trim() && !isValidHttpUrl(value)) {
         errors[option.id] = invalidUrlMessage(option.label);
+      } else if (option.type === "email" && value.trim() && !isValidEmailAddress(value)) {
+        errors[option.id] = invalidEmailMessage(option.label);
       }
     } else if (option.type === "file") {
       if (option.required && !state.textInputs[option.id]) {

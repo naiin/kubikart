@@ -72,4 +72,27 @@ describe("server cart link validation", () => {
       lines: [{ orderMeta: [{ key: "Link", value: "https://g.page/r/x" }] }],
     });
   });
+
+  it("rejects an invalid e-mail address in an email-type field and accepts a valid one", async () => {
+    const product = {
+      id: 8,
+      name: "Visitenkarten",
+      slug: "visitenkarten",
+      status: "publish",
+      price: "19",
+      purchasable: true,
+      stock_status: "instock",
+      weight: "0.1",
+      dimensions: { length: "10", width: "6", height: "1" },
+      categories: [],
+      meta_data: [{ key: "_kubikart_custom_fields", value: { schema_version: 3, fields: [{ id: "business_email", label: "E-Mail", type: "email", required: true }] } }],
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => product }));
+    const { calculateServerCart } = await import("@/lib/server-cart");
+
+    await expect(calculateServerCart({ items: [{ productId: 8, quantity: 1, customizations: { business_email: "kein-email" } }] })).rejects.toThrow(/Invalid e-mail address/);
+    await expect(calculateServerCart({ items: [{ productId: 8, quantity: 1, customizations: { business_email: "info@salon.de" } }] })).resolves.toMatchObject({
+      lines: [{ orderMeta: [{ key: "E-Mail", value: "info@salon.de" }] }],
+    });
+  });
 });

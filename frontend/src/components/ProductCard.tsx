@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { canOptimizeImage } from "@/lib/image-optimization";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { getBusinessKitCommercialState, isBusinessKitProduct, parseBusinessKitData } from "@/lib/business-kits";
@@ -39,15 +40,17 @@ export function ProductCard({ product }: { product: WCProduct }) {
 
   return (
     <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-kubikart-md border border-border bg-surface-white transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-border-strong hover:shadow-kubikart-md">
-      <Link href={`/shop/${product.slug}`} className={`relative block overflow-hidden bg-page ${kitState && image ? "aspect-square" : "aspect-[4/3]"}`}>
+      <Link href={`/shop/${product.slug}`} className={`relative block overflow-hidden bg-page ${image ? "aspect-square" : "aspect-[4/3]"}`}>
         {image ? (
           <Image
             src={image.src}
             alt={product.name}
             fill
-            sizes="(min-width: 1280px) 280px, (min-width: 768px) 33vw, (min-width: 480px) 50vw, 100vw"
+            sizes="(min-width: 1280px) 384px, (min-width: 1024px) 33vw, (min-width: 480px) 50vw, 100vw"
             className="object-cover transition-transform duration-200 group-hover:scale-[1.025]"
-            unoptimized
+            // Resized by Next on public hosts (the originals are 1254 px, up to 2.5 MB); local WordPress is served as is.
+            unoptimized={!canOptimizeImage(image.src)}
+            quality={85}
           />
         ) : kitState && parseBusinessKitData(product.meta_data).items.length > 0 ? (
           <KitIllustrationForProduct product={product} />

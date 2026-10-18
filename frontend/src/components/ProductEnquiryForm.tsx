@@ -33,7 +33,7 @@ export function ProductEnquiryForm({
    * The customer's choices on the product page, sent along with the enquiry. `validate` runs first and returns false
    * (after showing its own field errors) when the choices are incomplete.
    */
-  configuration?: { lines: string[]; fileTokens: string[]; validate: () => boolean; busy?: boolean };
+  configuration?: { lines: string[]; fileTokens: string[]; validate: () => boolean; busy?: boolean; fileNames?: string[] };
   /** Embedded in the product page: no intro box and no link back to the same page. */
   compact?: boolean;
 }) {
@@ -125,6 +125,11 @@ export function ProductEnquiryForm({
         </div>
       )}
       <p className="text-sm leading-6 text-gray-600">{customSize ? t(CUSTOM_SIZE_TEXT[customSizeKind].intro) : configuration ? t("configurationIntro") : t("intro")}</p>
+      {configuration?.fileNames?.length ? (
+        <p className="rounded-xl border border-border bg-surface-white px-4 py-3 text-sm text-navy-900">
+          {t("attachedFiles", { names: configuration.fileNames.join(", ") })}
+        </p>
+      ) : null}
 
       {customSize ? (
         <div className="grid gap-5 sm:grid-cols-2">

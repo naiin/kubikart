@@ -29,12 +29,13 @@ const contentSecurityPolicy = [
   "font-src 'self' data:",
   "connect-src 'self' https://api.stripe.com https://*.paypal.com https://challenges.cloudflare.com",
   "frame-src https://js.stripe.com https://hooks.stripe.com https://www.paypal.com https://www.sandbox.paypal.com https://challenges.cloudflare.com",
-  "upgrade-insecure-requests",
 ].join("; ");
 
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: wordpressImagePatterns(),
+    // 85 is used for product card images, which carry fine text and detail.
+    qualities: [75, 85],
   },
   // Permanent redirects from product slugs that were renamed for SEO.
   redirects: async () => [

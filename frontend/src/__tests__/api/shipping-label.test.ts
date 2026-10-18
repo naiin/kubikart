@@ -138,4 +138,32 @@ describe("POST /api/shipping/label", () => {
       product: "KLEINPAKET",
     });
   });
+
+  it("uses Paket for jar classes despite small fallback dimensions", async () => {
+    wcApiMock.mockResolvedValueOnce({
+      id: 56, status: "processing", shipping: { first_name: "QA", last_name: "Owner", address_1: "Teststrasse 1", city: "Ulm", postcode: "89073", country: "DE" },
+      line_items: [{ product_id: 1372, quantity: 1 }], meta_data: [],
+    }).mockResolvedValueOnce({ shipping_class: "kubikart-parcel", weight: "", dimensions: { length: "", width: "", height: "" } })
+      .mockResolvedValueOnce({ id: 56 });
+    createDHLShipmentMock.mockResolvedValue({ shipmentNo: "QA-JAR", labelUrl: "https://labels.example/qa.pdf" });
+    const { POST } = await import("@/app/api/shipping/label/route");
+    const res = await POST(makeRequest({ orderId: 56 }) as never);
+    expect(res.status).toBe(200);
+    expect(createDHLShipmentMock).toHaveBeenCalledWith(expect.objectContaining({ productCode: "V01PAK" }));
+    expect(getDHLProductForPackageMock).not.toHaveBeenCalled();
+  });
+
+  it("uses chosen variation measurements when creating the label", async () => {
+    wcApiMock.mockResolvedValueOnce({
+      id: 57, status: "processing", shipping: { first_name: "QA", last_name: "Owner", address_1: "Teststrasse 1", city: "Ulm", postcode: "89073", country: "DE" },
+      line_items: [{ product_id: 1372, variation_id: 1375, quantity: 1 }], meta_data: [],
+    }).mockResolvedValueOnce({ shipping_class: "kubikart-parcel", weight: "0.5", dimensions: { length: "20", width: "15", height: "5" } })
+      .mockResolvedValueOnce({ shipping_class: "kubikart-parcel", weight: "0.8", dimensions: { length: "18", width: "18", height: "22" } })
+      .mockResolvedValueOnce({ id: 57 });
+    createDHLShipmentMock.mockResolvedValue({ shipmentNo: "QA-VAR", labelUrl: "https://labels.example/qa.pdf" });
+    const { POST } = await import("@/app/api/shipping/label/route");
+    const res = await POST(makeRequest({ orderId: 57 }) as never);
+    expect(res.status).toBe(200);
+    expect(createDHLShipmentMock).toHaveBeenCalledWith(expect.objectContaining({ productCode: "V01PAK", package: { weight: 0.8, length: 18, width: 18, height: 22 } }));
+  });
 });

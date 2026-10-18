@@ -36,10 +36,10 @@ return [
             . '<ul><li>Vorhandenes Firmenlogo oder Wunschtext</li><li>Folienfarbe aus den angebotenen Optionen</li><li>Größe entsprechend der gewählten Variante</li>'
             . '<li>Optional Website, Telefonnummer oder Social-Media-Name</li><li>Optional QR-Code nach Prüfung von Größe und Umsetzung</li></ul>'
             . '<p><strong>Im Preis enthalten</strong></p>'
-            . '<ul><li>Ein Logo in einer Standard-Folienfarbe</li><li>Geeignete, schneidfertige Datei (SVG oder vektorbasierte PDF)</li><li>Firmenname, sofern er bereits Teil deines Logos ist</li>'
+            . '<ul><li>Ein Logo in einer Standard-Folienfarbe</li><li>Geeignete, schneidfertige Datei (vektorbasierte PDF oder hochauflösende PNG-Datei)</li><li>Firmenname, sofern er bereits Teil deines Logos ist</li>'
             . '<li>Eine Vorschau und eine kleine Korrekturrunde</li><li>Übertragungsfolie und Montageanleitung</li><li>Normaler oder gespiegelter Zuschnitt</li></ul>'
             . '<p><strong>Deine Datei</strong></p>'
-            . '<p>Lade dein Logo möglichst als SVG oder vektorbasierte PDF hoch. Bei anderen Dateiformaten prüfen wir, ob eine saubere Umsetzung möglich ist.</p>'
+            . '<p>Lade dein Logo möglichst als vektorbasierte PDF oder als hochauflösende PNG-Datei hoch. Bei anderen Vorlagen prüfen wir, ob eine saubere Umsetzung möglich ist.</p>'
             . '<p>Sehr feine Details, Farbverläufe und Fotos lassen sich nicht ohne Weiteres als geschnittene Folie umsetzen. Aufwendige Dateiaufbereitung und mehrfarbige Motive werden bei Bedarf separat angeboten. Eine neue Logoentwicklung ist nicht enthalten.</p>'
             . '<p><strong>Optionaler QR-Code</strong></p>'
             . '<p>Sende die vollständige Zieladresse. Größe, Kontrast, Freiraum und gegebenenfalls eine zusätzliche Hintergrundfläche werden vor der Fertigung abgestimmt. Prüfe den Code nach der Montage am tatsächlichen Einsatzort.</p>'
@@ -54,10 +54,10 @@ return [
             . '<p>From shop-window logos to business names on glass doors and salon mirrors, your suitable artwork is cut from quality ORACAL® branded vinyl. The surface remains visible between letters and design elements, with no rectangular background on standard lettering.</p>'
             . '<p>Choose your available vinyl colour and size. Optional additions include a website, phone number, social-media handle or QR code.</p>'
             . '<p><strong>Included in the price</strong></p>'
-            . '<ul><li>One logo in one standard vinyl colour</li><li>Suitable, cut-ready artwork (SVG or vector PDF)</li><li>Your business name, if it is already part of your logo</li>'
+            . '<ul><li>One logo in one standard vinyl colour</li><li>Suitable, cut-ready artwork (vector PDF or high-resolution PNG)</li><li>Your business name, if it is already part of your logo</li>'
             . '<li>One preview and one minor correction round</li><li>Transfer tape and application instructions</li><li>Normal or mirrored cutting</li></ul>'
             . '<p><strong>Artwork</strong></p>'
-            . '<p>Upload your existing logo as an SVG or vector PDF where possible. Other file types can be checked for suitability.</p>'
+            . '<p>Upload your existing logo as a vector PDF or a high-resolution PNG where possible. Other artwork can be checked for suitability.</p>'
             . '<p>Very fine details, photographs and gradients may require a different production method. Complex artwork preparation and multicolour designs are quoted separately where needed. New logo creation is not included.</p>'
             . '<p><strong>Optional QR code</strong></p>'
             . '<p>Provide the full destination URL. Size, contrast, clear space and any necessary background panel will be agreed before production. Test the code in its final position after installation.</p>'
@@ -70,8 +70,8 @@ return [
             . '<p>Supplied with transfer tape and instructions for self-installation on suitable clean, smooth surfaces. Local on-site installation can be added as an option and is only included if you add it to your order. Glass and decorative props are not included.</p>',
     ],
     'categories' => [
-        'de' => ['fenster-glasaufkleber', 'spiegel-aufkleber', 'business-produkte'],
-        'en' => ['window-glass-stickers', 'mirror-stickers', 'business-products'],
+        'de' => ['fenster-glasaufkleber', 'business-produkte'],
+        'en' => ['window-glass-stickers', 'business-products'],
     ],
     'tags' => [
         'de' => ['Logo Aufkleber', 'Firmenlogo Folie', 'Fensterlogo', 'Fensterbeschriftung', 'Schaufensterlogo', 'Firmenbeschriftung', 'Spiegel Aufkleber', 'Social Media Folie', 'QR Code Aufkleber', 'Instagram Aufkleber', 'Geschäftslogo', 'ORACAL Folie', 'Logo nach Wunsch'],
@@ -93,7 +93,7 @@ return [
             'options' => [['black', $ph('Schwarz', 'Black')], ['white', $ph('Weiß', 'White')], ['gold', $ph('Gold', 'Gold')]]],
         ['id' => 'logo_datei', 'type' => 'file', 'required' => true,
             'label' => $ph('Dein Logo', 'Your logo'),
-            'help' => $ph('Möglichst als SVG oder vektorbasierte PDF. Bei anderen Dateiformaten prüfen wir, ob eine saubere Umsetzung möglich ist.', 'Preferably as an SVG or vector PDF. For other file types we check whether a clean result is possible.')],
+            'help' => $ph('Möglichst als vektorbasierte PDF oder hochauflösende PNG-Datei (erlaubt sind PDF, PNG, JPG und WebP). Bei anderen Vorlagen prüfen wir, ob eine saubere Umsetzung möglich ist.', 'Preferably as a vector PDF or a high-resolution PNG (PDF, PNG, JPG and WebP are accepted). For other artwork we check whether a clean result is possible.')],
         ['id' => 'zusatz_zeile_1', 'type' => 'checkbox', 'required' => false, 'price' => 4.99,
             'label' => $ph('Zusätzliche Textzeile (Website, Telefonnummer oder Social-Media-Name)', 'Additional text line (website, phone number or social handle)'),
             'help' => $ph('Der Text muss in die gewählte Gesamtgröße passen. Wird das Logo dadurch zu klein, schlagen wir vor der Fertigung eine größere Variante vor.', 'The text must fit within the selected overall size. If it makes the logo too small, we will suggest a larger size before production.')],

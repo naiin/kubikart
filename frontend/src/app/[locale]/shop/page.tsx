@@ -118,7 +118,7 @@ export default async function ShopPage({
             {productsUnavailable || products.length === 0 ? (
               <ShopEmptyState unavailable={productsUnavailable} />
             ) : (
-              <div className="grid grid-cols-1 gap-5 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid grid-cols-1 gap-5 min-[480px]:grid-cols-2 lg:grid-cols-3">
                 {products.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}

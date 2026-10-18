@@ -617,6 +617,7 @@
     "labelFormatHeight": "Gewünschte fertige Höhe (cm)",
     "placeholderFormatWidth": "z. B. 15",
     "placeholderFormatHeight": "z. B. 25",
+    "attachedFiles": "Deine bereits hochgeladenen Dateien senden wir mit: {names}",
     "configurationIntro": "Wir prüfen deine Angaben und senden dir ein Angebot mit Maßen, Ausführung und Preis. Eine Anfrage ist keine Bestellung und keine Zahlung."
   },
   "homepage": {
@@ -863,6 +864,7 @@
     "fieldTooLong": "{label} darf höchstens {maxLength} Zeichen enthalten.",
     "fieldOptional": "(optional)",
     "fieldInvalidUrl": "Bitte gib bei „{label}“ einen vollständigen Link an, z. B. https://beispiel.de.",
+    "fieldInvalidEmail": "Bitte gib bei „{label}“ eine gültige E-Mail-Adresse an, z. B. name@beispiel.de.",
     "fileHelp": "PNG, JPG, WebP oder PDF, maximal 4 MB.",
     "fileUploading": "Datei wird hochgeladen …",
     "fileUploaded": "Hochgeladen: {name}",
@@ -932,6 +934,8 @@
     "ctaButton": "Projekt anfragen",
     "ctaServicesLink": "Zu den Leistungen",
     "galleryLabel": "Produktbilder",
+    "videosLabel": "Produktvideos",
+    "videoFallback": "Produktvideo öffnen",
     "galleryViewImage": "Produktbild {index} ansehen",
     "galleryZoom": "Produktbild vergrößern",
     "galleryPreview": "Produktbild-Vorschau",
@@ -946,6 +950,8 @@
     "skuLabel": "Artikelnummer",
     "weightLabel": "Gewicht",
     "dimensionsLabel": "Maße",
+    "estimatedPackageDimensions": "Versandverpackung (geschätztes Maximum der Standardvarianten, keine Produktmaße)",
+    "estimatedShippingWeight": "Versandgewicht inkl. Verpackung (geschätztes Maximum der Standardvarianten)",
     "taxNoticePrefix": "Preis gem.",
     "shippingCosts": "zzgl. Versandkosten",
     "imageUnavailable": "Für dieses Produkt ist derzeit kein Bild verfügbar.",
@@ -1024,6 +1030,8 @@
     "enquiryConfigTitle": "Individuelles Angebot anfordern"
   },
   "captcha": {
+    "privacyNotice": "Für diese Prüfung wird Cloudflare Turnstile geladen und verarbeitet technische Verbindungs- und Browserdaten.",
+    "privacyLink": "Datenschutz zum Formularschutz (neuer Tab)",
     "title": "Sicherheitsprüfung",
     "body": "Bitte schließe die Sicherheitsprüfung ab, um deine Anfrage zu senden.",
     "checking": "Dein Browser wird überprüft…",

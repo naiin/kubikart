@@ -111,8 +111,8 @@ return [
             . '<p>Your order includes the agreed film and logo lettering with application instructions. Installation may involve several steps. On-site fitting is included only if you add the optional installation; glass and decorative props are not included.</p>',
     ],
     'categories' => [
-        'de' => ['milchglas-sichtschutz', 'fenster-glasaufkleber', 'business-produkte'],
-        'en' => ['frosted-glass-privacy', 'window-glass-stickers', 'business-products'],
+        'de' => ['fenster-glasaufkleber', 'business-produkte'],
+        'en' => ['window-glass-stickers', 'business-products'],
     ],
     'tags' => [
         'de' => ['Milchglasfolie', 'Sichtschutzfolie', 'Milchglas mit Logo', 'Glasdekorfolie', 'Fensterfolie Logo', 'Praxis Sichtschutz', 'Büro Sichtschutz', 'Salon Fensterfolie', 'Glaswand Folie', 'Sichtschutzstreifen', 'Firmenlogo Fenster', 'ORACAL Glasdekor', 'Frosted Glass Folie'],
@@ -131,7 +131,7 @@ return [
     'fields' => [
         ['id' => 'logo_datei', 'type' => 'file', 'required' => true,
             'label' => $ph('Dein Logo', 'Your logo'),
-            'help' => $ph('Möglichst als SVG oder vektorbasierte PDF (hochgeladen werden PNG, JPG, WebP oder PDF). Bei anderen Dateiformaten prüfen wir, ob eine saubere Umsetzung möglich ist.', 'Preferably as an SVG or vector PDF (PNG, JPG, WebP or PDF can be uploaded). For other file types we check whether a clean result is possible.')],
+            'help' => $ph('Möglichst als vektorbasierte PDF oder hochauflösende PNG-Datei (erlaubt sind PDF, PNG, JPG und WebP). Bei anderen Vorlagen prüfen wir, ob eine saubere Umsetzung möglich ist.', 'Preferably as a vector PDF or a high-resolution PNG (PDF, PNG, JPG and WebP are accepted). For other artwork we check whether a clean result is possible.')],
         ['id' => 'logogroesse', 'type' => 'text', 'required' => true, 'max' => 60,
             'label' => $ph('Gewünschte Logogröße (Breite × maximale Höhe in cm)', 'Preferred logo size (width × maximum height in cm)'),
             'placeholder' => $ph('z. B. 20 × 15 cm', 'e.g. 20 × 15 cm'),

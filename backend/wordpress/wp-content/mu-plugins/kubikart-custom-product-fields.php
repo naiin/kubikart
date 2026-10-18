@@ -17,7 +17,7 @@ const KUBIKART_PRODUCT_FIELDS_BACKUP_META_KEY = '_kubikart_custom_fields_backup_
  * (logo/artwork) handled by kubikart-customer-files.php.
  */
 function kubikart_custom_field_types() {
-    return ['text', 'textarea', 'url', 'select', 'checkbox', 'file'];
+    return ['text', 'textarea', 'url', 'email', 'select', 'checkbox', 'file'];
 }
 
 /**
@@ -111,7 +111,7 @@ function kubikart_sanitize_custom_fields_payload($raw_fields) {
             'helperText' => sanitize_text_field($field['helperText'] ?? ''),
         ];
 
-        if ($type === 'text' || $type === 'textarea' || $type === 'url') {
+        if ($type === 'text' || $type === 'textarea' || $type === 'url' || $type === 'email') {
             $saved_field['placeholder'] = sanitize_text_field($field['placeholder'] ?? '');
             $saved_field['maxLength'] = absint($field['maxLength'] ?? 0) ?: null;
         }
@@ -246,6 +246,7 @@ function kubikart_render_custom_field_row($index, $field = []) {
                 <option value="text" <?php selected($type, 'text'); ?>>Text</option>
                 <option value="textarea" <?php selected($type, 'textarea'); ?>>Textarea</option>
                 <option value="url" <?php selected($type, 'url'); ?>>Web-Link (URL)</option>
+                <option value="email" <?php selected($type, 'email'); ?>>E-Mail-Adresse</option>
                 <option value="select" <?php selected($type, 'select'); ?>>Select</option>
                 <option value="checkbox" <?php selected($type, 'checkbox'); ?>>Checkbox / Extra</option>
                 <option value="file" <?php selected($type, 'file'); ?>>Datei-Upload (Logo)</option>

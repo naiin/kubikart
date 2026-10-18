@@ -26,7 +26,7 @@ if (!defined('ABSPATH')) {
 if (!defined('KUBIKART_REVALIDATE_META_KEYS')) {
     // Direct meta writes (e.g. `wp post meta update`) bypass WooCommerce hooks.
     define('KUBIKART_REVALIDATE_META_KEYS', [
-        '_price', '_regular_price', '_sale_price', '_stock', '_stock_status', '_thumbnail_id',
+        '_price', '_regular_price', '_sale_price', '_stock', '_stock_status', '_thumbnail_id', '_kubikart_video_ids',
     ]);
 }
 

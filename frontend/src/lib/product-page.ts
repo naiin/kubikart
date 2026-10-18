@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { parseProductVideos, type ProductVideo } from "@/lib/product-videos";
 import { isEnquiryOnly, parseSetConfig, type SetConfig } from "@/lib/purchase-mode";
 import { getBusinessKitCommercialState, isBusinessKitsCategorySlug, parseBusinessKitData, type BusinessKitCommercialState, type BusinessKitData } from "@/lib/business-kits";
 import { toOptionValue, toWooAttributeId } from "@/lib/option-ids";
@@ -23,7 +24,7 @@ export interface ProductImage {
 export interface ProductPersonalizationOption {
   id: string;
   label: string;
-  type: "text" | "textarea" | "url" | "select" | "checkbox" | "file";
+  type: "text" | "textarea" | "url" | "email" | "select" | "checkbox" | "file";
   required: boolean;
   placeholder?: string;
   helperText?: string;
@@ -98,6 +99,7 @@ export interface ProductPageProduct {
     slug: string;
   }[];
   images: ProductImage[];
+  videos?: ProductVideo[];
   price: ProductPrice;
   priceNote: string;
   availability: ProductAvailability;
@@ -186,7 +188,7 @@ export function parseProductCustomFields(metaData: { key: string; value: unknown
       const rawType = String(field.type || "");
       const type = rawType === "color" ? "select" : rawType;
 
-      if (!["text", "textarea", "url", "select", "checkbox", "file"].includes(type)) {
+      if (!["text", "textarea", "url", "email", "select", "checkbox", "file"].includes(type)) {
         if (process.env.NODE_ENV !== "production") {
           console.warn(`Unsupported Kubikart product field type "${rawType}" for field "${String(field.id)}".`);
         }
@@ -210,7 +212,7 @@ export function parseProductCustomFields(metaData: { key: string; value: unknown
         parsedField.showWhen = { field: String(showWhen.field), equals: String(showWhen.equals) };
       }
 
-      if (type === "text" || type === "textarea" || type === "url") {
+      if (type === "text" || type === "textarea" || type === "url" || type === "email") {
         parsedField.placeholder = field.placeholder ? String(field.placeholder) : undefined;
         parsedField.maxLength =
           Number.isFinite(Number(field.maxLength)) && Number(field.maxLength) > 0
@@ -292,6 +294,8 @@ function mapAvailability(stockStatus: string | undefined, fallbackAvailability: 
 }
 
 interface MappingLabels {
+  estimatedPackageDimensions: string;
+  estimatedShippingWeight: string;
   fallbackCategory: string;
   factCategory: string;
   factProduction: string;
@@ -421,6 +425,16 @@ function mapWooProductToProductPageProduct(
   const priceAmount = parsePriceAmount(product.price || product.regular_price || product.sale_price, 0);
   const isKit = product.categories.some((category) => isBusinessKitsCategorySlug(category.slug));
   const mappedVariations = mapWooVariations(variations, "in_stock");
+  const estimatedPackage = product.meta_data?.some((meta) =>
+    meta.key === "_kubikart_shipping_dimensions_estimate" &&
+    typeof meta.value === "object" && meta.value !== null &&
+    "basis" in meta.value && meta.value.basis === "owner-approved-estimate",
+  );
+  const estimatedWeight = product.meta_data?.some((meta) =>
+    meta.key === "_kubikart_shipping_weight_estimate" &&
+    typeof meta.value === "object" && meta.value !== null &&
+    "basis" in meta.value && meta.value.basis === "owner-approved-estimate",
+  );
   const defaultOptionValues = mapWooDefaultOptionValues(product);
   const attributePersonalizationOptions = mapAttributePersonalizationOptions(product);
   const metaCustomFields = parseProductCustomFields(product.meta_data);
@@ -455,6 +469,7 @@ function mapWooProductToProductPageProduct(
           ...(image.caption ? { caption: image.caption } : {}),
         }))
       : [],
+    videos: parseProductVideos(product.kubikart_videos),
     price: mapWooPrice(product),
     priceNote: labels.priceNote,
     availability: mapAvailability(product.stock_status, "in_stock"),
@@ -463,7 +478,7 @@ function mapWooProductToProductPageProduct(
     badges: [],
     trustItems: [],
     paymentHints: [],
-    quickFacts: product.weight ? [{ label: "Weight", value: `${product.weight} kg` }] : [],
+    quickFacts: product.weight && !estimatedWeight ? [{ label: "Weight", value: `${product.weight} kg` }] : [],
     personalizationOptions: configuredPersonalizationOptions,
     defaultOptionValues,
     variations: mappedVariations,
@@ -499,7 +514,17 @@ function mapWooProductToProductPageProduct(
     seoContent: { title: product.name, paragraphs: descriptionParagraphs },
     relatedProductSlugs: [],
     relatedProductIds: [...(product.upsell_ids || []), ...(product.related_ids || [])],
-    attributes: product.attributes.map((attribute) => ({ name: attribute.name, values: attribute.options })),
+    attributes: [
+      ...product.attributes.map((attribute) => ({ name: attribute.name, values: attribute.options })),
+      ...(estimatedPackage && product.dimensions ? [{
+        name: labels.estimatedPackageDimensions,
+        values: [`${product.dimensions.length} × ${product.dimensions.width} × ${product.dimensions.height} cm`],
+      }] : []),
+      ...(estimatedWeight && product.weight ? [{
+        name: labels.estimatedShippingWeight,
+        values: [`${product.weight} kg`],
+      }] : []),
+    ],
     customRequestHref: buildCustomRequestHref(product.name, product.slug),
     supportHref: buildSupportHref(product.name, product.slug),
     sku: product.sku?.trim() || undefined,
@@ -513,9 +538,9 @@ function mapWooProductToProductPageProduct(
     ...(isKit ? { kit: parseBusinessKitData(product.meta_data) } : {}),
     ...(isKit || isEnquiryOnly(product) ? { kitCommercialState: getBusinessKitCommercialState(product) } : {}),
     ...(parseSetConfig(product.meta_data) ? { setConfig: parseSetConfig(product.meta_data) as SetConfig } : {}),
-    weight: parseFloat(product.weight) || undefined,
+    weight: !estimatedWeight ? parseFloat(product.weight) || undefined : undefined,
     dimensions:
-      product.dimensions?.length || product.dimensions?.width || product.dimensions?.height
+      !estimatedPackage && (product.dimensions?.length || product.dimensions?.width || product.dimensions?.height)
         ? {
             length: parseFloat(product.dimensions.length) || 0,
             width: parseFloat(product.dimensions.width) || 0,
@@ -530,6 +555,8 @@ export async function getProductPageProduct(slug: string, lang?: string) {
     try {
       const t = await getTranslations("productPage");
       const labels: MappingLabels = {
+        estimatedPackageDimensions: t("estimatedPackageDimensions"),
+        estimatedShippingWeight: t("estimatedShippingWeight"),
         fallbackCategory: t("fallbackCategory"),
         factCategory: t("factCategory"),
         factProduction: t("factProduction"),

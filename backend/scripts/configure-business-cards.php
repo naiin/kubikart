@@ -88,7 +88,7 @@ $fields = [
         ['id' => 'business_name', 'label' => 'Dein Firmenname', 'type' => 'text', 'required' => true, 'helperText' => 'Schreibweise genau so, wie sie auf der Visitenkarte erscheinen soll.', 'placeholder' => 'Firmenname', 'maxLength' => 100, 'showWhen' => ['field' => 'design_service', 'equals' => 'simple-layout'], 'price' => 0],
         ['id' => 'customer_name', 'label' => 'Dein Name', 'type' => 'text', 'required' => true, 'helperText' => 'Name und optional Berufsbezeichnung für die Visitenkarte.', 'placeholder' => 'Vor- und Nachname, Berufsbezeichnung', 'maxLength' => 120, 'showWhen' => ['field' => 'design_service', 'equals' => 'simple-layout'], 'price' => 0],
         ['id' => 'social_contact_details', 'label' => 'Social Media, Adresse, Telefon und weitere Angaben', 'type' => 'textarea', 'required' => false, 'helperText' => 'Trage nur die Angaben ein, die auf der Karte erscheinen sollen.', 'placeholder' => 'Instagram, Website, Adresse, Telefonnummer …', 'maxLength' => 1200, 'showWhen' => ['field' => 'design_service', 'equals' => 'simple-layout'], 'price' => 0],
-        ['id' => 'business_email', 'label' => 'Deine geschäftliche E-Mail-Adresse', 'type' => 'text', 'required' => true, 'helperText' => 'E-Mail-Adresse genau so, wie sie gedruckt werden soll.', 'placeholder' => 'name@unternehmen.de', 'maxLength' => 254, 'showWhen' => ['field' => 'design_service', 'equals' => 'simple-layout'], 'price' => 0],
+        ['id' => 'business_email', 'label' => 'Deine geschäftliche E-Mail-Adresse', 'type' => 'email', 'required' => true, 'helperText' => 'E-Mail-Adresse genau so, wie sie gedruckt werden soll.', 'placeholder' => 'name@unternehmen.de', 'maxLength' => 254, 'showWhen' => ['field' => 'design_service', 'equals' => 'simple-layout'], 'price' => 0],
         ['id' => 'design_preferences', 'label' => 'Farb- und Schriftwünsche', 'type' => 'textarea', 'required' => false, 'helperText' => 'Beschreibe deine gewünschten Farben und den Stil der Schrift.', 'placeholder' => 'Zum Beispiel Dunkelblau und Beige, klare moderne Schrift.', 'maxLength' => 500, 'showWhen' => ['field' => 'design_service', 'equals' => 'simple-layout'], 'price' => 0],
         ['id' => 'additional_notes', 'label' => 'Weitere Hinweise', 'type' => 'textarea', 'required' => false, 'helperText' => 'Optional: zusätzliche Hinweise zu deiner Bestellung.', 'placeholder' => '', 'maxLength' => 500, 'price' => 0],
     ],
@@ -101,7 +101,7 @@ $fields = [
         ['id' => 'business_name', 'label' => 'Your business name', 'type' => 'text', 'required' => true, 'helperText' => 'Enter it exactly as it should appear on the business card.', 'placeholder' => 'Business name', 'maxLength' => 100, 'showWhen' => ['field' => 'design_service', 'equals' => 'simple-layout'], 'price' => 0],
         ['id' => 'customer_name', 'label' => 'Your name', 'type' => 'text', 'required' => true, 'helperText' => 'Your name and optional job title for the business card.', 'placeholder' => 'First and last name, job title', 'maxLength' => 120, 'showWhen' => ['field' => 'design_service', 'equals' => 'simple-layout'], 'price' => 0],
         ['id' => 'social_contact_details', 'label' => 'Social media, address, phone and other details', 'type' => 'textarea', 'required' => false, 'helperText' => 'Enter only the details that should appear on the card.', 'placeholder' => 'Instagram, website, address, phone number …', 'maxLength' => 1200, 'showWhen' => ['field' => 'design_service', 'equals' => 'simple-layout'], 'price' => 0],
-        ['id' => 'business_email', 'label' => 'Your business email', 'type' => 'text', 'required' => true, 'helperText' => 'Enter the email address exactly as it should be printed.', 'placeholder' => 'name@business.com', 'maxLength' => 254, 'showWhen' => ['field' => 'design_service', 'equals' => 'simple-layout'], 'price' => 0],
+        ['id' => 'business_email', 'label' => 'Your business email', 'type' => 'email', 'required' => true, 'helperText' => 'Enter the email address exactly as it should be printed.', 'placeholder' => 'name@business.com', 'maxLength' => 254, 'showWhen' => ['field' => 'design_service', 'equals' => 'simple-layout'], 'price' => 0],
         ['id' => 'design_preferences', 'label' => 'Colour and font preferences', 'type' => 'textarea', 'required' => false, 'helperText' => 'Describe your preferred colours and font style.', 'placeholder' => 'For example navy and beige with a clean modern font.', 'maxLength' => 500, 'showWhen' => ['field' => 'design_service', 'equals' => 'simple-layout'], 'price' => 0],
         ['id' => 'additional_notes', 'label' => 'Additional notes', 'type' => 'textarea', 'required' => false, 'helperText' => 'Optional: any other information about your order.', 'placeholder' => '', 'maxLength' => 500, 'price' => 0],
     ],
@@ -180,7 +180,6 @@ function kbc_sync_variations(int $product_id, array $rows): void {
         $variation->set_attributes(['paper-papier' => $row['paper'], 'quantity-stuckzahl' => $row['quantity']]);
         $variation->set_regular_price($row['price']);
         $variation->set_sale_price('');
-        $variation->set_sku('');
         $variation->set_manage_stock(false);
         $variation->set_stock_status('instock');
         $variation->set_weight('');
@@ -210,7 +209,7 @@ foreach ($images as $def) {
 
 WP_CLI::line("Products: DE #{$de_id}, EN #{$en_id}");
 WP_CLI::line('Will set: localized copy/slugs/tags, six images, format plus paper/quantity attributes, 10 priced variations and 11 personalization fields.');
-WP_CLI::line('Will leave unset: SKU, shipping weight and parcel dimensions. Products are published and visible.');
+WP_CLI::line('Will preserve existing SKUs (assign separately with configure-catalog-skus.cjs). Will leave shipping weight and parcel dimensions unset. Products are published and visible.');
 if ($mode === 'dry-run') {
     WP_CLI::success('Dry run complete; no changes made.');
     return;
@@ -235,7 +234,6 @@ foreach (['de' => $de_id, 'en' => $en_id] as $lang => $id) {
     $product->set_regular_price('');
     $product->set_sale_price('');
     $product->set_price('');
-    $product->set_sku('');
     $product->set_weight('');
     $product->set_length('');
     $product->set_width('');

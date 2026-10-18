@@ -6,16 +6,16 @@ import { useSearchParams } from "next/navigation";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { isBusinessKitsCategorySlug } from "@/lib/business-kits";
 import type { WCCategory } from "@/lib/woocommerce";
-
-const HIDDEN_CATEGORY_SLUGS = new Set(["uncategorized", "uncategorized-en"]);
+import { findShopCategory, getVisibleShopCategories } from "@/lib/shop-categories";
 
 export function ShopCategoryFilters({ categories }: { categories: WCCategory[] }) {
   const t = useTranslations("shopPage");
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const activeCategory = searchParams.get("category") || "";
-  const visibleCategories = categories.filter((category) => category.count > 0 && !HIDDEN_CATEGORY_SLUGS.has(category.slug));
+  const requestedCategory = searchParams.get("category") || "";
+  const activeCategory = String(findShopCategory(categories, requestedCategory)?.id ?? requestedCategory);
+  const visibleCategories = getVisibleShopCategories(categories);
 
   const updateCategory = useCallback(
     (categoryId: string) => {

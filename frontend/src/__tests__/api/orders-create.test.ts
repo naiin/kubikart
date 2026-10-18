@@ -62,6 +62,7 @@ describe("POST /api/orders/create", () => {
       { key: "_kubikart_payment_email_status", value: "pending" },
     ]));
     expect(body.status).toBe("pending");
+    expect(body.lang).toBe("de");
     expect(body.set_paid).toBe(false);
     expect(body.transaction_id).toBeUndefined();
     expect(body.line_items).toEqual([

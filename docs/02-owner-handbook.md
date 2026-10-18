@@ -159,6 +159,13 @@ code. Settings are the same as for Text (placeholder, maximum length). The
 website only accepts a complete `http://` or `https://` link and checks it
 again on the server before an order is created.
 
+### E-Mail-Adresse
+
+Use when the customer must supply an e-mail address that will be printed or used
+(for example on business cards). Settings are the same as for Text. The website
+accepts only a plausible address (one `@`, no spaces, a dot in the domain) and
+checks it again on the server before an order is created.
+
 ### File upload (logo or artwork)
 
 Use when the customer must supply a file, typically a logo.

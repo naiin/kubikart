@@ -212,13 +212,8 @@ export default function CheckoutPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12">
           {/* Left: Form */}
           <div className="lg:col-span-7 px-4 sm:px-8 lg:px-12 py-8 lg:py-12">
-            {/* Logo */}
-            <Link href="/" className="text-2xl font-bold text-navy-900">
-              KubikArt
-            </Link>
-
             {/* Breadcrumb Steps */}
-            <nav className="mt-6 mb-8">
+            <nav className="mb-8">
               <ol className="flex items-center gap-2 text-sm">
                 {steps.map((s, i) => (
                   <li key={s.key} className="flex items-center gap-2">

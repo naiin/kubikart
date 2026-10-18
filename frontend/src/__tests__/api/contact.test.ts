@@ -258,6 +258,27 @@ describe("POST /api/contact", () => {
       expect(content).toContain("- Format: Wunschformat anfragen");
     });
 
+    it("keeps the files uploaded before switching to a custom size with a custom-size enquiry", async () => {
+      const fetchMock = setup();
+      const { POST } = await import("@/app/api/contact/route");
+
+      const res = await POST(
+        makeRequest({
+          ...body(undefined),
+          details: {
+            customSize: { kind: "overall", width: "55", height: 30 },
+            configuration: { lines: ["Gesamtbreite: Wunschmaß anfragen", "Dein Logo: logo.png"], fileTokens: [token] },
+          },
+        }) as never,
+      );
+
+      expect(res.status).toBe(200);
+      const stored = JSON.parse(storedCall(fetchMock)[1].body as string);
+      expect(stored.content).toContain("gewünschte Gesamtbreite 55 cm");
+      expect(stored.content).toContain("- Dein Logo: logo.png");
+      expect(stored.meta._kubikart_enquiry_files).toBe(JSON.stringify([token]));
+    });
+
     it("stores a plain quotation request with the chosen options and no measures", async () => {
       const fetchMock = setup();
       const { POST } = await import("@/app/api/contact/route");
