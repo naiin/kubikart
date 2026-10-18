@@ -65,6 +65,10 @@ describe("owner enquiry notification", () => {
       ["admin_url", "business_name", "customer_email", "customer_name", "customer_phone", "enquiry_type", "language", "message", "page_url", "product_id", "product_name", "product_slug", "received_at", "reference"],
     );
     expect(mail.template_variables.product_id).toBe("160");
+    // The product is also part of the message text, so a template that prints only `message` still names it.
+    expect(mail.template_variables.message).toContain("Produkt: Business-Starterpaket (ID 160");
+    expect(mail.template_variables.message).toContain("Seite: https://kubikart.de/en/shop/starter-visibility-kit");
+    expect(mail.template_variables.message).toContain("Bitte ein Angebot");
   });
 
   it("records 'accepted' (provider acceptance, not inbox delivery) with the provider message id", async () => {

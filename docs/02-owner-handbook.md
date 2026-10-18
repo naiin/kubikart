@@ -419,7 +419,7 @@ production static fallback catalogue.
 - **Product gallery:** additional product angles or details.
 - **Business Kit imagery:** currently AI-generated *design examples*
   (Gestaltungsbeispiele), not photographs of delivered kits. Every kit image
-  carries the visible label "Illustrative Darstellung", a per-image caption
+  carries a per-image caption (the "Illustrative Darstellung" badge was removed)
   and the gallery note about scope. Glass, mirrors, holders, counters and
   other props shown are not included in the package; the Contents section
   ("Das ist im Paket enthalten") is authoritative. Replace them with real

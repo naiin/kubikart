@@ -12,19 +12,92 @@ Internal identifiers (`_kubikart_kit_*`, the `business-kits` category slugs, the
 slugs) are unchanged on purpose. Applied by [`configure-business-kits.php`](../backend/scripts/configure-business-kits.php)
 (see section 5).
 
-### Final catalogue
+### Current catalogue (six enquiry bundles)
 
-| Product (DE / EN) | Slug (DE / EN) | Price | Ordering |
-|---|---|---:|---|
-| Business-Starterpaket / Business Starter Bundle | `starter-visibility-kit-de` / `starter-visibility-kit` | Ab €220 | Nur auf Anfrage |
-| Gastro-Paket / Café & Restaurant Bundle | `gastro-visibility-kit-de` / `gastro-visibility-kit` | Ab €229 | Nur auf Anfrage |
-| Friseur- & Barber-Paket / Barber & Salon Bundle | `barber-salon-kit-de` / `barber-salon-kit` | Ab €149 | Nur auf Anfrage |
-| Empfangs-Paket / Reception Bundle | `reception-kit-de` / `reception-kit` | Ab €179 | Nur auf Anfrage |
-| Schaufenster-Paket / Shop Window Bundle | `local-shop-window-kit-de` / `local-shop-window-kit` | Ab €199 | Nur auf Anfrage |
+On 18 October 2026 the earlier set of ten bundles was deleted and replaced by the six bundles below, created by
+[`create-business-bundles.php`](../backend/scripts/create-business-bundles.php) from the owner's catalogue
+(`backend/scripts/data/business-bundles.json`). All are **enquiry-only** (created as drafts; the owner has since published them locally, and the script never changes the status); Window Branding (**Ab €149**), Practice & Office (**Ab €199**), Beauty & Nail Studio (**Ab €149**) and Barber & Hair Salon (**Ab €149**) have owner-set starting prices, the other two have none yet: a published
+bundle with no WooCommerce price shows "Ab-Preis wird noch festgelegt" / "Starting price to be confirmed"; once the owner
+sets a price it shows "Ab €…" / "From €…". A starting price is informational and never a checkout price.
 
-The four non-starter "Ab" prices are the previously approved package prices kept as starting prices (owner to confirm). The Starter Bundle has its own scope and price (below).
+| Bundle (EN) | SKU | Slug (DE / EN) | IDs (DE / EN) | Base items | Optional |
+|---|---|---|---|---:|---:|
+| Barber & Hair Salon Bundle | `KA-BND-BARBER-001` | `barber-salon-kit-de` / `barber-salon-kit` | 1468 / 1469 | 4 | 7 |
+| Beauty & Nail Studio Bundle | `KA-BND-BEAUTY-001` | `beauty-nail-studio-kit-de` / `beauty-nail-studio-kit` | 1474 / 1475 | 4 | 5 |
+| Café & Restaurant Bundle | `KA-BND-GASTRO-001` | `gastro-visibility-kit-de` / `gastro-visibility-kit` | 1480 / 1481 | 3 | 8 |
+| Shop & Boutique Bundle | `KA-BND-RETAIL-001` | `retail-boutique-kit-de` / `retail-boutique-kit` | 1486 / 1487 | 4 | 5 |
+| Practice & Office Bundle | `KA-BND-OFFICE-001` | `practice-office-kit-de` / `practice-office-kit` | 1492 / 1493 | 4 | 7 |
+| Business Window Branding Bundle | `KA-BND-WINDOW-001` | `business-window-branding-kit-de` / `business-window-branding-kit` | 1498 / 1499 | 2 | 5 |
 
-Public URL pattern: `/{de|en}/shop/{slug}`.
+(IDs are those of the local database; other environments get their own IDs because the script resolves products by slug
+and Polylang translation.) German and English share one SKU. Public URL pattern: `/{de|en}/shop/{slug}`.
+
+**Contents.** Each bundle stores two kinds of rows in `_kubikart_kit_contents`: *included* base items (with quantity,
+link to the real source product, and the owner's specification text) and *optional* upgrades. An optional row has an
+`operation`: `add` (additional), `replace` / `replace_format` (replaces a named base item, e.g. acrylic stand instead of
+the 3D-printed one) or `quote_dependent` (priced in the quote). The storefront lists the included items, then the
+optional upgrades in a separate section with a badge per operation. Source products: frosted film #1221, logo decal
+#1205, custom stickers #1029, laminated menus #542, opening-hours decal #540, business cards #538, acrylic stand #509,
+3D stand #507 (EN; DE mapped through Polylang).
+
+**Enquiry.** The "Paket anfragen / Request this bundle" button opens the existing short enquiry form inline (no separate
+page): name and e-mail required, phone, business and message optional, privacy acknowledgement, Turnstile. No
+measurements, quantities or uploads are required. The server re-resolves the bundle and adds its **ID, SKU, title,
+locale and canonical URL** to the stored enquiry and the owner e-mail (the browser's text is never trusted). The cart API
+refuses these products (`409 enquiry_only`). The pages also show the three-step enquiry process and four shared FAQs (all
+text in `messages/{de,en}.json`, namespace `businessKitProduct`).
+
+**SEO.** The title and description come from the bundle's own fields ("SEO-Titel / SEO-Beschreibung" box in the kit panel,
+meta `_kubikart_seo_title` / `_kubikart_seo_description`) and fall back to the product name when empty.
+
+**Industries.** The script links each bundle to the eight DE/EN industry pairs through `_kubikart_bundle_ids`
+(bundle first, then Window Branding); the mapping is in `backend/scripts/data/business-bundles.php`.
+
+**Images.** Four images per bundle (24 total), imported unchanged through the normal media pipeline; the featured image
+and gallery order follow the catalogue. The supplied pictures still contain their embedded captions.
+
+**Window Branding scope (Ab €149).** One-colour cut vinyl: window lettering up to 100 × 50 cm (logo) and door lettering up
+to 30 × 40 cm (opening hours), a usable customer logo file, one proof and one revision. Two-colour designs, complicated
+logos, vector recreation, larger dimensions and unusually detailed weeding are quoted separately (an optional
+"nach Angebot" row). A 100 cm-wide design exceeds the 63 cm vinyl roll, so the page says wide designs are produced in
+sections where required, with the layout confirmed in the quote. The owner's Basic/Premium/installation prices (€99 /
+€199 / +€100) are deliberately **not** shown; they stay quote-level.
+
+**Practice & Office scope (Ab €199).** Window logo, opening-hours decal, 3D-printed QR/NFC stand and **100 double-sided
+business cards** (pack of 100 and the "double-sided" option exist on the card product), with coordinated layout
+preparation, one proof and one revision. The acrylic stand is a replacement upgrade shown as **+€30** (so €229). Installation
+(simple local jobs from +€100, subject to distance and site), larger windows, complex logos, frosted film and extra cards
+are quoted individually. The earlier base scope was 50 cards; the owner changed it to 100.
+
+**Beauty & Nail Studio scope (Ab €149, "Individuelles Angebot · Ohne Montage").** Opening-hours lettering up to
+40 × 40 cm, one 3D-printed QR/NFC stand, three double-sided laminated A4 price lists, a small Instagram or booking
+lettering, uniform design and one digital proof. Optional: acrylic stand **+€30**, additional price lists, larger
+lettering, more QR stands, installation on site (no installation price stated). The line "Individuelles Angebot · Ohne
+Montage" is the bundle's scope summary (`scope_summary` in the catalogue, meta `_kubikart_kit_scope_summary`). The
+Instagram/booking lettering reuses the opening-hours decal product with its own title (`title` override per included item).
+The earlier optional rows (business cards, logo stickers, window logo, frosted film) were dropped in favour of the owner's list.
+
+**Barber & Hair Salon scope (Ab €149, same structure as Beauty & Nail Studio).** Opening-hours lettering, one 3D-printed
+QR/NFC stand, three laminated A4 price lists, a small Instagram or booking lettering, coordinated design with one digital
+proof; no installation. Priced upgrades shown in the labels: acrylic instead of 3D stand +€30, additional A4 list +€9.90,
+A3 list +€16.90, additional 3D stand +€39.90, additional acrylic stand +€69.99, mirror logo / Instagram lettering from
++€19, simple local installation from +€100. These amounts are text in the labels (not read from WooCommerce).
+"inkl. MwSt." was **not** added: the site shows the § 19 UStG notice (no VAT shown), see "Commercial model".
+
+**Owner corrections made by the script.** The retail bundle asked for 50 round Ø 40 mm logo stickers, but the sticker
+product is only sold in packs of 48, 96, 240 and 480. The bundle uses **48** (the nearest pack) in both languages; this is
+a data correction in `business-bundles.php` (`corrections`) that the owner should confirm or change.
+
+**Review / repeat / undo.**
+
+```
+wp eval-file scripts/create-business-bundles.php dry-run  <images-dir>
+wp eval-file scripts/create-business-bundles.php apply    <images-dir>
+wp eval-file scripts/create-business-bundles.php rollback backups/business_bundles-snapshot-<date>.json
+```
+
+The script is repeatable: existing bundles are matched by slug and get only the managed fields (title, texts, contents,
+SEO, category, tags, images, industry links) with a before/after report; status and any price the owner entered are kept.
 
 ### Commercial model
 
@@ -47,6 +120,10 @@ Public URL pattern: `/{de|en}/shop/{slug}`.
   included. Other sizes, quantities, complex artwork or installation go through
   the custom enquiry, which is linked next to the purchase controls without
   replacing the purchase button.
+
+> **Historical sections.** "Commercial model" (tax, made-to-order, shipping) still applies. The per-kit contents,
+> personalisation fields and AI-generated package imagery described from here to "German names" belong to the
+> earlier set of bundles that was deleted on 18 October 2026; they are kept as reference for the data model only.
 
 ### Contents (structured, display-only)
 
@@ -140,9 +217,9 @@ The laminated sheets are paper; Starter lettering is vinyl only. QR patterns
 and names ("Studio Luna", "Café Luna", "Studio Noir") are examples and never
 customer assets or clients.
 
-Every kit image shows the visible label "Illustrative Darstellung" /
-"Illustrative image" (badge on every card and gallery, plus the caption under
-the gallery image) and the gallery note "Gestaltungsbeispiel. Lieferumfang
+The "Illustrative Darstellung" / "Illustrative image" badge on cards and galleries was **removed** on
+18 October 2026 at the owner's request (component and message key deleted). The caption under the gallery image
+remains, together with the gallery note "Gestaltungsbeispiel. Lieferumfang
 und Maße siehe Paketinhalt. Dekoration und Glasflächen nicht enthalten." /
 "Design example. See the package contents for scope and dimensions.
 Decoration and glass surfaces are not included." The images themselves carry a
@@ -185,8 +262,8 @@ symbol use a neutral design symbol.
 
 **Later visual improvement (optional):** real photographs of the complete
 packages. Replace the entries in the asset map (or assign the product image in
-WooCommerce); the "Illustrative Darstellung" badge and note are shown for all
-Business Kit images and should be removed only once real photographs are used.
+WooCommerce); the gallery note is shown for all
+Business Kit images (the badge no longer exists) and should be removed only once real photographs are used.
 
 ### German names (final)
 
@@ -615,12 +692,13 @@ local development. Nothing here has been run against production.
 | `create-opening-hours-decals.php` (+ `data/opening-hours-decals.php`) | Turn the opening-hours placeholder drafts into the custom opening-hours window decal (variable product, fields, installation option, tags, images) | `dry-run`, `apply <images-dir>`, `rollback <snapshot>` | Converts the placeholder pair instead of duplicating it (industry links stay); snapshot of the old state; products-with-fields are left alone |
 | `create-business-logo-decals.php` (+ `data/business-logo-decals.php`) | Create the business-logo window decal pair (variable product, request-size variation, fields, tags, images) as drafts | `dry-run`, `apply <images-dir>`, `rollback <snapshot>` | Create-only; snapshot first |
 | `create-frosted-film-logo.php` (+ `data/frosted-film-logo.php`) | Create the frosted-film pair (attribute Folienformat, prices, request-size variation, fields, tags, images) as drafts | `dry-run`, `apply <images-dir>`, `rollback <snapshot>` | Create-only; snapshot first |
+| `create-business-bundles.php` (+ `data/business-bundles.json`, `data/business-bundles.php`) | Create or update the six enquiry Business Bundles (DE/EN drafts, contents with included and optional rows, SEO, tags, 24 images, industry links) | `dry-run`, `apply <images-dir>`, `rollback <snapshot>` | Snapshot JSON in `backend/backups/`; repeat-safe, keeps status and price; never publishes |
 | `create-laminated-menus.php` (+ `data/laminated-menus.php`) | Turn the menus placeholder drafts into the laminated-menus product (four attributes, 43 variations, fields, tags, images) | `dry-run`, `apply <images-dir>`, `rollback <snapshot>` | Converts the placeholder pair (industry links stay); snapshot of the old state |
 | `lib/catalogue-engine.php`, `lib/catalogue-width-product.php` | Shared helpers (find product, terms, tags, fields with per-field price, assets) and the runner for single-size products (data keys `size_attribute`, `purchase_mode`, or a full `terms` + `rows` matrix with a per-row `request_kind`) incl. the idempotent request-size upgrade | library | none on their own |
 | `configure-business-cards.php` | Fill the business-card product drafts (copy, tags, images, attributes, variations, fields). Does not invent SKU, weight or parcel size; products stay hidden drafts | `dry-run <images-dir>`, `apply <images-dir>` | See the script header |
 
 Order on a fresh environment: backup, `migrate-industry-relations.php` (only if the old structure exists),
-`configure-business-kits.php`, then `create-custom-stickers.php` / `create-opening-hours-decals.php` / `create-business-logo-decals.php` / `create-frosted-film-logo.php` / `create-laminated-menus.php` / `configure-business-cards.php`, then review and
+`configure-business-kits.php`, then `create-custom-stickers.php` / `create-opening-hours-decals.php` / `create-business-logo-decals.php` / `create-frosted-film-logo.php` / `create-laminated-menus.php` / `configure-business-cards.php` / `create-business-bundles.php`, then review and
 publish the drafts in WordPress. Image archives are not committed; pass their folder as `<images-dir>` (originals are
 verified by checksum and never modified; a WebP copy is imported through the normal media pipeline). Rollback keeps
 imported media (unused media is harmless).
@@ -663,6 +741,17 @@ imported media (unused media is harmless).
   production by this repository.
 
 ## 6. Open owner inputs
+
+**Business Bundles (new)**
+
+- Set the two remaining starting prices (Café & Restaurant, Shop & Boutique) (WooCommerce regular price) before publishing each bundle; until then the page
+  shows "Ab-Preis wird noch festgelegt". Publish the DE and EN pair together. Window Branding is already at €149, Practice & Office at €199 and Beauty & Nail Studio and Barber & Hair Salon at €149.
+- Window Branding: confirm the "produced in sections" wording for designs wider than the 63 cm roll.
+- Confirm the retail bundle's 48 logo stickers (the 50-piece pack does not exist).
+- Confirm that Repair & Service businesses and Driving schools use the Practice & Office bundle (the brief did not name
+  them), or change their lists in the industry editor.
+- The supplied bundle photos carry embedded captions and the gallery note under the image says "Gestaltungsbeispiel"; replace
+  the files with caption-free versions when available.
 
 **Commercial**
 

@@ -485,7 +485,7 @@ export interface OwnerEnquiryEmail {
   company?: string;
   message?: string;
   kind: "product" | "industry" | "contact" | "withdrawal";
-  product?: { id: number; name: string; slug: string; url: string; mode: string };
+  product?: { id: number; name: string; slug: string; sku?: string; url: string; mode: string };
   industry?: { name: string; slug: string };
   adminUrl?: string;
 }
@@ -503,6 +503,7 @@ export function buildOwnerEnquiryLines(enquiry: OwnerEnquiryEmail): [string, str
   if (enquiry.product) {
     lines.push(
       ["Produkt/Paket", `${enquiry.product.name} (ID ${enquiry.product.id}, ${enquiry.product.slug})`],
+      ...(enquiry.product.sku ? ([["SKU", enquiry.product.sku]] as [string, string][]) : []),
       ["Seite", enquiry.product.url],
       ["Bestellart", enquiry.product.mode === "enquiry" ? "Nur auf Anfrage" : "Direktkauf"],
     );
@@ -521,6 +522,22 @@ export function buildOwnerEnquiryLines(enquiry: OwnerEnquiryEmail): [string, str
   );
   if (enquiry.adminUrl) lines.push(["In WordPress", enquiry.adminUrl]);
   return lines;
+}
+
+/**
+ * The message for a provider template, with the product (or industry) written into the text. A template that only
+ * prints `message` would otherwise show the customer's choices without saying which product they are about.
+ */
+export function ownerTemplateMessage(enquiry: OwnerEnquiryEmail): string {
+  const header = enquiry.product
+    ? [
+        `Produkt: ${enquiry.product.name} (ID ${enquiry.product.id}${enquiry.product.sku ? `, SKU ${enquiry.product.sku}` : ""})`,
+        `Seite: ${enquiry.product.url}`,
+      ].join("\n")
+    : enquiry.industry
+      ? `Branche: ${enquiry.industry.name} (${enquiry.industry.slug})`
+      : "";
+  return [header, enquiry.message ?? ""].filter(Boolean).join("\n\n");
 }
 
 export function ownerEnquirySubject(enquiry: OwnerEnquiryEmail): string {
@@ -565,7 +582,7 @@ export async function sendOwnerEnquiryNotification(enquiry: OwnerEnquiryEmail): 
           customer_email: enquiry.email,
           customer_phone: enquiry.phone ?? "",
           business_name: enquiry.company ?? "",
-          message: enquiry.message ?? "",
+          message: ownerTemplateMessage(enquiry),
           admin_url: enquiry.adminUrl ?? "",
         },
       })

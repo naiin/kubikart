@@ -1,7 +1,7 @@
 import { useTranslations } from "next-intl";
 import type { ProductFaq } from "@/lib/product-page";
 
-export function ProductFAQ({ faqs }: { faqs: ProductFaq[] }) {
+export function ProductFAQ({ faqs, title }: { faqs: ProductFaq[]; title?: string }) {
   const t = useTranslations("productPage");
 
   return (
@@ -9,7 +9,7 @@ export function ProductFAQ({ faqs }: { faqs: ProductFaq[] }) {
       <div className="mb-8">
         <p className="text-sm font-semibold uppercase tracking-[0.14em] text-accent-600">FAQ</p>
         <h2 id="faq-heading" className="mt-3 text-[30px] font-extrabold tracking-[-0.03em] text-navy-900 sm:text-[38px]">
-          {t("faqTitle")}
+          {title ?? t("faqTitle")}
         </h2>
       </div>
 

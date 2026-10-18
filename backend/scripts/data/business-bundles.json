@@ -1,0 +1,1261 @@
+{
+  "schema_version": 1,
+  "currency": "EUR",
+  "languages": [
+    "en",
+    "de"
+  ],
+  "source_products": {
+    "1221": "Frosted window film with business logo",
+    "1205": "Business logo window decal",
+    "1029": "Custom logo/text stickers",
+    "542": "Laminated menus and price lists, A5/A4/A3",
+    "540": "Opening-hours window decal",
+    "538": "Business cards",
+    "509": "Acrylic QR/NFC stand – five designs",
+    "507": "3D-printed QR/NFC stand – six designs"
+  },
+  "bundles": [
+    {
+      "key": "barber-hair-salon",
+      "sku": "KA-BND-BARBER-001",
+      "slug": "barber-salon-kit",
+      "folder": "Barber-Hair-Salon",
+      "titles": {
+        "en": "Barber & Hair Salon Bundle – Opening Hours, QR/NFC Stand & Laminated Price Lists",
+        "de": "Barber- & Friseursalon-Paket – Öffnungszeiten, QR-/NFC-Aufsteller & laminierte Preislisten"
+      },
+      "short": {
+        "en": "A coordinated setup for your salon entrance and reception: personalised opening-hours lettering, a 3D-printed QR/NFC stand, three laminated A4 price lists and a small Instagram or booking lettering. Individual quote, without installation.",
+        "de": "Ein abgestimmtes Set für Eingang und Empfang: individuelle Öffnungszeiten-Beschriftung, ein 3D-gedruckter QR-/NFC-Aufsteller, drei laminierte A4-Preislisten und eine kleine Instagram- oder Buchungsbeschriftung. Individuelles Angebot, ohne Montage."
+      },
+      "paragraphs": {
+        "en": [
+          "Give your barber shop or hair salon a coordinated appearance across your entrance, reception and service information. This package combines everyday customer information with a personalised countertop stand for your chosen links.",
+          "The base package includes opening-hours lettering, one 3D-printed QR/NFC stand, three laminated A4 price lists and a small Instagram or booking lettering, in a coordinated design with one digital proof. Use your business name, logo, colours and supplied service details to create a matching presentation. The stand can display links for booking, reviews or your social profile, within the selected product’s supported configuration.",
+          "Optional upgrades are quoted individually and are not included in the base price: an acrylic stand (+€30), additional price lists, additional stands, mirror or Instagram lettering and simple local installation. On-site installation and extensive redesign work are not part of the base package.",
+          "Send your contact details using the enquiry form. We will discuss your requirements, artwork and window measurements before providing the final quote. The displayed starting price applies to the base specification shown on this page; the final price depends on the agreed dimensions, quantities and design work."
+        ],
+        "de": [
+          "Gib deinem Barber-Shop oder Friseursalon einen abgestimmten Auftritt – vom Eingang über den Empfang bis zur Leistungsübersicht. Das Paket verbindet wichtige Kundeninformationen mit einem personalisierten Aufsteller für deine gewünschten Links.",
+          "Das Basispaket enthält eine Öffnungszeiten-Beschriftung, einen 3D-gedruckten QR-/NFC-Aufsteller, drei laminierte A4-Preislisten und eine kleine Instagram- oder Buchungsbeschriftung, in abgestimmter Gestaltung mit einem digitalen Korrekturabzug. Unternehmensname, Logo, Farben und deine Leistungsangaben werden aufeinander abgestimmt. Der Aufsteller kann im Rahmen der verfügbaren Produktkonfiguration auf Terminbuchung, Bewertungen oder dein Social-Media-Profil verweisen.",
+          "Optionale Upgrades werden individuell angeboten und sind nicht im Basispreis enthalten: Acryl-Aufsteller (+30 €), zusätzliche Preislisten, weitere Aufsteller, Spiegel- oder Instagram-Beschriftung und einfache Montage vor Ort. Montage vor Ort und umfangreiche Neugestaltung gehören nicht zum Basispaket.",
+          "Sende deine Kontaktdaten über das Anfrageformular. Anschließend besprechen wir Wünsche, Druckdaten und Fenstermaße und erstellen dein Angebot. Der angezeigte Ab-Preis gilt für den auf dieser Seite beschriebenen Basisumfang; der Endpreis richtet sich nach Maßen, Mengen und vereinbarter Gestaltung."
+        ]
+      },
+      "included": [
+        {
+          "product_id": 540,
+          "quantity": 1,
+          "specification": {
+            "en": "One personalised opening-hours decal; dimensions and colour agreed in the quote.",
+            "de": "Eine individuelle Öffnungszeiten-Beschriftung; Maße und Farbe gemäß Angebot."
+          }
+        },
+        {
+          "product_id": 507,
+          "quantity": 1,
+          "specification": {
+            "en": "One personalised 3D-printed QR/NFC stand; choose an available design.",
+            "de": "Ein personalisierter 3D-gedruckter QR-/NFC-Aufsteller; verfügbares Design auswählen."
+          }
+        },
+        {
+          "product_id": 542,
+          "quantity": 3,
+          "specification": {
+            "en": "Three laminated A4 price lists\nBased on the service menu you supply.",
+            "de": "Drei laminierte A4-Preislisten\nNach deiner bereitgestellten Leistungsübersicht."
+          }
+        },
+        {
+          "product_id": 540,
+          "quantity": 1,
+          "title": {
+            "en": "Small Instagram or booking lettering",
+            "de": "Kleine Instagram- oder Buchungsbeschriftung"
+          },
+          "specification": {
+            "en": "A small lettering with your Instagram handle or booking details; size and colour agreed in the quote.",
+            "de": "Eine kleine Beschriftung mit deinem Instagram-Namen oder deinen Buchungsdaten; Größe und Farbe gemäß Angebot."
+          }
+        }
+      ],
+      "optional": [
+        {
+          "product_id": 509,
+          "operation": "replace",
+          "label": {
+            "en": "Replace the 3D-printed stand with an acrylic QR/NFC stand (+€30)",
+            "de": "3D-Aufsteller durch einen Acryl-QR-/NFC-Aufsteller ersetzen (+30 €)"
+          },
+          "replaces_product_id": 507
+        },
+        {
+          "product_id": 542,
+          "operation": "add",
+          "label": {
+            "en": "Additional laminated A4 price list (+€9.90)",
+            "de": "Zusätzliche laminierte A4-Preisliste (+9,90 €)"
+          },
+          "replaces_product_id": null
+        },
+        {
+          "product_id": 542,
+          "operation": "add",
+          "label": {
+            "en": "Additional laminated A3 price list (+€16.90)",
+            "de": "Zusätzliche laminierte A3-Preisliste (+16,90 €)"
+          },
+          "replaces_product_id": null
+        },
+        {
+          "product_id": 507,
+          "operation": "add",
+          "label": {
+            "en": "Additional 3D-printed QR/NFC stand (+€39.90)",
+            "de": "Zusätzlicher 3D-gedruckter QR-/NFC-Aufsteller (+39,90 €)"
+          },
+          "replaces_product_id": null
+        },
+        {
+          "product_id": 509,
+          "operation": "add",
+          "label": {
+            "en": "Additional acrylic QR/NFC stand (+€69.99)",
+            "de": "Zusätzlicher Acryl-QR-/NFC-Aufsteller (+69,99 €)"
+          },
+          "replaces_product_id": null
+        },
+        {
+          "product_id": 540,
+          "operation": "add",
+          "label": {
+            "en": "Mirror logo / Instagram vinyl lettering (from +€19)",
+            "de": "Spiegel-Logo / Instagram-Folienbeschriftung (ab +19 €)"
+          },
+          "replaces_product_id": null
+        },
+        {
+          "product_id": 1205,
+          "operation": "quote_dependent",
+          "label": {
+            "en": "Simple local installation (from +€100), subject to distance and site conditions",
+            "de": "Einfache Montage vor Ort (ab +100 €), abhängig von Entfernung und Gegebenheiten"
+          },
+          "replaces_product_id": null
+        }
+      ],
+      "tags": {
+        "en": [
+          "barber bundle",
+          "hair salon bundle",
+          "salon branding",
+          "opening hours decal",
+          "QR code stand",
+          "NFC stand",
+          "laminated price list",
+          "personalised business package"
+        ],
+        "de": [
+          "Barber Paket",
+          "Friseursalon Paket",
+          "Salonbeschriftung",
+          "Öffnungszeiten Aufkleber",
+          "QR Code Aufsteller",
+          "NFC Aufsteller",
+          "laminierte Preisliste",
+          "personalisiertes Geschäftspaket"
+        ]
+      },
+      "seo": {
+        "en": [
+          "Barber & Hair Salon Bundle | KubiKart",
+          "Personalised opening hours, a QR/NFC stand and laminated salon price lists. Explore optional upgrades and request your KubiKart quote."
+        ],
+        "de": [
+          "Barber- & Friseursalon-Paket | KubiKart",
+          "Individuelle Öffnungszeiten, QR-/NFC-Aufsteller und laminierte Preislisten für deinen Salon. Entdecke die Optionen und frage dein Angebot an."
+        ]
+      },
+      "industries": [
+        "barbers",
+        "hair-salons"
+      ],
+      "images": [
+        {
+          "path": "images/Barber-Hair-Salon/01-base-package.png",
+          "role": "featured",
+          "order": 1,
+          "alt": {
+            "en": "Barber & Hair Salon Bundle – base package with 3D-printed stand",
+            "de": "Barber- & Friseursalon-Paket – Basispaket mit 3D-Aufsteller"
+          },
+          "sha256": "e9fbe5fd1ef2b4fed08b30c0a7c42297bc09248621e8a480b30b0c6886794536"
+        },
+        {
+          "path": "images/Barber-Hair-Salon/02-acrylic-at-barber.png",
+          "role": "gallery",
+          "order": 2,
+          "alt": {
+            "en": "Barber & Hair Salon Bundle – optional acrylic stand in use",
+            "de": "Barber- & Friseursalon-Paket – optionaler Acryl-Aufsteller im Einsatz"
+          },
+          "sha256": "481aa73cd25ef89108535960b505de907e9e85bc4c2e286b34ccd394e929513e"
+        },
+        {
+          "path": "images/Barber-Hair-Salon/03-price-list-detail.png",
+          "role": "gallery",
+          "order": 3,
+          "alt": {
+            "en": "Barber & Hair Salon Bundle – printed-product detail",
+            "de": "Barber- & Friseursalon-Paket – Detail der Druckprodukte"
+          },
+          "sha256": "58649dc41366e1d160d91ae01ce8595ad2209c5ef35f83dbb1479c0230136387"
+        },
+        {
+          "path": "images/Barber-Hair-Salon/04-window-exterior.png",
+          "role": "gallery",
+          "order": 4,
+          "alt": {
+            "en": "Barber & Hair Salon Bundle – window lettering or optional frosted-film application",
+            "de": "Barber- & Friseursalon-Paket – Fensterbeschriftung oder optionale Milchglasfolie"
+          },
+          "sha256": "4c4b5aa9d45b874c330c523cdb5ee13e4a97c8486d32d9c218b622638dd3c95c"
+        }
+      ],
+      "scope_summary": {
+        "en": "Individual quote · Without installation",
+        "de": "Individuelles Angebot · Ohne Montage"
+      },
+      "starting_price_eur": 149,
+      "price_status": "owner_value_set",
+      "purchase_mode": "enquiry",
+      "category": {
+        "en": "Business Bundles",
+        "de": "Business-Pakete"
+      },
+      "image_notice": "Existing supplied images; embedded captions have not been removed."
+    },
+    {
+      "key": "beauty-nail-studio",
+      "sku": "KA-BND-BEAUTY-001",
+      "slug": "beauty-nail-studio-kit",
+      "folder": "Beauty-Nail-Studio",
+      "titles": {
+        "en": "Beauty & Nail Studio Bundle – Opening Hours, QR/NFC Stand & Treatment Price Lists",
+        "de": "Kosmetik- & Nagelstudio-Paket – Öffnungszeiten, QR-/NFC-Aufsteller & Preislisten"
+      },
+      "short": {
+        "en": "Bring your studio presentation together with personalised opening hours, a 3D-printed QR/NFC stand, three laminated A4 treatment price lists and small Instagram or booking lettering. Individual quote, without installation.",
+        "de": "Präsentiere dein Studio einheitlich mit individuellen Öffnungszeiten, einem 3D-gedruckten QR-/NFC-Aufsteller, drei laminierten A4-Preislisten und einer kleinen Instagram- oder Buchungsbeschriftung. Individuelles Angebot, ohne Montage."
+      },
+      "paragraphs": {
+        "en": [
+          "Create a coordinated look for your beauty or nail studio, from the entrance to the treatment information at your reception. Match the products to your studio name, branding and supplied treatment menu.",
+          "Your base package contains opening-hours lettering up to 40 × 40 cm, one 3D-printed QR/NFC stand, three double-sided laminated A4 price lists and a small Instagram or booking lettering, in a uniform design with one digital proof. The stand provides a place for your selected booking, review or social links, according to the available product configuration.",
+          "Optional extensions: an acrylic stand for +€30, additional price lists, larger lettering, further QR stands or installation on site. These are quoted individually and are included only when specified in your quote. Installation is not part of the base package.",
+          "Start with a short enquiry and your contact details; you do not need to prepare all measurements or artwork before contacting us. We agree the products, design and final price with you. The starting price refers to the stated base configuration."
+        ],
+        "de": [
+          "Gestalte einen abgestimmten Auftritt für dein Kosmetik- oder Nagelstudio – vom Eingang bis zur Behandlungsübersicht am Empfang. Die Produkte werden auf deinen Studionamen, dein Erscheinungsbild und deine bereitgestellte Leistungsübersicht abgestimmt.",
+          "Dein Basispaket enthält eine Öffnungszeiten-Beschriftung bis 40 × 40 cm, einen 3D-gedruckten QR-/NFC-Aufsteller, drei beidseitig bedruckte, laminierte A4-Preislisten und eine kleine Instagram- oder Buchungsbeschriftung, in einheitlicher Gestaltung mit einem digitalen Korrekturabzug. Der Aufsteller bietet Platz für deine gewünschten Termin-, Bewertungs- oder Social-Media-Links gemäß der verfügbaren Produktkonfiguration.",
+          "Optionale Erweiterungen: Acryl-Aufsteller für +30 €, zusätzliche Preislisten, größere Beschriftungen, weitere QR-Aufsteller oder Montage vor Ort. Sie werden individuell angeboten und sind nur enthalten, wenn sie im Angebot aufgeführt sind. Die Montage gehört nicht zum Basispaket.",
+          "Beginne mit einer kurzen Anfrage und deinen Kontaktdaten. Du musst dafür noch nicht alle Maße oder Druckdaten bereithalten. Wir stimmen Produkte, Gestaltung und Endpreis mit dir ab. Der Ab-Preis bezieht sich auf die beschriebene Basiskonfiguration."
+        ]
+      },
+      "included": [
+        {
+          "product_id": 540,
+          "quantity": 1,
+          "specification": {
+            "en": "Opening-hours lettering up to 40 × 40 cm\nPersonalised for your studio; colour agreed in the quote.",
+            "de": "Individuelle Öffnungszeiten-Beschriftung bis 40 × 40 cm\nFür dein Studio personalisiert; Farbe gemäß Angebot."
+          }
+        },
+        {
+          "product_id": 507,
+          "quantity": 1,
+          "specification": {
+            "en": "One personalised 3D-printed QR/NFC stand; choose an available design.",
+            "de": "Ein personalisierter 3D-gedruckter QR-/NFC-Aufsteller; verfügbares Design auswählen."
+          }
+        },
+        {
+          "product_id": 542,
+          "quantity": 3,
+          "specification": {
+            "en": "Three double-sided laminated A4 price lists\nBased on the treatment menu you supply.",
+            "de": "Drei beidseitig bedruckte, laminierte A4-Preislisten\nNach deiner bereitgestellten Leistungsübersicht."
+          }
+        },
+        {
+          "product_id": 540,
+          "quantity": 1,
+          "title": {
+            "en": "Small Instagram or booking lettering",
+            "de": "Kleine Instagram- oder Buchungsbeschriftung"
+          },
+          "specification": {
+            "en": "A small lettering with your Instagram handle or booking details; size and colour agreed in the quote.",
+            "de": "Eine kleine Beschriftung mit deinem Instagram-Namen oder deinen Buchungsdaten; Größe und Farbe gemäß Angebot."
+          }
+        }
+      ],
+      "optional": [
+        {
+          "product_id": 509,
+          "operation": "replace",
+          "label": {
+            "en": "Replace the 3D-printed stand with an acrylic QR/NFC stand (+€30)",
+            "de": "3D-Aufsteller durch einen Acryl-QR-/NFC-Aufsteller ersetzen (+30 €)"
+          },
+          "replaces_product_id": 507
+        },
+        {
+          "product_id": 542,
+          "operation": "add",
+          "label": {
+            "en": "Additional laminated price lists",
+            "de": "Zusätzliche laminierte Preislisten"
+          },
+          "replaces_product_id": null
+        },
+        {
+          "product_id": 540,
+          "operation": "quote_dependent",
+          "label": {
+            "en": "Larger lettering, quoted individually",
+            "de": "Größere Beschriftungen, individuell angeboten"
+          },
+          "replaces_product_id": null
+        },
+        {
+          "product_id": 507,
+          "operation": "add",
+          "label": {
+            "en": "Additional QR/NFC stands",
+            "de": "Weitere QR-/NFC-Aufsteller"
+          },
+          "replaces_product_id": null
+        },
+        {
+          "product_id": 1205,
+          "operation": "quote_dependent",
+          "label": {
+            "en": "Installation on site, quoted individually",
+            "de": "Montage vor Ort, individuell angeboten"
+          },
+          "replaces_product_id": null
+        }
+      ],
+      "tags": {
+        "en": [
+          "beauty studio bundle",
+          "nail salon bundle",
+          "beauty branding",
+          "treatment price list",
+          "opening hours decal",
+          "QR code stand",
+          "NFC stand",
+          "custom studio package"
+        ],
+        "de": [
+          "Kosmetikstudio Paket",
+          "Nagelstudio Paket",
+          "Studio Branding",
+          "Behandlungspreisliste",
+          "Öffnungszeiten Aufkleber",
+          "QR Code Aufsteller",
+          "NFC Aufsteller",
+          "individuelles Studiopaket"
+        ]
+      },
+      "seo": {
+        "en": [
+          "Beauty & Nail Studio Bundle | KubiKart",
+          "Matching opening hours, a QR/NFC stand and laminated treatment price lists for your studio. Choose optional upgrades and request a quote."
+        ],
+        "de": [
+          "Kosmetik- & Nagelstudio-Paket | KubiKart",
+          "Passende Öffnungszeiten, QR-/NFC-Aufsteller und laminierte Preislisten für dein Studio. Wähle optionale Ergänzungen und frage ein Angebot an."
+        ]
+      },
+      "industries": [
+        "beauty-studios",
+        "nail-studios"
+      ],
+      "images": [
+        {
+          "path": "images/Beauty-Nail-Studio/01-base-package.png",
+          "role": "featured",
+          "order": 1,
+          "alt": {
+            "en": "Beauty & Nail Studio Bundle – base package with 3D-printed stand",
+            "de": "Kosmetik- & Nagelstudio-Paket – Basispaket mit 3D-Aufsteller"
+          },
+          "sha256": "d5647d3350778c3a23f2396b15f8bc2b4f911bf993e0ad781c164c77fc726ff3"
+        },
+        {
+          "path": "images/Beauty-Nail-Studio/02-acrylic-at-salon.png",
+          "role": "gallery",
+          "order": 2,
+          "alt": {
+            "en": "Beauty & Nail Studio Bundle – optional acrylic stand in use",
+            "de": "Kosmetik- & Nagelstudio-Paket – optionaler Acryl-Aufsteller im Einsatz"
+          },
+          "sha256": "6b5525a0861aab2d9d9314a352820bbb868d2364bcd0ce9ff7ea0c8039c2c0d6"
+        },
+        {
+          "path": "images/Beauty-Nail-Studio/03-price-list-detail.png",
+          "role": "gallery",
+          "order": 3,
+          "alt": {
+            "en": "Beauty & Nail Studio Bundle – printed-product detail",
+            "de": "Kosmetik- & Nagelstudio-Paket – Detail der Druckprodukte"
+          },
+          "sha256": "34d8b7427bc93e6212242164dbd82d9562543a445cd6a24f88b46b5771033975"
+        },
+        {
+          "path": "images/Beauty-Nail-Studio/04-privacy-window-option.png",
+          "role": "gallery",
+          "order": 4,
+          "alt": {
+            "en": "Beauty & Nail Studio Bundle – window lettering or optional frosted-film application",
+            "de": "Kosmetik- & Nagelstudio-Paket – Fensterbeschriftung oder optionale Milchglasfolie"
+          },
+          "sha256": "079e65be50c65235a7a6f6b2c121b033a760496d3e0d3392cd6538f1142ee788"
+        }
+      ],
+      "scope_summary": {
+        "en": "Individual quote · Without installation",
+        "de": "Individuelles Angebot · Ohne Montage"
+      },
+      "starting_price_eur": 149,
+      "price_status": "owner_value_set",
+      "purchase_mode": "enquiry",
+      "category": {
+        "en": "Business Bundles",
+        "de": "Business-Pakete"
+      },
+      "image_notice": "Existing supplied images; embedded captions have not been removed."
+    },
+    {
+      "key": "cafe-restaurant",
+      "sku": "KA-BND-GASTRO-001",
+      "slug": "gastro-visibility-kit",
+      "folder": "Cafe-Restaurant",
+      "titles": {
+        "en": "Café & Restaurant Bundle – Opening Hours, QR/NFC Stand & Laminated Menus",
+        "de": "Café- & Restaurant-Paket – Öffnungszeiten, QR-/NFC-Aufsteller & laminierte Speisekarten"
+      },
+      "short": {
+        "en": "Coordinate your café or restaurant with opening-hours lettering, one 3D-printed QR/NFC stand and ten laminated A5 menus. Request a package tailored to your business.",
+        "de": "Stimme dein Café oder Restaurant mit Öffnungszeiten-Beschriftung, einem 3D-gedruckten QR-/NFC-Aufsteller und zehn laminierten A5-Speisekarten ab. Frage dein individuelles Paket an."
+      },
+      "paragraphs": {
+        "en": [
+          "Welcome your guests with a matching presentation at the entrance and on the table. This package brings together your opening hours, printed menu and selected digital links in your business style.",
+          "The base package includes one opening-hours window decal, one 3D-printed QR/NFC stand and ten single-sided laminated A5 menus. Supply your menu content, prices and branding so the printed pieces can be coordinated. Depending on the supported stand configuration, the QR links can lead to your menu, reviews or another chosen destination.",
+          "Choose an acrylic stand as an upgrade, change the menu format to A4 or A3, or request additional menus and stands. Window logos, logo stickers and business cards are optional additions. Larger formats replace the included A5 format; extra copies increase the quantity.",
+          "Send an enquiry with your contact details and, if you wish, a brief outline of your needs. We discuss the menu, artwork, quantities and window dimensions before preparing the final quote. The starting price applies to the base configuration described on this page."
+        ],
+        "de": [
+          "Begrüße deine Gäste mit einem passenden Auftritt am Eingang und auf dem Tisch. Das Paket verbindet deine Öffnungszeiten, gedruckte Speisekarten und gewünschte digitale Links im Stil deines Betriebs.",
+          "Das Basispaket enthält eine Öffnungszeiten-Beschriftung, einen 3D-gedruckten QR-/NFC-Aufsteller und zehn einseitig bedruckte, laminierte A5-Speisekarten. Stelle uns Speisen, Preise und deine Unternehmensgestaltung bereit, damit die Druckprodukte abgestimmt werden können. Je nach unterstützter Aufsteller-Konfiguration führen die QR-Links zur Speisekarte, zu Bewertungen oder zu einem anderen gewünschten Ziel.",
+          "Wähle einen Acryl-Aufsteller als Upgrade, ändere das Kartenformat auf A4 oder A3 oder frage weitere Karten und Aufsteller an. Fensterlogos, Logo-Aufkleber und Visitenkarten sind optionale Ergänzungen. Ein größeres Format ersetzt das enthaltene A5-Format; zusätzliche Exemplare erhöhen die Stückzahl.",
+          "Sende eine Anfrage mit deinen Kontaktdaten und auf Wunsch einer kurzen Beschreibung. Wir besprechen Speisekarte, Druckdaten, Mengen und Fenstermaße, bevor wir das endgültige Angebot erstellen. Der Ab-Preis gilt für die auf dieser Seite beschriebene Basiskonfiguration."
+        ]
+      },
+      "included": [
+        {
+          "product_id": 540,
+          "quantity": 1,
+          "specification": {
+            "en": "One personalised opening-hours decal; dimensions and colour agreed in the quote.",
+            "de": "Eine individuelle Öffnungszeiten-Beschriftung; Maße und Farbe gemäß Angebot."
+          }
+        },
+        {
+          "product_id": 507,
+          "quantity": 1,
+          "specification": {
+            "en": "One personalised 3D-printed QR/NFC stand; choose an available design.",
+            "de": "Ein personalisierter 3D-gedruckter QR-/NFC-Aufsteller; verfügbares Design auswählen."
+          }
+        },
+        {
+          "product_id": 542,
+          "quantity": 10,
+          "specification": {
+            "en": "Ten single-sided laminated A5 menus.",
+            "de": "Zehn einseitig bedruckte, laminierte A5-Speisekarten."
+          }
+        }
+      ],
+      "optional": [
+        {
+          "product_id": 509,
+          "operation": "replace",
+          "label": {
+            "en": "Replace the 3D-printed stand with an acrylic QR/NFC stand",
+            "de": "3D-Aufsteller durch einen Acryl-QR-/NFC-Aufsteller ersetzen"
+          },
+          "replaces_product_id": 507
+        },
+        {
+          "product_id": 542,
+          "operation": "replace_format",
+          "label": {
+            "en": "Change menus to A4 or A3",
+            "de": "Speisekarten auf A4 oder A3 ändern"
+          },
+          "replaces_product_id": 542
+        },
+        {
+          "product_id": 542,
+          "operation": "add",
+          "label": {
+            "en": "Extra menu copies",
+            "de": "Zusätzliche Speisekarten"
+          },
+          "replaces_product_id": null
+        },
+        {
+          "product_id": 507,
+          "operation": "add",
+          "label": {
+            "en": "Additional 3D-printed stands",
+            "de": "Weitere 3D-Aufsteller"
+          },
+          "replaces_product_id": null
+        },
+        {
+          "product_id": 509,
+          "operation": "add",
+          "label": {
+            "en": "Additional acrylic stands",
+            "de": "Weitere Acryl-Aufsteller"
+          },
+          "replaces_product_id": null
+        },
+        {
+          "product_id": 1205,
+          "operation": "add",
+          "label": {
+            "en": "Window logo",
+            "de": "Fensterlogo"
+          },
+          "replaces_product_id": null
+        },
+        {
+          "product_id": 1029,
+          "operation": "add",
+          "label": {
+            "en": "Logo stickers",
+            "de": "Logo-Aufkleber"
+          },
+          "replaces_product_id": null
+        },
+        {
+          "product_id": 538,
+          "operation": "add",
+          "label": {
+            "en": "Business cards",
+            "de": "Visitenkarten"
+          },
+          "replaces_product_id": null
+        }
+      ],
+      "tags": {
+        "en": [
+          "cafe bundle",
+          "restaurant bundle",
+          "laminated menus",
+          "A5 menu",
+          "QR menu stand",
+          "NFC stand",
+          "opening hours decal",
+          "restaurant branding"
+        ],
+        "de": [
+          "Café Paket",
+          "Restaurant Paket",
+          "laminierte Speisekarten",
+          "A5 Speisekarte",
+          "QR Speisekarten Aufsteller",
+          "NFC Aufsteller",
+          "Öffnungszeiten Aufkleber",
+          "Gastronomie Branding"
+        ]
+      },
+      "seo": {
+        "en": [
+          "Café & Restaurant Bundle | KubiKart",
+          "Personalised opening hours, a QR/NFC stand and laminated A5 menus for your café or restaurant. Other formats and quantities available by enquiry."
+        ],
+        "de": [
+          "Café- & Restaurant-Paket | KubiKart",
+          "Individuelle Öffnungszeiten, QR-/NFC-Aufsteller und laminierte A5-Speisekarten. Weitere Formate und Mengen für deine Gastronomie auf Anfrage."
+        ]
+      },
+      "industries": [
+        "cafes",
+        "bakeries",
+        "restaurants"
+      ],
+      "images": [
+        {
+          "path": "images/Cafe-Restaurant/01-base-package.png",
+          "role": "featured",
+          "order": 1,
+          "alt": {
+            "en": "Café & Restaurant Bundle – base package with 3D-printed stand",
+            "de": "Café- & Restaurant-Paket – Basispaket mit 3D-Aufsteller"
+          },
+          "sha256": "3fe26ac61894d235911a0d62b4e2114c5cef485ae2a8a1cf8be5fef797687869"
+        },
+        {
+          "path": "images/Cafe-Restaurant/02-acrylic-at-bistro.png",
+          "role": "gallery",
+          "order": 2,
+          "alt": {
+            "en": "Café & Restaurant Bundle – optional acrylic stand in use",
+            "de": "Café- & Restaurant-Paket – optionaler Acryl-Aufsteller im Einsatz"
+          },
+          "sha256": "973cf9dd1479a9faa6fc0ba31e350dc2cd2b1753ff1a005c97bf58073701b4c7"
+        },
+        {
+          "path": "images/Cafe-Restaurant/03-menus-on-table.png",
+          "role": "gallery",
+          "order": 3,
+          "alt": {
+            "en": "Café & Restaurant Bundle – printed-product detail",
+            "de": "Café- & Restaurant-Paket – Detail der Druckprodukte"
+          },
+          "sha256": "0e72800f1582edca3ec5466a0b2c5d480b588b3dc09e777839e0b79ad8541064"
+        },
+        {
+          "path": "images/Cafe-Restaurant/04-cafe-hours-exterior.png",
+          "role": "gallery",
+          "order": 4,
+          "alt": {
+            "en": "Café & Restaurant Bundle – window lettering or optional frosted-film application",
+            "de": "Café- & Restaurant-Paket – Fensterbeschriftung oder optionale Milchglasfolie"
+          },
+          "sha256": "8339860a9ef04ae8df031f5872eef4b537043f587d00bfcc5cf59b2b7bb6023c"
+        }
+      ],
+      "starting_price_eur": null,
+      "price_status": "owner_value_required",
+      "purchase_mode": "enquiry",
+      "category": {
+        "en": "Business Bundles",
+        "de": "Business-Pakete"
+      },
+      "image_notice": "Existing supplied images; embedded captions have not been removed."
+    },
+    {
+      "key": "retail-boutique",
+      "sku": "KA-BND-RETAIL-001",
+      "slug": "retail-boutique-kit",
+      "folder": "Shop-Boutique",
+      "titles": {
+        "en": "Shop & Boutique Bundle – Window Branding, QR/NFC Stand & Logo Stickers",
+        "de": "Laden- & Boutique-Paket – Fensterbeschriftung, QR-/NFC-Aufsteller & Logo-Aufkleber"
+      },
+      "short": {
+        "en": "A coordinated shop presentation with a window logo, opening-hours lettering, one 3D-printed QR/NFC stand and 50 logo stickers. Personalised for your business by enquiry.",
+        "de": "Ein abgestimmter Ladenauftritt mit Fensterlogo, Öffnungszeiten-Beschriftung, einem 3D-gedruckten QR-/NFC-Aufsteller und 50 Logo-Aufklebern. Individuell für dein Geschäft auf Anfrage."
+      },
+      "paragraphs": {
+        "en": [
+          "Carry your shop identity from the storefront to the counter and your printed labels. This package combines window lettering, a countertop stand and logo stickers in a coordinated business presentation.",
+          "The base package contains one business-logo window decal, one opening-hours decal, one 3D-printed QR/NFC stand and 50 logo stickers using one supplied design. The proposed sticker specification is round, 40 mm; available sizes and finishes are confirmed in the quote. Bags and other packaging shown in photographs are not supplied.",
+          "Use the stand for your chosen website, social or review links within its supported configuration. An acrylic stand is available as a replacement upgrade. You can also request business cards, more stickers, other supported sticker shapes or sizes, or frosted film for suitable glass.",
+          "Leave your contact details in the enquiry form. We will discuss your logo, lettering dimensions, sticker specification and required quantities. The starting price refers to the stated base scope; your final package and price are agreed individually."
+        ],
+        "de": [
+          "Führe das Erscheinungsbild deines Geschäfts vom Schaufenster über die Verkaufstheke bis zu deinen Etiketten fort. Das Paket kombiniert Fensterbeschriftung, einen Aufsteller und Logo-Aufkleber zu einem abgestimmten Auftritt.",
+          "Das Basispaket enthält ein Fensterlogo, eine Öffnungszeiten-Beschriftung, einen 3D-gedruckten QR-/NFC-Aufsteller und 50 Logo-Aufkleber mit einem bereitgestellten Motiv. Vorgesehen sind runde Aufkleber mit 40 mm Durchmesser; verfügbare Größen und Ausführungen werden im Angebot bestätigt. Abgebildete Tüten und weitere Verpackungen gehören nicht zum Lieferumfang.",
+          "Nutze den Aufsteller für deine gewünschten Website-, Social-Media- oder Bewertungslinks im Rahmen seiner unterstützten Konfiguration. Ein Acryl-Aufsteller ist als Ersatz-Upgrade möglich. Ergänzend kannst du Visitenkarten, weitere Aufkleber, andere verfügbare Formen und Größen oder Milchglasfolie für geeignete Glasflächen anfragen.",
+          "Hinterlasse deine Kontaktdaten im Anfrageformular. Wir besprechen Logo, Beschriftungsmaße, Aufkleberausführung und Mengen. Der Ab-Preis bezieht sich auf den beschriebenen Basisumfang; das endgültige Paket und der Preis werden individuell vereinbart."
+        ]
+      },
+      "included": [
+        {
+          "product_id": 1205,
+          "quantity": 1,
+          "specification": {
+            "en": "One business-logo window decal; dimensions and colour agreed in the quote.",
+            "de": "Eine Fensterbeschriftung mit Firmenlogo; Maße und Farbe gemäß Angebot."
+          }
+        },
+        {
+          "product_id": 540,
+          "quantity": 1,
+          "specification": {
+            "en": "One personalised opening-hours decal; dimensions and colour agreed in the quote.",
+            "de": "Eine individuelle Öffnungszeiten-Beschriftung; Maße und Farbe gemäß Angebot."
+          }
+        },
+        {
+          "product_id": 507,
+          "quantity": 1,
+          "specification": {
+            "en": "One personalised 3D-printed QR/NFC stand; choose an available design.",
+            "de": "Ein personalisierter 3D-gedruckter QR-/NFC-Aufsteller; verfügbares Design auswählen."
+          }
+        },
+        {
+          "product_id": 1029,
+          "quantity": 50,
+          "specification": {
+            "en": "50 logo stickers, one design; proposed round 40 mm, subject to verified availability.",
+            "de": "50 Logo-Aufkleber mit einem Motiv; vorgesehen rund, 40 mm, Verfügbarkeit prüfen."
+          }
+        }
+      ],
+      "optional": [
+        {
+          "product_id": 509,
+          "operation": "replace",
+          "label": {
+            "en": "Replace the 3D-printed stand with an acrylic QR/NFC stand",
+            "de": "3D-Aufsteller durch einen Acryl-QR-/NFC-Aufsteller ersetzen"
+          },
+          "replaces_product_id": 507
+        },
+        {
+          "product_id": 538,
+          "operation": "add",
+          "label": {
+            "en": "Business cards",
+            "de": "Visitenkarten"
+          },
+          "replaces_product_id": null
+        },
+        {
+          "product_id": 1029,
+          "operation": "add",
+          "label": {
+            "en": "More logo stickers",
+            "de": "Weitere Logo-Aufkleber"
+          },
+          "replaces_product_id": null
+        },
+        {
+          "product_id": 1029,
+          "operation": "replace_format",
+          "label": {
+            "en": "Other supported sticker shapes or sizes",
+            "de": "Andere verfügbare Aufkleberformen oder -größen"
+          },
+          "replaces_product_id": 1029
+        },
+        {
+          "product_id": 1221,
+          "operation": "quote_dependent",
+          "label": {
+            "en": "Frosted film with logo; agree placement and avoid duplicating the included logo",
+            "de": "Milchglasfolie mit Logo; Platzierung abstimmen und enthaltenes Logo nicht doppelt berechnen"
+          },
+          "replaces_product_id": null
+        }
+      ],
+      "tags": {
+        "en": [
+          "shop bundle",
+          "boutique bundle",
+          "window logo",
+          "opening hours decal",
+          "logo stickers",
+          "QR code stand",
+          "NFC stand",
+          "retail branding"
+        ],
+        "de": [
+          "Laden Paket",
+          "Boutique Paket",
+          "Fensterlogo",
+          "Öffnungszeiten Aufkleber",
+          "Logo Aufkleber",
+          "QR Code Aufsteller",
+          "NFC Aufsteller",
+          "Einzelhandel Branding"
+        ]
+      },
+      "seo": {
+        "en": [
+          "Shop & Boutique Branding Bundle | KubiKart",
+          "Coordinate your shop with window lettering, a QR/NFC stand and 50 logo stickers. Personalised options and acrylic upgrades available by enquiry."
+        ],
+        "de": [
+          "Laden- & Boutique-Paket | KubiKart",
+          "Fensterbeschriftung, QR-/NFC-Aufsteller und 50 Logo-Aufkleber für dein Geschäft. Individuelle Optionen und Acryl-Upgrades auf Anfrage."
+        ]
+      },
+      "industries": [
+        "shops",
+        "boutiques",
+        "retail"
+      ],
+      "images": [
+        {
+          "path": "images/Shop-Boutique/01-base-package.png",
+          "role": "featured",
+          "order": 1,
+          "alt": {
+            "en": "Shop & Boutique Bundle – base package with 3D-printed stand",
+            "de": "Laden- & Boutique-Paket – Basispaket mit 3D-Aufsteller"
+          },
+          "sha256": "366c40863908ab67966879581f500195131c545615c5f80a2145965e653a917e"
+        },
+        {
+          "path": "images/Shop-Boutique/02-acrylic-at-boutique.png",
+          "role": "gallery",
+          "order": 2,
+          "alt": {
+            "en": "Shop & Boutique Bundle – optional acrylic stand in use",
+            "de": "Laden- & Boutique-Paket – optionaler Acryl-Aufsteller im Einsatz"
+          },
+          "sha256": "a9224f6425571a3098b795ee241a19c8d35c33f399f5ffca1124f47c24c6dd8d"
+        },
+        {
+          "path": "images/Shop-Boutique/03-logo-sticker-detail.png",
+          "role": "gallery",
+          "order": 3,
+          "alt": {
+            "en": "Shop & Boutique Bundle – printed-product detail",
+            "de": "Laden- & Boutique-Paket – Detail der Druckprodukte"
+          },
+          "sha256": "75ccdf595e5a2f823de58dcd645fd6c941d6cd87279200f6830dfa2416735705"
+        },
+        {
+          "path": "images/Shop-Boutique/04-shop-window.png",
+          "role": "gallery",
+          "order": 4,
+          "alt": {
+            "en": "Shop & Boutique Bundle – window lettering or optional frosted-film application",
+            "de": "Laden- & Boutique-Paket – Fensterbeschriftung oder optionale Milchglasfolie"
+          },
+          "sha256": "4b5904b30a930c34fd8ef0b7523a5960ef1abb43147a11790fd24d20ba91a217"
+        }
+      ],
+      "starting_price_eur": null,
+      "price_status": "owner_value_required",
+      "purchase_mode": "enquiry",
+      "category": {
+        "en": "Business Bundles",
+        "de": "Business-Pakete"
+      },
+      "image_notice": "Existing supplied images; embedded captions have not been removed."
+    },
+    {
+      "key": "practice-office",
+      "sku": "KA-BND-OFFICE-001",
+      "slug": "practice-office-kit",
+      "folder": "Practice-Office",
+      "titles": {
+        "en": "Practice & Office Bundle – Window Branding, QR/NFC Stand & Business Cards",
+        "de": "Praxis- & Büro-Paket – Fensterbeschriftung, QR-/NFC-Aufsteller & Visitenkarten"
+      },
+      "short": {
+        "en": "Coordinate your entrance and reception with a business-logo decal, opening hours, a 3D-printed QR/NFC stand and 100 double-sided business cards, with layout preparation, a proof and one revision. Available by enquiry.",
+        "de": "Stimme Eingang und Empfang mit Fensterlogo, Öffnungszeiten, einem 3D-gedruckten QR-/NFC-Aufsteller und 100 doppelseitigen Visitenkarten ab, inklusive Gestaltungsvorbereitung, Entwurf und einer Korrekturrunde. Auf Anfrage erhältlich."
+      },
+      "paragraphs": {
+        "en": [
+          "Present your practice, office or service studio with coordinated information at the entrance and reception. Combine business lettering with printed contact details and a stand for your selected digital links.",
+          "The base package includes one business-logo window decal, one opening-hours decal, one 3D-printed QR/NFC stand and 100 double-sided business cards, with coordinated layout preparation, a proof and one revision. Card paper and format are selected from the available product options and confirmed in the quote. Use your own logo and contact information across the pieces.",
+          "Choose an acrylic stand as a replacement upgrade or add frosted film with branding for suitable glass partitions. Installation, additional cards, larger windows and complex logos are quoted individually. Frosted film is optional and does not form part of the base package.",
+          "Submit a short enquiry with your contact details. We will discuss the lettering sizes, artwork, card specification and stand configuration. The displayed starting price applies to the defined base package; the final scope and price are confirmed personally."
+        ],
+        "de": [
+          "Präsentiere deine Praxis, dein Büro oder dein Dienstleistungsstudio mit abgestimmten Informationen am Eingang und Empfang. Verbinde deine Unternehmensbeschriftung mit gedruckten Kontaktdaten und einem Aufsteller für die gewünschten digitalen Links.",
+          "Das Basispaket enthält ein Fensterlogo, eine Öffnungszeiten-Beschriftung, einen 3D-gedruckten QR-/NFC-Aufsteller und 100 doppelseitige Visitenkarten, mit abgestimmter Gestaltungsvorbereitung, Entwurf und einer Korrekturrunde. Papier und Format werden aus den verfügbaren Produktoptionen ausgewählt und im Angebot bestätigt. Dein Logo und deine Kontaktdaten werden über die Produkte hinweg verwendet.",
+          "Wähle einen Acryl-Aufsteller als Ersatz-Upgrade oder ergänze Milchglasfolie mit Beschriftung für geeignete Glasflächen. Montage, weitere Visitenkarten, größere Fenster und aufwendige Logos werden individuell angeboten. Milchglasfolie ist optional und gehört nicht zum Basispaket.",
+          "Sende eine kurze Anfrage mit deinen Kontaktdaten. Wir besprechen Beschriftungsmaße, Druckdaten, Kartenausführung und Aufsteller-Konfiguration. Der angezeigte Ab-Preis gilt für das definierte Basispaket; Umfang und Endpreis bestätigen wir persönlich."
+        ]
+      },
+      "included": [
+        {
+          "product_id": 1205,
+          "quantity": 1,
+          "specification": {
+            "en": "One business-logo window decal; dimensions and colour agreed in the quote.",
+            "de": "Eine Fensterbeschriftung mit Firmenlogo; Maße und Farbe gemäß Angebot."
+          }
+        },
+        {
+          "product_id": 540,
+          "quantity": 1,
+          "specification": {
+            "en": "One personalised opening-hours decal; dimensions and colour agreed in the quote.",
+            "de": "Eine individuelle Öffnungszeiten-Beschriftung; Maße und Farbe gemäß Angebot."
+          }
+        },
+        {
+          "product_id": 507,
+          "quantity": 1,
+          "specification": {
+            "en": "One personalised 3D-printed QR/NFC stand; choose an available design.",
+            "de": "Ein personalisierter 3D-gedruckter QR-/NFC-Aufsteller; verfügbares Design auswählen."
+          }
+        },
+        {
+          "product_id": 538,
+          "quantity": 100,
+          "specification": {
+            "en": "100 double-sided business cards; paper and format selected from the available product options.",
+            "de": "100 doppelseitige Visitenkarten; Papier und Format aus den verfügbaren Produktoptionen."
+          }
+        }
+      ],
+      "optional": [
+        {
+          "product_id": 509,
+          "operation": "replace",
+          "label": {
+            "en": "Replace the 3D-printed stand with an acrylic QR/NFC stand (+€30)",
+            "de": "3D-Aufsteller durch einen Acryl-QR-/NFC-Aufsteller ersetzen (+30 €)"
+          },
+          "replaces_product_id": 507
+        },
+        {
+          "product_id": 1221,
+          "operation": "quote_dependent",
+          "label": {
+            "en": "Frosted film with logo; agree placement and avoid duplicating the included logo",
+            "de": "Milchglasfolie mit Logo; Platzierung abstimmen und enthaltenes Logo nicht doppelt berechnen"
+          },
+          "replaces_product_id": null
+        },
+        {
+          "product_id": 1205,
+          "operation": "quote_dependent",
+          "label": {
+            "en": "Installation, quoted separately; straightforward local jobs from +€100, subject to distance and site conditions",
+            "de": "Montage, separat angeboten; einfache Einsätze vor Ort ab +100 €, abhängig von Entfernung und Gegebenheiten"
+          },
+          "replaces_product_id": null
+        },
+        {
+          "product_id": 1205,
+          "operation": "quote_dependent",
+          "label": {
+            "en": "Larger windows or complex logos, quoted individually",
+            "de": "Größere Fenster oder aufwendige Logos, individuell angeboten"
+          },
+          "replaces_product_id": null
+        },
+        {
+          "product_id": 538,
+          "operation": "add",
+          "label": {
+            "en": "Additional business cards",
+            "de": "Weitere Visitenkarten"
+          },
+          "replaces_product_id": null
+        },
+        {
+          "product_id": 507,
+          "operation": "add",
+          "label": {
+            "en": "Additional 3D-printed stands",
+            "de": "Weitere 3D-Aufsteller"
+          },
+          "replaces_product_id": null
+        },
+        {
+          "product_id": 509,
+          "operation": "add",
+          "label": {
+            "en": "Additional acrylic stands",
+            "de": "Weitere Acryl-Aufsteller"
+          },
+          "replaces_product_id": null
+        }
+      ],
+      "tags": {
+        "en": [
+          "practice bundle",
+          "office bundle",
+          "reception branding",
+          "business cards",
+          "window logo",
+          "opening hours decal",
+          "QR code stand",
+          "NFC stand"
+        ],
+        "de": [
+          "Praxis Paket",
+          "Büro Paket",
+          "Empfang Gestaltung",
+          "Visitenkarten",
+          "Fensterlogo",
+          "Öffnungszeiten Aufkleber",
+          "QR Code Aufsteller",
+          "NFC Aufsteller"
+        ]
+      },
+      "seo": {
+        "en": [
+          "Practice & Office Bundle | KubiKart",
+          "Window logo, opening hours, a QR/NFC stand and personalised business cards for your reception. Acrylic and frosted-film options by enquiry."
+        ],
+        "de": [
+          "Praxis- & Büro-Paket | KubiKart",
+          "Fensterlogo, Öffnungszeiten, QR-/NFC-Aufsteller und persönliche Visitenkarten für deinen Empfang. Acryl und Milchglasfolie optional anfragen."
+        ]
+      },
+      "industries": [
+        "practices",
+        "offices",
+        "service-studios"
+      ],
+      "images": [
+        {
+          "path": "images/Practice-Office/01-base-package.png",
+          "role": "featured",
+          "order": 1,
+          "alt": {
+            "en": "Practice & Office Bundle – base package with 3D-printed stand",
+            "de": "Praxis- & Büro-Paket – Basispaket mit 3D-Aufsteller"
+          },
+          "sha256": "b1bfdecc9dc0a12035508d25e4dbd0049c4ac7ae420f226de21eacbba1985a42"
+        },
+        {
+          "path": "images/Practice-Office/02-acrylic-at-practice.png",
+          "role": "gallery",
+          "order": 2,
+          "alt": {
+            "en": "Practice & Office Bundle – optional acrylic stand in use",
+            "de": "Praxis- & Büro-Paket – optionaler Acryl-Aufsteller im Einsatz"
+          },
+          "sha256": "8b82fb6efcf09f5db07d256244f30f291a2f437f90e2377d9777bd840cfb97fa"
+        },
+        {
+          "path": "images/Practice-Office/03-business-card-detail.png",
+          "role": "gallery",
+          "order": 3,
+          "alt": {
+            "en": "Practice & Office Bundle – printed-product detail",
+            "de": "Praxis- & Büro-Paket – Detail der Druckprodukte"
+          },
+          "sha256": "092813594ccad7dd23f762ccdd1eea82777ed7a210482b995be4da22fa9e39a6"
+        },
+        {
+          "path": "images/Practice-Office/04-frosted-office-option.png",
+          "role": "gallery",
+          "order": 4,
+          "alt": {
+            "en": "Practice & Office Bundle – window lettering or optional frosted-film application",
+            "de": "Praxis- & Büro-Paket – Fensterbeschriftung oder optionale Milchglasfolie"
+          },
+          "sha256": "12f3843fc4edb177dc5a6dad6ebf8168ab393ef76768982f6969f561c5be73c8"
+        }
+      ],
+      "starting_price_eur": 199,
+      "price_status": "owner_value_set",
+      "purchase_mode": "enquiry",
+      "category": {
+        "en": "Business Bundles",
+        "de": "Business-Pakete"
+      },
+      "image_notice": "Existing supplied images; embedded captions have not been removed."
+    },
+    {
+      "key": "window-branding",
+      "sku": "KA-BND-WINDOW-001",
+      "slug": "business-window-branding-kit",
+      "folder": "Window-Branding",
+      "titles": {
+        "en": "Business Window Branding Bundle – Custom Logo & Opening Hours Vinyl Decals",
+        "de": "Schaufenster-Beschriftungspaket – Individuelles Firmenlogo & Öffnungszeiten"
+      },
+      "short": {
+        "en": "Coordinated one-colour vinyl lettering for suitable glass: window lettering up to 100 × 50 cm and door lettering up to 30 × 40 cm. Larger sizes, two colours and optional frosted film by enquiry.",
+        "de": "Abgestimmte einfarbige Folienbeschriftung für geeignete Glasflächen: Schaufensterbeschriftung bis 100 × 50 cm und Türbeschriftung bis 30 × 40 cm. Größere Maße, zwei Farben und optionale Milchglasfolie auf Anfrage."
+      },
+      "paragraphs": {
+        "en": [
+          "Give your entrance a coordinated appearance with your business logo and opening hours. This package focuses on lettering for suitable windows and glass doors, with size, colour and placement agreed for your space.",
+          "The base package contains one-colour cut vinyl: window lettering with your business logo up to 100 × 50 cm and separate door lettering with your opening hours up to 30 × 40 cm. You provide a usable logo file and the opening-hours text; one proof and one revision are included. Glass suitability and the final dimensions are reviewed before the quote is confirmed.",
+    "Two-colour designs, complicated logos, vector recreation of a logo, larger dimensions and unusually detailed weeding are quoted separately. Where the vinyl width requires it, a wide design is produced in sections; we confirm the layout in your quote.",
+          "Frosted film with additional vinyl branding is an optional upgrade. Where the frosted-film product already includes your logo, the quote will clarify whether it replaces the base logo application or covers a separate location, so the same logo placement is not charged twice. Countertop QR/NFC stands and additional lettering can be requested separately.",
+          "Use the enquiry form to leave your contact details. You may include a brief description of your window, but measurements and artwork can be discussed afterwards. The starting price refers to the defined base configuration; installation is included only if expressly stated in the agreed quote."
+        ],
+        "de": [
+          "Gestalte deinen Eingangsbereich einheitlich mit deinem Firmenlogo und deinen Öffnungszeiten. Dieses Paket konzentriert sich auf Beschriftungen für geeignete Fenster und Glastüren. Größe, Farbe und Platzierung stimmen wir auf deine Fläche ab.",
+          "Das Basispaket enthält einfarbige Schneidefolie: eine Schaufensterbeschriftung mit Firmenlogo bis 100 × 50 cm und eine separate Türbeschriftung mit deinen Öffnungszeiten bis 30 × 40 cm. Du stellst eine verwendbare Logo-Datei und den Öffnungszeiten-Text bereit; ein Entwurf und eine Korrekturrunde sind enthalten. Die Eignung der Glasfläche und die endgültigen Maße werden vor der Angebotsbestätigung geprüft.",
+          "Zweifarbige Gestaltungen, aufwendige Logos, die Neuzeichnung eines Logos als Vektordatei, größere Maße und ungewöhnlich detailliertes Entgittern werden separat angeboten. Wenn die Folienbreite es erfordert, wird ein breites Motiv in Teilen gefertigt; die Aufteilung bestätigen wir im Angebot.",
+          "Milchglasfolie mit zusätzlicher Folienbeschriftung ist ein optionales Upgrade. Wenn das Milchglasfolien-Produkt bereits ein Logo enthält, wird im Angebot geklärt, ob es die Basis-Logobeschriftung ersetzt oder für eine weitere Fläche vorgesehen ist. Dieselbe Logoplatzierung wird dadurch nicht doppelt berechnet. QR-/NFC-Aufsteller und zusätzliche Beschriftungen kannst du separat anfragen.",
+          "Hinterlasse deine Kontaktdaten im Anfrageformular. Eine kurze Beschreibung der Fensterfläche ist hilfreich; Maße und Druckdaten können wir anschließend besprechen. Der Ab-Preis gilt für die definierte Basiskonfiguration. Eine Montage ist nur enthalten, wenn sie ausdrücklich im vereinbarten Angebot aufgeführt ist."
+        ]
+      },
+      "included": [
+        {
+          "product_id": 1205,
+          "quantity": 1,
+          "specification": {
+            "en": "Window lettering up to 100 × 50 cm\nOne-colour cut vinyl from your usable logo file; one proof and one revision.",
+            "de": "Schaufensterbeschriftung bis 100 × 50 cm\nEinfarbige Schneidefolie aus deiner verwendbaren Logo-Datei; ein Entwurf und eine Korrekturrunde."
+          }
+        },
+        {
+          "product_id": 540,
+          "quantity": 1,
+          "specification": {
+            "en": "Door lettering up to 30 × 40 cm\nOne-colour cut vinyl with your opening hours; one proof and one revision.",
+            "de": "Türbeschriftung bis 30 × 40 cm\nEinfarbige Schneidefolie mit deinen Öffnungszeiten; ein Entwurf und eine Korrekturrunde."
+          }
+        }
+      ],
+      "optional": [
+        {
+          "product_id": 1221,
+          "operation": "quote_dependent",
+          "label": {
+            "en": "Frosted film with logo; agree placement and avoid duplicating the included logo",
+            "de": "Milchglasfolie mit Logo; Platzierung abstimmen und enthaltenes Logo nicht doppelt berechnen"
+          },
+          "replaces_product_id": null
+        },
+        {
+          "product_id": 1205,
+          "operation": "quote_dependent",
+          "label": {
+            "en": "Two-colour designs, complicated logos, vector recreation, larger dimensions or very detailed weeding",
+            "de": "Zweifarbige Gestaltungen, aufwendige Logos, Vektor-Neuzeichnung, größere Maße oder sehr detailliertes Entgittern"
+          },
+          "replaces_product_id": null
+        },
+        {
+          "product_id": 1205,
+          "operation": "add",
+          "label": {
+            "en": "Additional logo or lettering placements",
+            "de": "Weitere Logo- oder Beschriftungsflächen"
+          },
+          "replaces_product_id": null
+        },
+        {
+          "product_id": 507,
+          "operation": "add",
+          "label": {
+            "en": "3D-printed QR/NFC stand",
+            "de": "3D-gedruckter QR-/NFC-Aufsteller"
+          },
+          "replaces_product_id": null
+        },
+        {
+          "product_id": 509,
+          "operation": "add",
+          "label": {
+            "en": "Acrylic QR/NFC stand",
+            "de": "Acryl-QR-/NFC-Aufsteller"
+          },
+          "replaces_product_id": null
+        }
+      ],
+      "tags": {
+        "en": [
+          "window branding bundle",
+          "business window decal",
+          "custom logo decal",
+          "opening hours lettering",
+          "shop window branding",
+          "glass door lettering",
+          "vinyl lettering",
+          "business signage"
+        ],
+        "de": [
+          "Schaufenster Paket",
+          "Firmenlogo Aufkleber",
+          "individuelles Fensterlogo",
+          "Öffnungszeiten Beschriftung",
+          "Schaufensterbeschriftung",
+          "Glastür Beschriftung",
+          "Folienbeschriftung",
+          "Geschäftsbeschriftung"
+        ]
+      },
+      "seo": {
+        "en": [
+          "Window Logo & Opening Hours Bundle | KubiKart",
+          "Custom business-logo and opening-hours vinyl lettering for suitable glass surfaces. Discuss sizes, colours and optional frosted film with KubiKart."
+        ],
+        "de": [
+          "Fensterlogo & Öffnungszeiten im Paket | KubiKart",
+          "Individuelles Firmenlogo und Öffnungszeiten aus Folie für geeignete Glasflächen. Maße, Farben und optionale Milchglasfolie persönlich anfragen."
+        ]
+      },
+      "industries": [
+        "barbers",
+        "hair-salons",
+        "beauty-studios",
+        "nail-studios",
+        "cafes",
+        "bakeries",
+        "restaurants",
+        "shops",
+        "boutiques",
+        "retail",
+        "practices",
+        "offices",
+        "service-studios"
+      ],
+      "images": [
+        {
+          "path": "images/Window-Branding/01-logo-storefront.png",
+          "role": "gallery",
+          "order": 1,
+          "alt": {
+            "en": "Business Window Branding Bundle – business logo on glass",
+            "de": "Schaufenster-Beschriftungspaket – Firmenlogo auf Glas"
+          },
+          "sha256": "3f95ae0ce71e5e6ca809b274f38f80b6f74ccfc12252a6462a183f8d49823fab"
+        },
+        {
+          "path": "images/Window-Branding/02-opening-hours-closeup.png",
+          "role": "gallery",
+          "order": 2,
+          "alt": {
+            "en": "Business Window Branding Bundle – opening-hours lettering",
+            "de": "Schaufenster-Beschriftungspaket – Öffnungszeiten-Beschriftung"
+          },
+          "sha256": "514f3e12b3624137a17838292b13bdb9372716da65b966b63a24b13c1d5421bb"
+        },
+        {
+          "path": "images/Window-Branding/03-frosted-film-option.png",
+          "role": "gallery",
+          "order": 3,
+          "alt": {
+            "en": "Business Window Branding Bundle – optional frosted film with logo",
+            "de": "Schaufenster-Beschriftungspaket – optionale Milchglasfolie mit Logo"
+          },
+          "sha256": "c253176cb588889db3e6aeb9528a226933aa1e2e198c3ae474b0233aef2ad521"
+        },
+        {
+          "path": "images/Window-Branding/04-complete-entrance.png",
+          "role": "featured",
+          "order": 4,
+          "alt": {
+            "en": "Business Window Branding Bundle – complete entrance with logo and opening hours",
+            "de": "Schaufenster-Beschriftungspaket – Eingang mit Logo und Öffnungszeiten"
+          },
+          "sha256": "29782820a65f89e28f54285c6243dcedcfbe83f7a8e87d497b1db70b5c994fdf"
+        }
+      ],
+      "starting_price_eur": 149,
+      "price_status": "owner_value_set",
+      "purchase_mode": "enquiry",
+      "category": {
+        "en": "Business Bundles",
+        "de": "Business-Pakete"
+      },
+      "image_notice": "Existing supplied images; embedded captions have not been removed."
+    }
+  ]
+}

@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { IllustrativeImageBadge } from "@/components/business-kits/IllustrativeImageBadge";
 
 type GalleryImage = { src: string; alt: string; caption?: string };
 
@@ -11,11 +10,10 @@ type ProductGalleryProps = {
   images: GalleryImage[];
   activeIndex: number;
   onSelect: (index: number) => void;
-  illustrative?: boolean;
   note?: string;
 };
 
-export function ProductGallery({ images, activeIndex, onSelect, illustrative = false, note }: ProductGalleryProps) {
+export function ProductGallery({ images, activeIndex, onSelect, note }: ProductGalleryProps) {
   const t = useTranslations("productPage");
   const active = images[activeIndex] || images[0];
   const [zoomed, setZoomed] = useState(false);
@@ -66,7 +64,6 @@ export function ProductGallery({ images, activeIndex, onSelect, illustrative = f
       <figure>
         <div className="relative aspect-square overflow-hidden rounded-kubikart-lg border border-border bg-surface-white">
           <Image src={active.src} alt={active.alt} fill priority sizes="(min-width: 1024px) 52vw, 100vw" className="object-contain" unoptimized />
-          {illustrative ? <IllustrativeImageBadge className="left-4 bottom-4" /> : null}
 
           {images.length > 1 ? (
             <>

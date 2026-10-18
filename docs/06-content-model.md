@@ -120,9 +120,13 @@ WooCommerce. Two meta keys add the bundle-specific data:
 |---|---|---|
 | `_kubikart_kit_order_mode` | `purchase`, `enquiry` or empty | Legacy bundle order mode; the generic `_kubikart_purchase_mode` is authoritative (see products document) |
 | `_kubikart_kit_contents` | `{ schema_version: 1, items: [...] }` | Ordered, display-only contents |
+| `_kubikart_seo_title`, `_kubikart_seo_description` | plain text (70 / 170 characters in the editor) | Optional search title and description for the bundle page; the product name is used when empty |
 
 Each content item has an optional linked `product_id`/`variation_id`, a quantity (1-999), an optional title, a
-description (specification) and an optional `image_id`. The `kubikart-business-kit-contents` mu-plugin validates on save
+description (specification) and an optional `image_id`. It also has a `kind` (`included` base item or `optional` upgrade); an optional item has an `operation` (`add`,
+`replace`, `replace_format`, `quote_dependent`) and, for the two replace operations, a `replaces_product_id` that must be
+a product of the base package (mapped to the bundle's language). The REST entry exposes `kind`, `operation`,
+`replaces {id,name,slug}` and `seo {title,description}`. The `kubikart-business-kit-contents` mu-plugin validates on save
 (an invalid save is rejected and the old value kept), exposes a resolved read-only `_kubikart_kit` entry in the REST
 product, maps linked products to the right language through Polylang, and never trusts submitted translation IDs.
 There is no bundle inventory: selling a bundle does not change component stock. `wp kubikart kits audit` lists bundles

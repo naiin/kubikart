@@ -102,7 +102,7 @@ describe("POST /api/contact", () => {
     vi.doMock("@/lib/enquiry-context", () => ({
       resolveEnquiryProduct: vi.fn(async (slug: string) =>
         slug === "starter-visibility-kit-de"
-          ? { id: 160, slug, name: "Business-Starterpaket", mode: "enquiry", url: "https://kubikart.de/de/shop/starter-visibility-kit-de" }
+          ? { id: 160, slug, name: "Business-Starterpaket", sku: "KA-BND-BARBER-001", mode: "enquiry", url: "https://kubikart.de/de/shop/starter-visibility-kit-de" }
           : null,
       ),
     }));
@@ -123,6 +123,8 @@ describe("POST /api/contact", () => {
     expect(res.status).toBe(200);
     const stored = JSON.parse(storedCall(fetchMock)[1].body as string);
     expect(stored.content).toContain("Produkt/Paket: Business-Starterpaket (ID 160, starter-visibility-kit-de)");
+    expect(stored.content).toContain("SKU: KA-BND-BARBER-001");
+    expect(JSON.parse(stored.meta._kubikart_enquiry).product.sku).toBe("KA-BND-BARBER-001");
     expect(stored.content).toContain("Seite: https://kubikart.de/de/shop/starter-visibility-kit-de");
     expect(stored.content).toContain("Sprache: de");
     expect(stored.content).toContain("Bestellart: Nur auf Anfrage");

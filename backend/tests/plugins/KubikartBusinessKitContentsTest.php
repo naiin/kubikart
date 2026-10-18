@@ -326,6 +326,68 @@ class KubikartBusinessKitContentsTest extends TestCase
         $this->assertSame(0, $entry['id']);
     }
 
+    public function test_optional_upgrade_operations_are_validated_and_exposed(): void
+    {
+        $this->seedProduct(71, 'QR Stand');
+        $this->seedProduct(72, 'Acrylic Stand');
+        $this->seedProduct(73, 'Frosted film');
+
+        $result = kubikart_kit_sanitize_contents_payload([
+            ['product_id' => '71', 'quantity' => '1', 'kind' => 'included', 'operation' => 'replace', 'replaces_product_id' => '99'],
+            ['product_id' => '72', 'quantity' => '1', 'kind' => 'optional', 'operation' => 'replace', 'replaces_product_id' => '71'],
+            ['product_id' => '73', 'quantity' => '1', 'kind' => 'optional', 'operation' => 'quote_dependent'],
+        ], 'enquiry', self::KIT);
+
+        $this->assertTrue($result['valid'], implode('; ', $result['errors']));
+        $items = $result['payload']['items'];
+        $this->assertSame(['included', 'optional', 'optional'], array_column($items, 'kind'));
+        // A base item never carries an upgrade operation.
+        $this->assertSame(['', 'replace', 'quote_dependent'], array_column($items, 'operation'));
+        $this->assertSame([0, 71, 0], array_column($items, 'replaces_product_id'));
+
+        $GLOBALS['_wp_post_meta'][self::KIT]['_kubikart_kit_contents'] = $result['payload'];
+        $exposed = $this->kitEntry()['value']['items'];
+        $this->assertSame('optional', $exposed[1]['kind']);
+        $this->assertSame('replace', $exposed[1]['operation']);
+        $this->assertSame(71, $exposed[1]['replaces']['id']);
+        $this->assertNull($exposed[0]['replaces']);
+    }
+
+    public function test_replace_operation_needs_a_replaced_product_from_the_base_package(): void
+    {
+        $this->seedProduct(71, 'QR Stand');
+        $this->seedProduct(72, 'Acrylic Stand');
+        $this->seedProduct(74, 'Other');
+
+        $missing = kubikart_kit_sanitize_contents_payload([
+            ['product_id' => '71', 'quantity' => '1', 'kind' => 'included'],
+            ['product_id' => '72', 'quantity' => '1', 'kind' => 'optional', 'operation' => 'replace'],
+        ], 'enquiry', self::KIT);
+        $this->assertFalse($missing['valid']);
+
+        $outside = kubikart_kit_sanitize_contents_payload([
+            ['product_id' => '71', 'quantity' => '1', 'kind' => 'included'],
+            ['product_id' => '72', 'quantity' => '1', 'kind' => 'optional', 'operation' => 'replace', 'replaces_product_id' => '74'],
+        ], 'enquiry', self::KIT);
+        $this->assertFalse($outside['valid']);
+    }
+
+    public function test_seo_title_and_description_are_exposed_as_plain_text(): void
+    {
+        $GLOBALS['_wp_post_meta'][self::KIT]['_kubikart_seo_title'] = 'Barber-Paket | KubiKart';
+        $GLOBALS['_wp_post_meta'][self::KIT]['_kubikart_seo_description'] = 'Öffnungszeiten, Aufsteller und Menüs.';
+
+        $this->assertSame(
+            ['title' => 'Barber-Paket | KubiKart', 'description' => 'Öffnungszeiten, Aufsteller und Menüs.'],
+            $this->kitEntry()['value']['seo']
+        );
+    }
+
+    public function test_seo_defaults_to_empty(): void
+    {
+        $this->assertSame(['title' => '', 'description' => ''], $this->kitEntry()['value']['seo']);
+    }
+
     public function test_scope_summary_is_exposed_as_plain_text(): void
     {
         $GLOBALS['_wp_post_meta'][self::KIT]['_kubikart_kit_scope_summary'] = 'Mit vorhandenem Logo · ohne Montage';

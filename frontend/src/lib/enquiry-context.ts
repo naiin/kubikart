@@ -9,7 +9,7 @@ export type EnquiryContext =
   | { kind: "product"; id: number; slug: string; name: string }
   | { kind: "industry"; slug: string; name: string };
 
-export type EnquiryProduct = { id: number; slug: string; name: string; mode: "purchase" | "enquiry"; url: string };
+export type EnquiryProduct = { id: number; slug: string; name: string; sku: string; mode: "purchase" | "enquiry"; url: string };
 
 const SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{0,119}$/;
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://kubikart.de").replace(/\/$/, "");
@@ -32,6 +32,7 @@ export async function resolveEnquiryProduct(slug: string, locale: SiteLocale): P
       id: product.id,
       slug: product.slug,
       name: product.name,
+      sku: typeof product.sku === "string" ? product.sku.trim().slice(0, 64) : "",
       mode: getPurchaseMode(product),
       url: `${SITE_URL}/${locale}/shop/${product.slug}`,
     };
