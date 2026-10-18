@@ -19,10 +19,15 @@ export function CustomSizeRequest({
   product,
   kind = "overall",
   selection = [],
+  fileTokens = [],
+  fileNames = [],
 }: {
   product: { id: number; slug: string; name: string };
   kind?: CustomSizeKind | "quote";
   selection?: string[];
+  /** Files already uploaded on the product page: they are sent with the enquiry. */
+  fileTokens?: string[];
+  fileNames?: string[];
 }) {
   const t = useTranslations("productPage");
   const keys = TEXT_KEYS[kind];
@@ -37,7 +42,7 @@ export function CustomSizeRequest({
         product={product}
         customSize={kind !== "quote"}
         customSizeKind={kind === "quote" ? "overall" : kind}
-        configuration={{ lines: selection, fileTokens: [], validate: () => true }}
+        configuration={{ lines: selection, fileTokens, fileNames, validate: () => true }}
         compact
       />
     </section>

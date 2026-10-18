@@ -11,7 +11,7 @@ Companion documents: [products and bundles](07-products-and-bundles.md), [owner 
 | Product categories (shop filters, Business-Pakete) | WooCommerce | Business-Pakete German category slug `business-kits-de`, English `business-kits` |
 | Business Bundles (Business-Pakete) | WooCommerce product in the bundle category plus the `kubikart-business-kit-contents` mu-plugin | Contents are display-only; see section 4 |
 | Purchase mode (buy vs. enquiry), sold-in-sets configuration | Product meta (`_kubikart_purchase_mode`, `_kubikart_set_config`) | See [products and bundles](07-products-and-bundles.md) |
-| Personalisation fields | Product meta `_kubikart_custom_fields` (editor panel *Kubikart: Personalisierung*) | Text, textarea, URL, select, checkbox, file; optional "visible when" condition |
+| Personalisation fields | Product meta `_kubikart_custom_fields` (editor panel *Kubikart: Personalisierung*) | Text, textarea, URL, e-mail, select, checkbox, file; optional "visible when" condition |
 | Business Industry landing pages | `business_industry` custom post type (plugin `kubikart-business-industries`) | Editorial text plus two ordered product lists |
 | About, Contact, FAQ, legal, services | Frontend pages and `next-intl` messages | No CMS type needed |
 | UI and navigation labels | `frontend/src/messages/de.json` and `en.json` | Every key exists in both languages |
@@ -136,6 +136,25 @@ generated. Details and the launch checklist are in [SEO](11-seo.md).
 
 ## 6. Deferred
 
-Portfolio and Case Studies, an Industry taxonomy, standalone category routes, category sitemaps and schema, customer
-results and testimonials, and migrating or deleting legacy categories (the owner decides which legacy categories stay
-visible; they are not shown in primary navigation merely because they exist).
+Portfolio and Case Studies, an Industry taxonomy, standalone category routes, category sitemaps and schema, and customer
+results and testimonials remain deferred.
+
+## 7. Consolidated shop categories (local, owner-approved 18 October 2026)
+
+WooCommerce owns two audience roots: Business Products / Business-Produkte and Personalized Gifts / Personalisierte
+Geschenke. Product-type children replace the overlapping material/use-case filters. Business Products includes both QR/NFC
+stand models, window/glass stickers, menus/price lists, business cards, and stickers/labels. The special Business Bundles
+category remains a child with its existing slug and commercial behavior. Gift types are keychains, engraved bamboo boards,
+and gift jars. Custom logo/text stickers can legitimately appear under both audience roots.
+
+The `kubikart-product-categories` mu-plugin stores merged numeric category aliases in the `kubikart_category_aliases` option,
+resolves them in WooCommerce v3 product collection requests, and exposes read-only `kubikart_legacy_ids` on category responses.
+This also resolves a numeric filter carried across a language switch. The frontend uses those aliases for the selected
+filter and active chip; it does not hard-code production category IDs. Native taxonomy assignment hooks map categories to
+the product language, including when language assignment follows creation. The default Uncategorized pair is preserved
+and hidden. Empty categories stay hidden from filters, not replaced with fabricated products.
+
+`scripts/consolidate-shop-categories.php` is dry-run by default, snapshots before writing, refuses default-category or coupon
+dependencies, reassigns products before deleting reviewed terms, and verifies non-category product data is unchanged.
+See [the consolidation audit](audits/2026-10-18-shop-categories.md) for exact removals, backups and verification. Restore
+category data selectively when recovering old IDs; do not overwrite newer orders with an old full database backup.

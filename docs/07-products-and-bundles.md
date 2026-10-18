@@ -509,6 +509,9 @@ treated as request-only everywhere:
   the normal enquiry fields), and the shipping estimate is skipped. Other personalisation fields are hidden.
 - Enquiry (`/api/contact`): accepts `details.customSize` (width and height 1-500 cm, otherwise 400). The stored message
   and the owner e-mail start with "Wunschmaß-Anfrage: gewünschte Gesamtbreite X cm, maximal verfügbare Höhe Y cm".
+  Files the customer already uploaded on the product page (for example the logo) are sent with the enquiry: the panel
+  passes their tokens and file names, the server verifies each token and keeps the files with the enquiry (see the
+  enquiry-files section below).
 - Server cart (`server-cart.ts`): a variation without price returns 409 `enquiry_only`, so it can never be bought by a
   hand-made request.
 

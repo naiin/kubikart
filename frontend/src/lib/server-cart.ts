@@ -9,15 +9,16 @@ import {
   formatCustomerFileMetaValue,
   getCustomerFile,
 } from "@/lib/customer-files";
-import { isValidHttpUrl, resolveVisibleItems } from "@/lib/product-configuration";
+import { isValidEmailAddress, isValidHttpUrl, resolveVisibleItems } from "@/lib/product-configuration";
 import { toOptionValue, toWooAttributeId } from "@/lib/option-ids";
 import { calculateShippingRates, type ShippingPackage, type ShippingRate } from "@/lib/shipping";
+import { getDomesticShippingCharge } from "@/lib/shipping-policy";
 import { wcApi, type WCProduct, type WCVariation } from "@/lib/woocommerce";
 
 type CustomField = {
   id: string;
   label: string;
-  type: "text" | "textarea" | "url" | "select" | "checkbox" | "file";
+  type: "text" | "textarea" | "url" | "email" | "select" | "checkbox" | "file";
   required: boolean;
   showWhen?: { field: string; equals: string };
   maxLength?: number;
@@ -78,7 +79,7 @@ function parseFields(product: WCProduct): CustomField[] {
     if (!candidate || typeof candidate !== "object") return [];
     const field = candidate as Record<string, unknown>;
     const type = field.type === "color" ? "select" : String(field.type || "");
-    if (!field.id || !["text", "textarea", "url", "select", "checkbox", "file"].includes(type)) return [];
+    if (!field.id || !["text", "textarea", "url", "email", "select", "checkbox", "file"].includes(type)) return [];
     const options = Array.isArray(field.options)
       ? field.options.flatMap((option) => {
           if (!option || typeof option !== "object" || !("value" in option)) return [];
@@ -140,6 +141,7 @@ function validateCustomizations(product: WCProduct, supplied: Record<string, str
     if (field.maxLength && value.length > field.maxLength) throw new ServerCartError(`Product option is too long: ${field.label}`);
     if (field.type === "select" && !field.options.some((option) => option.value === value)) throw new ServerCartError(`Invalid product option: ${field.label}`);
     if (field.type === "url" && !isValidHttpUrl(value)) throw new ServerCartError(`Invalid link: ${field.label}`);
+    if (field.type === "email" && !isValidEmailAddress(value)) throw new ServerCartError(`Invalid e-mail address: ${field.label}`);
     if (field.type === "file") {
       if (!CUSTOMER_FILE_TOKEN_PATTERN.test(value)) throw new ServerCartError(`Invalid uploaded file: ${field.label}`);
       fileChecks.push(
@@ -173,6 +175,7 @@ function positiveDimension(value: string | undefined, fallback: number) {
 export async function calculateServerCart(input: { items: ServerCartItemInput[]; country?: string; shippingMethodId?: string }): Promise<CalculatedCart> {
   if (!Array.isArray(input.items) || input.items.length === 0 || input.items.length > 50) throw new ServerCartError("A cart must contain between 1 and 50 items");
   let totalWeight = 0, maxLength = 0, maxWidth = 0, totalHeight = 0;
+  const shippingClasses: string[] = [];
   const lines = await Promise.all(input.items.map(async (item) => {
     if (!Number.isInteger(item.productId) || item.productId <= 0 || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 100) {
       throw new ServerCartError("Invalid product or quantity");
@@ -215,6 +218,7 @@ export async function calculateServerCart(input: { items: ServerCartItemInput[];
     }
     const unitPriceCents = moneyToCents(variation?.price ?? product.price) + extraCents;
     const dimensions = variation?.dimensions ?? product.dimensions;
+    shippingClasses.push(variation?.shipping_class || product.shipping_class || "");
     totalWeight += positiveDimension(variation?.weight || product.weight, 0.5) * item.quantity;
     maxLength = Math.max(maxLength, positiveDimension(dimensions?.length, 20));
     maxWidth = Math.max(maxWidth, positiveDimension(dimensions?.width, 15));
@@ -223,7 +227,7 @@ export async function calculateServerCart(input: { items: ServerCartItemInput[];
   }));
   const subtotalCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
   const pkg = { weight: totalWeight, length: maxLength || 20, width: maxWidth || 15, height: totalHeight || 5 };
-  const rates = calculateShippingRates(pkg, subtotalCents / 100, String(input.country || "DE").toUpperCase());
+  const rates = calculateShippingRates(pkg, subtotalCents / 100, String(input.country || "DE").toUpperCase(), getDomesticShippingCharge(shippingClasses));
   const selectedRate = input.shippingMethodId ? rates.find((rate) => rate.id === input.shippingMethodId) : rates[0];
   if (!selectedRate) throw new ServerCartError("Selected shipping method is unavailable", 409);
   const shippingCents = moneyToCents(selectedRate.price);

@@ -70,6 +70,8 @@ export async function POST(request: NextRequest) {
 
     const orderData: Record<string, unknown> = {
       status: "pending",
+      // Polylang for WooCommerce: the order language selects the language of WooCommerce's own e-mails (refunds, notes).
+      lang: locale,
       payment_method: body.payment_method,
       payment_method_title: body.payment_method_title,
       set_paid: false,

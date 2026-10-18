@@ -91,6 +91,7 @@ export interface WCProduct {
   related_ids?: number[];
   upsell_ids?: number[];
   images: { id: number; src: string; alt: string; name?: string; caption?: string }[];
+  kubikart_videos?: unknown;
   attributes: { id: number; name: string; slug?: string; variation?: boolean; options: string[] }[];
   default_attributes?: { id: number; name: string; option: string }[];
   variations?: number[];
@@ -103,6 +104,8 @@ export interface WCProduct {
 
 export interface WCVariation {
   id: number;
+  shipping_class?: string;
+  shipping_class_id?: number;
   purchasable?: boolean;
   price: string;
   regular_price: string;
@@ -126,6 +129,7 @@ export interface WCVariation {
 
 export interface WCCategory {
   id: number;
+  kubikart_legacy_ids?: number[];
   name: string;
   slug: string;
   parent: number;
@@ -167,28 +171,28 @@ export async function getProduct(idOrSlug: string | number, lang?: string) {
   const tags = [CACHE_TAGS.products, CACHE_TAGS.product(slug)];
 
   if (typeof idOrSlug === "number" || !isNaN(Number(idOrSlug))) {
-    return wcApi<WCProduct>(`products/${idOrSlug}`, { params: langParam, tags });
+    return requirePublishedProduct(await wcApi<WCProduct>(`products/${idOrSlug}`, { params: langParam, tags }));
   }
 
   // Try finding product by slug in the requested language
   const products = await wcApi<WCProduct[]>("products", {
-    params: { slug, ...langParam },
+    params: { slug, status: "publish", ...langParam },
     tags,
   });
-  if (products.length > 0) return products[0];
+  if (products.length > 0) return requirePublishedProduct(products[0]);
 
   // Slug not found in this language — look it up without language filter
   // to find the other-language version, then get its translation
   if (lang) {
     const allLangProducts = await wcApi<WCProduct[]>("products", {
-      params: { slug },
+      params: { slug, status: "publish" },
       tags,
     });
     if (allLangProducts.length > 0) {
-      const found = allLangProducts[0];
+      const found = requirePublishedProduct(allLangProducts[0]);
       const translatedId = found.translations?.[lang];
       if (translatedId) {
-        return wcApi<WCProduct>(`products/${translatedId}`, { params: { lang }, tags });
+        return requirePublishedProduct(await wcApi<WCProduct>(`products/${translatedId}`, { params: { lang }, tags }));
       }
       // If no translation mapping, return the found product as-is
       return found;
@@ -196,6 +200,12 @@ export async function getProduct(idOrSlug: string | number, lang?: string) {
   }
 
   throw new Error("Product not found");
+}
+
+/** Authenticated WooCommerce reads can include drafts; storefront and metadata must not. */
+function requirePublishedProduct(product: WCProduct) {
+  if (product.status !== "publish") throw new Error("Product not found");
+  return product;
 }
 
 export async function getProductVariations(productId: number, lang?: string, productSlug?: string) {

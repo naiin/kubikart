@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { buildPageMetadata, normalizeLocale, SEO_ROUTE_SEGMENTS } from "@/lib/seo";
+import { TurnstilePrivacyNotice } from "@/components/legal/TurnstilePrivacyNotice";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale: rawLocale } = await params;
@@ -77,6 +78,8 @@ export default async function DatenschutzPage({ params }: { params: Promise<{ lo
           übermittelt.
         </p>
 
+        <TurnstilePrivacyNotice locale={locale} />
+
         <h3>Anfrage per E-Mail oder Telefon</h3>
         <p>
           Wenn Sie uns per E-Mail oder Telefon kontaktieren, wird Ihre Anfrage inklusive aller daraus hervorgehenden personenbezogenen Daten zum Zwecke der
@@ -132,7 +135,8 @@ export default async function DatenschutzPage({ params }: { params: Promise<{ lo
           <li>Löschung Ihrer Daten zu verlangen (Art. 17 DSGVO)</li>
           <li>Einschränkung der Verarbeitung zu verlangen (Art. 18 DSGVO)</li>
           <li>Datenübertragbarkeit zu verlangen (Art. 20 DSGVO)</li>
-          <li>Einer erteilten Einwilligung zu widersprechen (Art. 21 DSGVO)</li>
+          <li>Eine erteilte Einwilligung mit Wirkung für die Zukunft zu widerrufen (Art. 7 Abs. 3 DSGVO)</li>
+          <li>Der Verarbeitung aufgrund berechtigter Interessen aus Gründen Ihrer besonderen Situation zu widersprechen (Art. 21 Abs. 1 DSGVO)</li>
           <li>Sich bei einer Aufsichtsbehörde zu beschweren (Art. 77 DSGVO)</li>
         </ul>
       </div>

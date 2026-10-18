@@ -20,6 +20,15 @@ database credentials or a production `wp-config.php`. The tracked
 
 The local file is ignored by Git. Do not add it with `git add -f`.
 
+### Private customer uploads
+
+Customer uploads (logos, print files, photos) must live outside the web root. The deployer therefore adds
+`define( 'KUBIKART_CUSTOMER_FILES_DIR', ... )` to the **generated** `wp-config-remote.php` only (the local
+`wp-config.php` keeps its Lando-only definition) and creates the folder with `chmod 700` during deployment. The default is
+`customer-files` next to the WordPress folder (`/home/www/STRATO-apps/wordpress_01/customer-files`); override it with
+`DEPLOY_REMOTE_CUSTOMER_FILES_DIR`. A path inside the WordPress folder is refused. The folder is not part of the database
+export or the `wp-content` sync, so the deployment never deletes it; include it in your server backups.
+
 The server must contain the public half of a local SSH key in
 `~/.ssh/authorized_keys`. The matching private key remains on the local
 machine. Set `DEPLOY_SSH_KEY` only when the default SSH agent/key selection is

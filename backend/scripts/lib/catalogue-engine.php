@@ -15,7 +15,7 @@ function kc_fields(array $data, string $lang): array {
     $fields = [];
     foreach ($data['fields'] as $f) {
         $row = ['id' => $f['id'], 'label' => $f['label'][$lang], 'type' => $f['type'], 'required' => $f['required'], 'helperText' => $f['help'][$lang] ?? ''];
-        if (in_array($f['type'], ['text', 'textarea', 'url'], true)) {
+        if (in_array($f['type'], ['text', 'textarea', 'url', 'email'], true)) {
             $row['placeholder'] = $f['placeholder'][$lang] ?? '';
             $row['maxLength'] = $f['max'] ?? null;
         }

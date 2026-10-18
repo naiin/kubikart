@@ -214,6 +214,27 @@ class KubikartCustomProductFieldsTest extends TestCase
         $this->assertFalse(kubikart_normalize_custom_fields_payload($result['payload'])['requires_review']);
     }
 
+    public function test_email_type_is_supported_and_keeps_text_settings(): void
+    {
+        $this->assertContains('email', kubikart_custom_field_types());
+
+        $result = kubikart_sanitize_custom_fields_payload([[
+            'id' => 'business_email',
+            'label' => 'Geschäftliche E-Mail-Adresse',
+            'type' => 'email',
+            'required' => '1',
+            'placeholder' => 'name@unternehmen.de',
+            'maxLength' => '254',
+        ]]);
+
+        $this->assertTrue($result['valid']);
+        $field = $result['payload']['fields'][0];
+        $this->assertSame('email', $field['type']);
+        $this->assertSame('name@unternehmen.de', $field['placeholder']);
+        $this->assertSame(254, $field['maxLength']);
+        $this->assertFalse(kubikart_normalize_custom_fields_payload($result['payload'])['requires_review']);
+    }
+
     public function test_file_type_renders_selected_without_review_flag(): void
     {
         ob_start();

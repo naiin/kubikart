@@ -1,3 +1,5 @@
+import type { DomesticShippingCharge } from "@/lib/shipping-policy";
+
 /**
  * DHL Shipping Configuration & Rate Calculation
  *
@@ -89,7 +91,7 @@ export function getDHLProductForPackage(pkg: ShippingPackage): "KLEINPAKET" | "P
 /**
  * Calculate shipping rates for a given package and destination
  */
-export function calculateShippingRates(pkg: ShippingPackage, subtotal: number, countryCode: string = "DE"): ShippingRate[] {
+export function calculateShippingRates(pkg: ShippingPackage, subtotal: number, countryCode: string = "DE", charge?: DomesticShippingCharge): ShippingRate[] {
   const rates: ShippingRate[] = [];
 
   if (countryCode !== "DE") {
@@ -105,7 +107,10 @@ export function calculateShippingRates(pkg: ShippingPackage, subtotal: number, c
     return rates;
   }
 
-  const productType = getDHLProductForPackage(pkg);
+  // Jars use Paket even when incomplete dimensions would otherwise fit Kleinpaket.
+  // A small-packet customer charge does not make a large physical parcel eligible for Kleinpaket.
+  const productType = charge === "parcel" ? "PAKET_NATIONAL" : getDHLProductForPackage(pkg);
+  const parcelPrice = charge === "small-packet" ? SHIPPING_PRICES.KLEINPAKET : SHIPPING_PRICES.PAKET_NATIONAL;
 
   if (productType === "KLEINPAKET") {
     const price = subtotal >= SHIPPING_PRICES.FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_PRICES.KLEINPAKET;
@@ -118,7 +123,7 @@ export function calculateShippingRates(pkg: ShippingPackage, subtotal: number, c
       dhlProduct: DHL_PRODUCTS.KLEINPAKET,
     });
   } else if (productType === "PAKET_NATIONAL") {
-    const price = subtotal >= SHIPPING_PRICES.FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_PRICES.PAKET_NATIONAL;
+    const price = subtotal >= SHIPPING_PRICES.FREE_SHIPPING_THRESHOLD ? 0 : parcelPrice;
     rates.push({
       id: "dhl_paket",
       name: "DHL Paket",
@@ -131,7 +136,7 @@ export function calculateShippingRates(pkg: ShippingPackage, subtotal: number, c
 
   // If no product matches (shouldn't happen often), fallback to Paket
   if (rates.length === 0) {
-    const price = subtotal >= SHIPPING_PRICES.FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_PRICES.PAKET_NATIONAL;
+    const price = subtotal >= SHIPPING_PRICES.FREE_SHIPPING_THRESHOLD ? 0 : parcelPrice;
     rates.push({
       id: "dhl_paket",
       name: "DHL Paket",

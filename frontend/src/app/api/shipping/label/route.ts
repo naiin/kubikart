@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { wcApi } from "@/lib/woocommerce";
+import { PARCEL_SHIPPING_CLASS } from "@/lib/shipping-policy";
 import {
   createDHLShipment,
   createDHLReturnLabel,
@@ -24,12 +25,15 @@ interface WCOrderForLabel {
   };
   line_items: {
     product_id: number;
+    variation_id?: number;
     quantity: number;
   }[];
   meta_data: { key: string; value: unknown }[];
+  shipping_lines?: { method_id: string }[];
 }
 
 interface ProductData {
+  shipping_class?: string;
   weight: string;
   dimensions: { length: string; width: string; height: string };
 }
@@ -69,14 +73,22 @@ export async function POST(request: NextRequest) {
     let maxLength = 0;
     let maxWidth = 0;
     let totalHeight = 0;
+    let requiresParcel = order.shipping_lines?.some((line) => line.method_id === "dhl_paket") ?? false;
 
     for (const item of order.line_items) {
       try {
         const product = await wcApi<ProductData>(`products/${item.product_id}`, { revalidate: 600 });
-        const weight = parseFloat(product.weight) || 0.5;
-        const length = parseFloat(product.dimensions?.length) || 20;
-        const width = parseFloat(product.dimensions?.width) || 15;
-        const height = parseFloat(product.dimensions?.height) || 5;
+        // Retain the jar carrier requirement even if a subsequent variation lookup fails.
+        if (product.shipping_class === PARCEL_SHIPPING_CLASS) requiresParcel = true;
+        const variation = item.variation_id
+          ? await wcApi<ProductData>(`products/${item.product_id}/variations/${item.variation_id}`, { revalidate: 600 })
+          : undefined;
+        if ((variation?.shipping_class || product.shipping_class) === PARCEL_SHIPPING_CLASS) requiresParcel = true;
+        const dimensions = variation?.dimensions || product.dimensions;
+        const weight = parseFloat(variation?.weight || product.weight) || 0.5;
+        const length = parseFloat(dimensions?.length) || 20;
+        const width = parseFloat(dimensions?.width) || 15;
+        const height = parseFloat(dimensions?.height) || 5;
 
         totalWeight += weight * item.quantity;
         maxLength = Math.max(maxLength, length);
@@ -111,7 +123,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Determine DHL product code
-    const productType = getDHLProductForPackage(pkg);
+    const productType = requiresParcel ? "PAKET_NATIONAL" : getDHLProductForPackage(pkg);
     const productCode = productType === "KLEINPAKET" ? DHL_PRODUCTS.KLEINPAKET : DHL_PRODUCTS.PAKET_NATIONAL;
 
     if (type === "return") {

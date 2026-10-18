@@ -23,13 +23,22 @@ describe("authentication session endpoints", () => {
     expect(await response.json()).toEqual({ user });
   });
 
-  it("rejects an invalid cookie and expires it", async () => {
+  it("reports no user (not an error) when signed out", async () => {
+    const response = await GET(new NextRequest("http://localhost:3000/api/auth/session"));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ user: null });
+    expect(response.headers.get("set-cookie")).toBeNull();
+  });
+
+  it("treats an invalid cookie as signed out and expires it", async () => {
     const request = new NextRequest("http://localhost:3000/api/auth/session", {
       headers: { cookie: "kubikart_session=invalid" },
     });
 
     const response = await GET(request);
-    expect(response.status).toBe(401);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ user: null });
     expect(response.headers.get("set-cookie")).toContain("kubikart_session=");
     expect(response.headers.get("set-cookie")).toContain("Max-Age=0");
   });

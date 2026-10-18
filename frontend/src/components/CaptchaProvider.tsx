@@ -4,6 +4,7 @@ import Script from "next/script";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { CAPTCHA_ACTIONS } from "@/lib/captcha-actions";
+import { Link } from "@/i18n/navigation";
 
 type Challenge = { action: string; resolve: (token: string) => void; reject: (error: Error) => void };
 type TurnstileApi = {
@@ -45,6 +46,12 @@ function ChallengeDialog({ challenge, siteKey, close }: { challenge: Challenge; 
     <dialog ref={dialog} onCancel={(event) => { event.preventDefault(); cancel(); }} aria-labelledby="captcha-heading" className="m-auto w-[calc(100%-40px)] max-w-sm rounded-kubikart-lg border border-border bg-surface-white p-6 text-brand backdrop:bg-brand/40">
       <h2 id="captcha-heading" className="font-heading text-lg font-bold">{t("title")}</h2>
       <p className="mt-2 text-sm text-muted">{t("body")}</p>
+      <p className="mt-2 text-sm text-muted">
+        {t("privacyNotice")} {" "}
+        <Link href="/legal/datenschutz#cloudflare-turnstile" target="_blank" rel="noopener noreferrer" className="kk-link">
+          {t("privacyLink")}
+        </Link>
+      </p>
       {siteKey ? <Script id="cloudflare-turnstile" src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" onReady={() => setReady(true)} onError={() => setError(t("failed"))} /> : null}
       <div ref={container} className="mt-4 flex justify-center" />
       {!siteKey || error ? <p role="alert" className="mt-3 text-sm text-danger">{error || t("unavailable")}</p> : <p role="status" className="mt-3 text-sm text-muted">{t("checking")}</p>}

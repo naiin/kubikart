@@ -392,7 +392,7 @@ $KITS['qr_3d'] = [
     'create' => true, 'bundle' => false, 'mode' => 'purchase', 'retired_fields' => ['colour'],
     'de_slug' => 'personalisierter-qr-code-aufsteller-nfc', 'en_slug' => 'personalized-qr-code-stand-nfc',
     'legacy_de_slugs' => ['qr-staender-3d-druck', 'qr-code-aufsteller-nfc-3d-druck'],
-    'categories' => ['de' => ['qr-nfc-staender', '3d-druck', 'business-produkte'], 'en' => ['qr-nfc-stands', '3d-printing', 'business-products']],
+    'categories' => ['de' => ['qr-nfc-staender', 'business-produkte'], 'en' => ['qr-nfc-stands', 'business-products']],
     'images' => [], 'price' => '39.99',
     'name' => kk_ph('Personalisierter QR-Code-Aufsteller mit NFC – 6 Designs zur Auswahl', 'Personalized QR Code Stand with NFC – Choose from 6 Designs'),
     'short' => kk_ph(
@@ -439,7 +439,7 @@ $KITS['qr_acrylic'] = [
     'create' => true, 'bundle' => false, 'mode' => 'purchase', 'retired_fields' => ['colour'], 'status' => 'draft',
     'de_slug' => 'personalisierter-acryl-aufsteller-qr-code-nfc', 'en_slug' => 'personalized-acrylic-qr-code-nfc-stand',
     'legacy_de_slugs' => ['qr-staender-acryl'],
-    'categories' => ['de' => ['qr-nfc-staender', 'acrylprodukte'], 'en' => ['qr-nfc-stands', 'acrylic-products']],
+    'categories' => ['de' => ['qr-nfc-staender', 'business-produkte'], 'en' => ['qr-nfc-stands', 'business-products']],
     'images' => [], 'price' => '69.99',
     'name' => kk_ph('Personalisierter Acryl-Aufsteller mit QR-Code & NFC – 5 Designs zur Auswahl', 'Personalized Acrylic QR Code & NFC Stand – Choose from 5 Designs'),
     'short' => kk_ph(

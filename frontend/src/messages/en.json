@@ -617,6 +617,7 @@
     "labelFormatHeight": "Required finished height (cm)",
     "placeholderFormatWidth": "e.g. 15",
     "placeholderFormatHeight": "e.g. 25",
+    "attachedFiles": "We send your files that are already uploaded with this enquiry: {names}",
     "configurationIntro": "We review your details and send you a quotation with dimensions, construction and price. An enquiry is not an order or a payment."
   },
   "homepage": {
@@ -863,6 +864,7 @@
     "fieldTooLong": "{label} must contain no more than {maxLength} characters.",
     "fieldOptional": "(optional)",
     "fieldInvalidUrl": "Please enter a complete link for “{label}”, for example https://example.com.",
+    "fieldInvalidEmail": "Please enter a valid e-mail address for “{label}”, for example name@example.com.",
     "fileHelp": "PNG, JPG, WebP or PDF, up to 4 MB.",
     "fileUploading": "Uploading file …",
     "fileUploaded": "Uploaded: {name}",
@@ -932,6 +934,8 @@
     "ctaButton": "Request a Project",
     "ctaServicesLink": "View Services",
     "galleryLabel": "Product images",
+    "videosLabel": "Product videos",
+    "videoFallback": "Open product video",
     "galleryViewImage": "View product image {index}",
     "galleryZoom": "Enlarge product image",
     "galleryPreview": "Product image preview",
@@ -946,6 +950,8 @@
     "skuLabel": "SKU",
     "weightLabel": "Weight",
     "dimensionsLabel": "Dimensions",
+    "estimatedPackageDimensions": "Shipping package (estimated maximum for standard options, not product dimensions)",
+    "estimatedShippingWeight": "Shipping weight including packaging (estimated maximum for standard options)",
     "taxNoticePrefix": "Price according to",
     "shippingCosts": "plus shipping costs",
     "imageUnavailable": "No image is currently available for this product.",
@@ -1024,6 +1030,8 @@
     "enquiryConfigTitle": "Request a custom quotation"
   },
   "captcha": {
+    "privacyNotice": "This check loads Cloudflare Turnstile, which processes technical connection and browser data.",
+    "privacyLink": "Security-check privacy information (new tab)",
     "title": "Security verification",
     "body": "Please complete the security check to send your request.",
     "checking": "Checking your browser…",
