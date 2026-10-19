@@ -536,7 +536,7 @@
   },
   "cookie": {
     "title": "🍪 Cookie Notice",
-    "description": "Essential storage supports this website's operation. “Accept All” additionally allows Vercel Web Analytics to collect page-view statistics. “Essential Only” keeps this analytics service off. Vercel Speed Insights measures technical performance independently of this choice. You can withdraw your analytics consent at any time in the Privacy Policy.",
+    "description": "“Accept All” allows Vercel Web Analytics for usage statistics; “Essential Only” rejects it. Essential storage and Speed Insights remain active. Details and withdrawal at any time:",
     "privacyLink": "Privacy and analytics preferences",
     "acceptAll": "Accept All",
     "essentialOnly": "Essential Only"

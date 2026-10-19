@@ -536,7 +536,7 @@
   },
   "cookie": {
     "title": "🍪 Cookie-Hinweis",
-    "description": "Notwendige Speicherfunktionen ermöglichen den Betrieb dieser Website. Mit „Alle akzeptieren“ erlauben Sie zusätzlich Vercel Web Analytics zur statistischen Auswertung der Seitenaufrufe. „Nur essentielle“ lässt diese Analyse ausgeschaltet. Vercel Speed Insights misst die technische Leistung unabhängig von dieser Auswahl. Ihre Analyse-Einwilligung können Sie jederzeit in der Datenschutzerklärung widerrufen.",
+    "description": "„Alle akzeptieren“ erlaubt Vercel Web Analytics zur Nutzungsanalyse; „Nur essentielle“ lehnt sie ab. Notwendige Speicherung und Speed Insights bleiben aktiv. Details und jederzeitiger Widerruf:",
     "privacyLink": "Datenschutz und Analyse-Einstellungen",
     "acceptAll": "Alle akzeptieren",
     "essentialOnly": "Nur essentielle"

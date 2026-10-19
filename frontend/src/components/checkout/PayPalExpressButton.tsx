@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { PayPalScriptProvider, PayPalButtons, FUNDING } from "@paypal/react-paypal-js";
 import { useProtectedFetch } from "@/components/CaptchaProvider";
+import { useLocale } from "next-intl";
 
 interface PayPalExpressButtonProps {
   pendingOrderRequest: Record<string, unknown>;
@@ -16,7 +17,9 @@ interface PayPalExpressButtonProps {
 
 export default function PayPalExpressButton({ pendingOrderRequest, onSuccess, onError }: PayPalExpressButtonProps) {
   const protectedFetch = useProtectedFetch();
-  const pendingOrder = useRef<{ id: number; orderKey: string } | null>(null);
+  const locale = useLocale();
+  const requestKey = JSON.stringify(pendingOrderRequest);
+  const pendingOrder = useRef<{ requestKey: string; orderId: number; orderKey: string } | null>(null);
   if (!process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID) return null;
   return (
     <PayPalScriptProvider options={{ clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID, currency: "EUR", intent: "capture" }}>
@@ -24,17 +27,17 @@ export default function PayPalExpressButton({ pendingOrderRequest, onSuccess, on
         fundingSource={FUNDING.PAYPAL}
         style={{ layout: "horizontal", shape: "rect", label: "buynow", height: 48, tagline: false }}
         createOrder={async () => {
-          if (!pendingOrder.current) {
+          if (!pendingOrder.current || pendingOrder.current.requestKey !== requestKey) {
             const orderResponse = await protectedFetch("/api/orders/create", {
-              method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(pendingOrderRequest),
+              method: "POST", headers: { "Content-Type": "application/json", "Accept-Language": locale }, body: JSON.stringify(pendingOrderRequest),
             });
             const order = await orderResponse.json();
             if (!orderResponse.ok || !order.id || !order.orderKey) throw new Error(order.error || "Failed to create pending order");
-            pendingOrder.current = { id: order.id, orderKey: order.orderKey };
+            pendingOrder.current = { requestKey, orderId: order.id, orderKey: order.orderKey };
           }
           const response = await fetch("/api/paypal/create-order", {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(pendingOrder.current),
+            body: JSON.stringify({ orderId: pendingOrder.current.orderId, orderKey: pendingOrder.current.orderKey }),
           });
           const order = await response.json();
           if (!response.ok || !order.id) throw new Error(order.error || "Failed to create PayPal order");

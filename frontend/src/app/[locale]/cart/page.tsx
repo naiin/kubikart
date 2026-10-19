@@ -104,7 +104,7 @@ export default function CartPage() {
 
                 {/* Line Total */}
                 <div className="col-start-2 row-start-3 justify-self-start text-right sm:col-start-4 sm:row-start-1 sm:w-20 sm:justify-self-end">
-                  <span className="text-sm font-semibold text-gray-900">€{(parseFloat(item.price) * item.quantity).toFixed(2)}</span>
+                  <span className="text-sm font-semibold text-gray-900">{formatCartCurrency(parseFloat(item.price) * item.quantity, locale)}</span>
                 </div>
 
                 {/* Remove */}
@@ -126,10 +126,10 @@ export default function CartPage() {
           <div className="mt-8 rounded-xl border border-gray-200 p-6">
             <div className="flex justify-between items-center text-lg font-semibold text-gray-900">
               <span>{t("subtotal")}</span>
-              <span>€{subtotal.toFixed(2)}</span>
+              <span>{formatCartCurrency(subtotal, locale)}</span>
             </div>
             <p className="mt-2 text-sm text-gray-500">
-              {t("shipping")} + {t("tax")} wird an der Kasse berechnet.
+              {locale === "en" ? "Shipping is calculated at checkout." : "Versandkosten werden an der Kasse berechnet."}
             </p>
             <div className="mt-6 flex flex-col sm:flex-row gap-3">
               {availability.hasBlocked ? (

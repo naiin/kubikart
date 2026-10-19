@@ -4,6 +4,7 @@ import { wcApi } from "@/lib/woocommerce";
 import { markWooOrderPaid } from "@/lib/payment-transition";
 import { deliverWooOrderPaidEmail } from "@/lib/order-status-email";
 import { requireRuntimeEnv } from "@/lib/runtime-config";
+import { requireStripeSecretKey } from "@/lib/stripe-config";
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
 
   try {
     webhookSecret = requireRuntimeEnv("STRIPE_WEBHOOK_SECRET");
-    stripe = new Stripe(requireRuntimeEnv("STRIPE_SECRET_KEY"));
+    stripe = new Stripe(requireStripeSecretKey());
   } catch {
     return NextResponse.json({ error: "Webhook verification is not configured" }, { status: 503 });
   }
@@ -29,6 +30,10 @@ export async function POST(request: NextRequest) {
     // Log only the reason: the SDK error carries the raw payload, which holds payment data.
     console.error("Stripe webhook signature verification failed:", err instanceof Error ? err.message : "unknown error");
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+  }
+
+  if (process.env.VERCEL_ENV === "production" && event.livemode !== true) {
+    return NextResponse.json({ error: "Sandbox events are not accepted in production" }, { status: 400 });
   }
 
   try {

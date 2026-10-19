@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { markWooOrderPaid, PaymentTransitionError } from "@/lib/payment-transition";
 import { deliverWooOrderPaidEmail } from "@/lib/order-status-email";
 import { requireRuntimeEnvPair } from "@/lib/runtime-config";
+import { isDomesticCountry } from "@/lib/checkout-validation";
 
 const PAYPAL_BASE = process.env.PAYPAL_MODE === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
 
@@ -33,6 +34,16 @@ export async function POST(request: NextRequest) {
     }
 
     const accessToken = await getAccessToken();
+
+    // Check the approved provider address BEFORE capturing money (Express collects it in PayPal).
+    const approvedResponse = await fetch(`${PAYPAL_BASE}/v2/checkout/orders/${encodeURIComponent(orderID)}`, {
+      headers: { Authorization: `Bearer ${accessToken}` }, cache: "no-store",
+    });
+    if (!approvedResponse.ok) return NextResponse.json({ error: "Unable to verify PayPal delivery address" }, { status: 502 });
+    const approved = await approvedResponse.json();
+    if (!isDomesticCountry(approved.purchase_units?.[0]?.shipping?.address?.country_code)) {
+      return NextResponse.json({ error: "Delivery is currently available only within Germany" }, { status: 400 });
+    }
 
     const res = await fetch(`${PAYPAL_BASE}/v2/checkout/orders/${encodeURIComponent(orderID)}/capture`, {
       method: "POST",
@@ -67,6 +78,13 @@ export async function POST(request: NextRequest) {
               first_name: data.payer.name?.given_name || "",
               last_name: data.payer.name?.surname || "",
               email: data.payer.email_address || "",
+              ...(purchaseUnit?.shipping?.address ? {
+                address_1: purchaseUnit.shipping.address.address_line_1 || "",
+                address_2: purchaseUnit.shipping.address.address_line_2 || "",
+                city: purchaseUnit.shipping.address.admin_area_2 || "",
+                postcode: purchaseUnit.shipping.address.postal_code || "",
+                country: purchaseUnit.shipping.address.country_code || "",
+              } : {}),
             },
           } : {}),
           ...(purchaseUnit?.shipping ? {
@@ -74,6 +92,7 @@ export async function POST(request: NextRequest) {
               first_name: purchaseUnit.shipping.name?.full_name?.split(" ")[0] || "",
               last_name: purchaseUnit.shipping.name?.full_name?.split(" ").slice(1).join(" ") || "",
               address_1: purchaseUnit.shipping.address?.address_line_1 || "",
+              address_2: purchaseUnit.shipping.address?.address_line_2 || "",
               city: purchaseUnit.shipping.address?.admin_area_2 || "",
               postcode: purchaseUnit.shipping.address?.postal_code || "",
               country: purchaseUnit.shipping.address?.country_code || "",

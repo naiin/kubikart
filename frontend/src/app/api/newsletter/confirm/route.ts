@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
     if (typeof data.token !== "string" || Buffer.byteLength(data.token) !== Buffer.byteLength(token) || !crypto.timingSafeEqual(Buffer.from(data.token), Buffer.from(token))) {
       return reply(false, message("Ungültiger Token.", "Invalid token."), 403);
     }
+    if (data.status === "unsubscribed") return reply(false, message("Diese Anmeldung wurde abgemeldet. Bitte melde dich bei Bedarf erneut an.", "This subscription was cancelled. Please sign up again if you wish to subscribe."), 409);
     if (data.status === "confirmed" && data.email_status !== "failed" && data.email_status !== "pending") {
       return reply(true, message("Deine Anmeldung wurde bereits bestätigt!", "Your subscription has already been confirmed!"));
     }
@@ -50,9 +51,12 @@ export async function GET(request: NextRequest) {
       const saved = await fetch(endpoint, { method: "PUT", headers: { Authorization: WP_AUTH, "Content-Type": "application/json" }, body: JSON.stringify({ title: `Newsletter ✓: ${data.email}`, content: JSON.stringify(data) }) });
       if (!saved.ok) throw new Error("Newsletter state could not be stored");
     };
+    if (!data.unsubscribe_token) data.unsubscribe_token = crypto.randomBytes(32).toString("hex");
     await save();
     try {
-      await sendNewsletterWelcome(data.email, locale, data.coupon_code);
+      const site = process.env.NEXT_PUBLIC_SITE_URL || "https://kubikart.de";
+      const unsubscribeUrl = `${site}/api/newsletter/unsubscribe?id=${id}&token=${data.unsubscribe_token}&locale=${locale}`;
+      await sendNewsletterWelcome(data.email, locale, data.coupon_code, unsubscribeUrl);
       data.email_status = "accepted";
     } catch {
       data.email_status = "failed";

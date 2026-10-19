@@ -63,6 +63,12 @@ async function click(text: string) {
 }
 
 describe("navigation loading feedback", () => {
+  it("reserves a viewport while loading instead of exposing the footer below a short placeholder", () => {
+    const html = renderToStaticMarkup(<PageLoading />);
+    expect(html).toContain("min-h-svh");
+    expect(html).not.toContain("min-h-[40vh]");
+  });
+
   it("keeps localized router arguments and prefetch intact without leaving a spinner for no-op navigation", async () => {
     await act(async () => root.render(<NavigationProgress><RouterControls /></NavigationProgress>));
     for (const action of ["push", "replace", "back", "forward", "refresh", "prefetch"]) {

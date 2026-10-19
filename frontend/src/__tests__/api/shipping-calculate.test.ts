@@ -133,10 +133,17 @@ describe("POST /api/shipping/calculate", () => {
     const res = await POST(
       makeRequest({
         items: [{ productId: 99, quantity: 2 }],
-        country: "AT",
+        country: "DE",
       }) as never,
     );
 
     expect(res.status).toBe(500);
+  });
+  it("rejects overseas destinations before a backend product request", async () => {
+    const fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock);
+    const { POST } = await import("@/app/api/shipping/calculate/route");
+    const response = await POST(makeRequest({ items: [{ productId: 99, quantity: 1 }], country: "AT" }) as never);
+    expect(response.status).toBe(400);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

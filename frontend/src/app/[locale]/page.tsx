@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { BeforeAfterSection } from "@/components/home/BeforeAfterSection";
 import { CustomOrderProcess } from "@/components/home/CustomOrderProcess";
 import { FeaturedKits } from "@/components/home/FeaturedKits";
 import { FeaturedPortfolio } from "@/components/home/FeaturedPortfolio";
 import { HomeHero } from "@/components/home/HomeHero";
+import { HomeContentSkeleton } from "@/components/home/HomeContentSkeleton";
 import { HomepageFinalCta } from "@/components/home/HomepageFinalCta";
 import { HomepageTrustStrip } from "@/components/home/HomepageTrustStrip";
 import { IndustryLinks } from "@/components/home/IndustryLinks";
@@ -44,16 +46,18 @@ export default function HomePage() {
       <SiteJsonLd />
       <div className="overflow-clip bg-page">
         <HomeHero />
-        <HomePaths />
-        <FeaturedKits />
-        <KitContentsStrip />
-        <PopularProducts />
-        <BeforeAfterSection />
-        <IndustryLinks />
-        <CustomOrderProcess />
-        <FeaturedPortfolio />
-        <HomepageTrustStrip />
-        <HomepageFinalCta />
+        <Suspense fallback={<HomeContentSkeleton />}>
+          <HomePaths />
+          <FeaturedKits />
+          <KitContentsStrip />
+          <PopularProducts />
+          <BeforeAfterSection />
+          <IndustryLinks />
+          <CustomOrderProcess />
+          <FeaturedPortfolio />
+          <HomepageTrustStrip />
+          <HomepageFinalCta />
+        </Suspense>
       </div>
     </>
   );

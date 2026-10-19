@@ -31,6 +31,10 @@ homepage. Existing shop and industry skeletons retain their layout and display
 the same localized loading modal. A centered spinner appears in a compact white
 panel over a dimmed, full-viewport backdrop; it is not a top-corner notification.
 No artificial loading delay is added for cached navigation.
+The route fallback reserves at least one small viewport height (`min-h-svh`):
+the footer must not be painted halfway up the screen and then pushed down by
+the arriving page. The modal remains fixed and does not provide layout height
+itself.
 
 Programmatic navigation uses the shared localized router, which tracks React
 transitions and displays the same loading modal. This covers category

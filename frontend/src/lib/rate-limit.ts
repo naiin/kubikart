@@ -16,6 +16,7 @@ function localRateLimit(key: string, policy: RateLimitPolicy, now = Date.now()):
 
 export function getApiRateLimitPolicy(pathname: string): RateLimitPolicy {
   if (pathname.startsWith("/api/webhooks/")) return { limit: 180, windowMs: 60_000 };
+  if (pathname === "/api/auth/session") return { limit: 120, windowMs: 60_000 };
   if (pathname.startsWith("/api/auth/") || pathname === "/api/orders/create") return { limit: 10, windowMs: 60_000 };
   if (pathname.startsWith("/api/stripe/") || pathname.startsWith("/api/paypal/")) return { limit: 20, windowMs: 60_000 };
   if (["/api/contact", "/api/newsletter", "/api/withdrawal"].includes(pathname)) return { limit: 5, windowMs: 10 * 60_000 };

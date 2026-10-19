@@ -3,16 +3,19 @@ import { wcApi } from "@/lib/woocommerce";
 import { getRequestSession } from "@/lib/auth-session";
 import { calculateServerCart, serverCartErrorResponse } from "@/lib/server-cart";
 import type { ServerCartItemInput } from "@/lib/cart-contract";
+import { isValidCheckoutAddress, isValidCheckoutEmail } from "@/lib/checkout-validation";
 
 interface CreateOrderBody {
   items: ServerCartItemInput[];
   shippingMethodId?: string;
+  couponCode?: string;
   billing?: {
     first_name?: string;
     last_name?: string;
     email?: string;
     phone?: string;
     address_1?: string;
+    address_2?: string;
     city?: string;
     postcode?: string;
     country?: string;
@@ -21,6 +24,7 @@ interface CreateOrderBody {
     first_name?: string;
     last_name?: string;
     address_1?: string;
+    address_2?: string;
     city?: string;
     postcode?: string;
     country?: string;
@@ -45,10 +49,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No items provided" }, { status: 400 });
     }
 
+    if (body.payment_method !== "paypal-express" && (!isValidCheckoutEmail(body.billing?.email) || !isValidCheckoutAddress(body.billing) || !isValidCheckoutAddress(body.shipping ?? body.billing))) {
+      return NextResponse.json({ error: locale === "en" ? "Enter a valid email and complete German delivery address (five-digit postcode)." : "Bitte gib eine gültige E-Mail und vollständige deutsche Lieferadresse mit fünfstelliger Postleitzahl an." }, { status: 400 });
+    }
+
     const cart = await calculateServerCart({
       items: body.items,
       country: body.shipping?.country || body.billing?.country || "DE",
       shippingMethodId: body.shippingMethodId,
+      couponCode: body.couponCode,
+      billingEmail: body.billing?.email,
     });
 
     const lineItems = cart.lines.map((item) => {
@@ -97,6 +107,7 @@ export async function POST(request: NextRequest) {
     if (body.shipping) {
       orderData.shipping = body.shipping;
     }
+    if (cart.couponCode) orderData.coupon_lines = [{ code: cart.couponCode }];
 
     orderData.shipping_lines = [{
       method_id: cart.selectedRate.id,

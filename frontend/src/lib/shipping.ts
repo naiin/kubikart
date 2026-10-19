@@ -94,22 +94,13 @@ export function getDHLProductForPackage(pkg: ShippingPackage): "KLEINPAKET" | "P
 export function calculateShippingRates(pkg: ShippingPackage, subtotal: number, countryCode: string = "DE", charge?: DomesticShippingCharge): ShippingRate[] {
   const rates: ShippingRate[] = [];
 
-  if (countryCode !== "DE") {
-    // International shipping via Warenpost International
-    rates.push({
-      id: "dhl_international",
-      name: "DHL Warenpost International",
-      price: parseFloat(process.env.DHL_PRICE_INTERNATIONAL || "8.99"),
-      estimatedDays: "5–10",
-      carrier: "DHL",
-      dhlProduct: DHL_PRODUCTS.WARENPOST_INTERNATIONAL,
-    });
-    return rates;
-  }
+  if (countryCode.trim().toUpperCase() !== "DE" || !Object.values(pkg).every(value => Number.isFinite(value) && value > 0)) return rates;
 
   // Jars use Paket even when incomplete dimensions would otherwise fit Kleinpaket.
   // A small-packet customer charge does not make a large physical parcel eligible for Kleinpaket.
-  const productType = charge === "parcel" ? "PAKET_NATIONAL" : getDHLProductForPackage(pkg);
+  const physicalProduct = getDHLProductForPackage(pkg);
+  if (!physicalProduct) return rates;
+  const productType = charge === "parcel" ? "PAKET_NATIONAL" : physicalProduct;
   const parcelPrice = charge === "small-packet" ? SHIPPING_PRICES.KLEINPAKET : SHIPPING_PRICES.PAKET_NATIONAL;
 
   if (productType === "KLEINPAKET") {
@@ -123,19 +114,6 @@ export function calculateShippingRates(pkg: ShippingPackage, subtotal: number, c
       dhlProduct: DHL_PRODUCTS.KLEINPAKET,
     });
   } else if (productType === "PAKET_NATIONAL") {
-    const price = subtotal >= SHIPPING_PRICES.FREE_SHIPPING_THRESHOLD ? 0 : parcelPrice;
-    rates.push({
-      id: "dhl_paket",
-      name: "DHL Paket",
-      price,
-      estimatedDays: "3–5",
-      carrier: "DHL",
-      dhlProduct: DHL_PRODUCTS.PAKET_NATIONAL,
-    });
-  }
-
-  // If no product matches (shouldn't happen often), fallback to Paket
-  if (rates.length === 0) {
     const price = subtotal >= SHIPPING_PRICES.FREE_SHIPPING_THRESHOLD ? 0 : parcelPrice;
     rates.push({
       id: "dhl_paket",

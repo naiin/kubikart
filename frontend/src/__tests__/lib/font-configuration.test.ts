@@ -13,6 +13,12 @@ const globalsSource = readFileSync(
 );
 
 describe("local font configuration", () => {
+  it("ships the smaller WOFF2 Inter subset rather than the full multi-script download", () => {
+    const font = readFileSync(join(projectRoot, "src/assets/fonts/inter/Inter-Variable.woff2"));
+    expect(font.subarray(0, 4).toString()).toBe("wOF2");
+    expect(font.byteLength).toBeLessThan(220_000);
+  });
+
   it("loads Montserrat and Inter through next/font/local", () => {
     expect(layoutSource).toContain('import localFont from "next/font/local"');
     expect(layoutSource).toContain("Montserrat-Variable.woff2");
