@@ -56,6 +56,8 @@ export function ProductJsonLd({
   const productSchema: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "Product",
+    "@id": `${productUrl}#product`,
+    url: productUrl,
     name: product.name,
     description: product.description,
     brand: {
@@ -78,6 +80,7 @@ export function ProductJsonLd({
       itemCondition: "https://schema.org/NewCondition",
       seller: {
         "@type": "Organization",
+        "@id": `${siteUrl}/#organization`,
         name: "Kubikart",
       },
     };

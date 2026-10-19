@@ -59,11 +59,13 @@ export async function POST(request: NextRequest) {
       revalidateTag(CACHE_TAGS.products, EXPIRE_IMMEDIATELY);
       revalidateTag(CACHE_TAGS.categories, EXPIRE_IMMEDIATELY);
       revalidated.push(CACHE_TAGS.products, CACHE_TAGS.categories);
+      revalidatePath("/sitemap.xml");
     } else if (topic.startsWith("category.") || topic.startsWith("product_cat.")) {
       // Renamed categories are embedded in product payloads as well as the category list.
       revalidateTag(CACHE_TAGS.products, EXPIRE_IMMEDIATELY);
       revalidateTag(CACHE_TAGS.categories, EXPIRE_IMMEDIATELY);
       revalidated.push(CACHE_TAGS.products, CACHE_TAGS.categories);
+      revalidatePath("/sitemap.xml");
     } else if (topic.startsWith("industry.")) {
       const id = Number(body.id);
       const translations =

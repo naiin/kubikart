@@ -167,11 +167,16 @@ export function buildPageMetadata({
       siteName: "Kubikart",
       locale: canonicalLocale === "de" ? "de_DE" : "en_US",
       type: "website",
+      images: [{
+        url: getAbsoluteUrl("/images/home/qr-nfc-stands-business-cards-stickers.webp"),
+        alt: locale === "en" ? "Kubikart QR/NFC stands, business cards and stickers" : "Kubikart QR-/NFC-Aufsteller, Visitenkarten und Aufkleber",
+      }],
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title,
       description,
+      images: [getAbsoluteUrl("/images/home/qr-nfc-stands-business-cards-stickers.webp")],
     },
   };
 }

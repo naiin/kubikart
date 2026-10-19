@@ -89,6 +89,22 @@ The header must retain:
 
 ## Section 1 — Hero
 
+### Image delivery
+
+Public WordPress images in the gift thumbnails and shared Business Bundle cards
+use Next.js image optimization with responsive `sizes`, matching the existing
+product-card policy. Local `*.lndo.site` images still bypass optimization because
+the optimizer cannot fetch the private development host. The hero retains its
+preloaded, optimized local image; below-the-fold images remain lazy-loaded.
+
+On 19 October 2026, a public delivery check measured one gift original at 284,266
+bytes versus 12,210 bytes through the deployed optimizer at 256 px / quality 75.
+This is an individual asset comparison, not a measured Lighthouse improvement.
+After deploying, repeat PageSpeed on the same URL/device and inspect its LCP
+element and timing breakdown before attributing remaining delay to WordPress.
+WordPress originals lacked a Cache-Control header in that check; origin media
+caching is a separate hosting configuration task, not changed by the frontend.
+
 ### Purpose
 
 Communicate the primary business direction and provide the main actions.

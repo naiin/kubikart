@@ -1,4 +1,2 @@
-import { createNavigation } from "next-intl/navigation";
-import { routing } from "./routing";
-
-export const { Link, redirect, usePathname, useRouter, getPathname } = createNavigation(routing);
+export { Link, redirect, usePathname, getPathname } from "./navigation-base";
+export { useLoadingRouter as useRouter } from "./use-loading-router";

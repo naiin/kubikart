@@ -220,7 +220,7 @@ function adaptIndustry(record: BusinessIndustryRestRecord, requestedLocale: Site
     id: record.id,
     slug: record.slug,
     locale,
-    modified: record.modified_gmt || record.modified,
+    modified: record.modified_gmt ? `${record.modified_gmt.replace(/Z$/, "")}Z` : "",
     menuOrder: Number(record.menu_order) || 0,
     title: wordpressText(record.title?.rendered || ""),
     excerptHtml,

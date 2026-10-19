@@ -1,6 +1,9 @@
+import { LoadingOverlay } from "@/components/LoadingOverlay";
+
 export default function IndustryDetailLoading() {
   return (
-    <main className="bg-page">
+    <div className="bg-page">
+      <LoadingOverlay />
       <div className="kk-container-full py-12 lg:py-16" aria-busy="true" aria-live="polite">
         <div className="h-4 w-56 rounded bg-border" />
         <div className="mt-8 grid gap-8 lg:grid-cols-2">
@@ -12,7 +15,6 @@ export default function IndustryDetailLoading() {
           <div className="aspect-[4/3] rounded-kubikart-lg border border-border bg-surface" />
         </div>
       </div>
-    </main>
+    </div>
   );
 }
-

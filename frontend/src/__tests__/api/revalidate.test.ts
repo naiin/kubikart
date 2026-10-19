@@ -97,6 +97,15 @@ describe("POST /api/revalidate replay protection", () => {
 });
 
 describe("POST /api/revalidate", () => {
+  it("refreshes the sitemap on product and category lifecycle events", async () => {
+    const { POST } = await import("@/app/api/revalidate/route");
+    for (const topic of ["product.created", "product.updated", "product.deleted", "category.updated"]) {
+      revalidatePath.mockClear();
+      const response = await POST(makeRequest({ slug: "example" }, { "x-wc-webhook-topic": topic }) as never);
+      expect(response.status).toBe(200);
+      expect(revalidatePath).toHaveBeenCalledWith("/sitemap.xml");
+    }
+  });
   it("returns 401 for an invalid webhook signature", async () => {
     const { POST } = await import("@/app/api/revalidate/route");
     const res = await POST(

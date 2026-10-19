@@ -78,6 +78,15 @@ const nextConfig: NextConfig = {
       source: "/api/:path*",
       headers: [{ key: "Cache-Control", value: "no-store, no-cache, must-revalidate" }],
     },
+    ...["account", "cart", "checkout"].map((section) => ({
+      source: `/:locale(de|en)/${section}/:path*`,
+      headers: [
+        // Do not leak reset/payment URL parameters as a referrer on the next
+        // public page (including into a third-party measurement SDK).
+        { key: "Referrer-Policy", value: "no-referrer" },
+        { key: "X-Robots-Tag", value: "noindex, nofollow" },
+      ],
+    })),
   ],
 };
 

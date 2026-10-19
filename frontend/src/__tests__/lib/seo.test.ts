@@ -21,7 +21,7 @@ describe("SEO helpers", () => {
       "x-default": expect.stringContaining("/de/shop"),
     });
     expect(metadata.robots).toMatchObject({ index: true, follow: true });
-    expect(metadata.twitter).toMatchObject({ card: "summary", title: "Shop | Kubikart" });
+    expect(metadata.twitter).toMatchObject({ card: "summary_large_image", title: "Shop | Kubikart" });
     vi.unstubAllEnvs();
   });
 

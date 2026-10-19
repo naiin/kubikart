@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { canOptimizeImage } from "@/lib/image-optimization";
 import { useTranslations } from "next-intl";
 import type { WordPressFeaturedMedia } from "@/lib/wordpress";
 
@@ -31,7 +32,7 @@ export function IndustryMedia({
           sizes={sizes}
           priority={priority}
           className="object-cover"
-          unoptimized={Boolean(media?.source_url)}
+          unoptimized={!canOptimizeImage(media?.source_url || fallbackSrc!)}
         />
       ) : (
         <span

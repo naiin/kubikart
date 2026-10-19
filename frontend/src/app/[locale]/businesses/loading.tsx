@@ -1,6 +1,9 @@
+import { LoadingOverlay } from "@/components/LoadingOverlay";
+
 export default function BusinessIndustriesLoading() {
   return (
-    <main className="bg-page">
+    <div className="bg-page">
+      <LoadingOverlay />
       <div className="kk-container-full py-12 lg:py-16" aria-busy="true" aria-live="polite">
         <div className="h-4 w-40 rounded bg-border" />
         <div className="mt-8 h-4 w-52 rounded bg-border" />
@@ -12,7 +15,6 @@ export default function BusinessIndustriesLoading() {
           ))}
         </div>
       </div>
-    </main>
+    </div>
   );
 }
-

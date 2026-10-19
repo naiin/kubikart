@@ -21,6 +21,9 @@ interface WCRequestOptions {
 
 export async function wcApi<T>(endpoint: string, options: WCRequestOptions = {}): Promise<T> {
   const { params = {}, method = "GET", body, revalidate = 300, tags } = options;
+  // Only public catalogue reads may enter Next's shared Data Cache. Orders,
+  // customers, coupons and every mutation must remain request-time/private.
+  const cacheable = method === "GET" && /^products(?:\/|$)/.test(endpoint) && revalidate > 0;
 
   const url = new URL(`${WC_API_URL}/${endpoint}`);
 
@@ -34,7 +37,10 @@ export async function wcApi<T>(endpoint: string, options: WCRequestOptions = {})
       "Content-Type": "application/json",
       Authorization: `Basic ${Buffer.from(`${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`).toString("base64")}`,
     },
-    next: { revalidate, ...(tags?.length ? { tags } : {}) },
+    signal: AbortSignal.timeout(method === "GET" ? 8_000 : 20_000),
+    ...(cacheable
+      ? { next: { revalidate, ...(tags?.length ? { tags } : {}) } }
+      : { cache: "no-store" as const }),
   };
 
   if (body && method !== "GET") {

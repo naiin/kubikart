@@ -1,11 +1,9 @@
-import { useTranslations } from "next-intl";
+import { LoadingOverlay } from "@/components/LoadingOverlay";
 
 export default function ShopLoading() {
-  const t = useTranslations("shopPage");
-
   return (
     <div className="bg-page" aria-busy="true" aria-live="polite">
-      <span className="sr-only">{t("loading")}</span>
+      <LoadingOverlay />
       <div className="border-b border-border bg-surface">
         <div className="kk-container-full py-12 lg:py-16">
           <div className="h-4 w-44 rounded-full bg-border" />

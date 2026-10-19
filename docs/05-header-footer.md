@@ -24,6 +24,24 @@ They must be redesigned visually while preserving:
 
 Do not redesign page content during the header/footer phase.
 
+### Navigation loading feedback
+
+The shared locale layout provides a page-loading fallback, including the
+homepage. Existing shop and industry skeletons retain their layout and display
+the same localized loading modal. A centered spinner appears in a compact white
+panel over a dimmed, full-viewport backdrop; it is not a top-corner notification.
+No artificial loading delay is added for cached navigation.
+
+Programmatic navigation uses the shared localized router, which tracks React
+transitions and displays the same loading modal. This covers category
+changes, search, sorting, filter removal, language changes and account navigation,
+including changes to query parameters on the same route. It does not replace
+form submission or payment-specific busy states. Spinners respect reduced motion.
+The native dialog isolates background interaction and focus while open, and the
+page cannot scroll behind it. It closes automatically when loading completes.
+Escape dismisses the overlay without cancelling navigation, avoiding a keyboard
+trap. Initial loading markup is server-rendered before dialog hydration.
+
 ---
 
 # 2. Header Architecture
