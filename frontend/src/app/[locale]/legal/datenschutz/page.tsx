@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { buildPageMetadata, normalizeLocale, SEO_ROUTE_SEGMENTS } from "@/lib/seo";
 import { TurnstilePrivacyNotice } from "@/components/legal/TurnstilePrivacyNotice";
+import { VercelPrivacyNotice } from "@/components/legal/VercelPrivacyNotice";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale: rawLocale } = await params;
@@ -79,6 +80,7 @@ export default async function DatenschutzPage({ params }: { params: Promise<{ lo
         </p>
 
         <TurnstilePrivacyNotice locale={locale} />
+        <VercelPrivacyNotice locale={locale} />
 
         <h3>Anfrage per E-Mail oder Telefon</h3>
         <p>

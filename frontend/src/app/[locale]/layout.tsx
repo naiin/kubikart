@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { PrivateSpeedInsights } from "@/components/PrivateSpeedInsights";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { CookieBanner } from "@/components/CookieBanner";
+import { NavigationProgress } from "@/components/NavigationProgress";
 import { AuthProvider } from "@/lib/auth";
 import { CaptchaProvider } from "@/components/CaptchaProvider";
 import { getRobotsMetadata, getSiteUrl } from "@/lib/seo";
@@ -56,6 +58,7 @@ export default async function LocaleLayout({ children, params }: { children: Rea
     <html lang={locale} className={`${inter.variable} ${montserrat.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-white text-gray-900">
         <NextIntlClientProvider locale={locale} messages={messages}>
+          <NavigationProgress>
           <CaptchaProvider siteKey={process.env.CLOUDFLARE_TURNSTILE_SITEKEY?.trim() || ""}>
           <AuthProvider>
             <Header />
@@ -64,7 +67,9 @@ export default async function LocaleLayout({ children, params }: { children: Rea
             <CookieBanner />
           </AuthProvider>
           </CaptchaProvider>
+          </NavigationProgress>
         </NextIntlClientProvider>
+        <PrivateSpeedInsights />
       </body>
     </html>
   );

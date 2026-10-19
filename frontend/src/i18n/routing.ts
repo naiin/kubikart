@@ -5,6 +5,9 @@ export const routing = defineRouting({
   defaultLocale: "de",
   localePrefix: "always",
   localeDetection: false,
+  // Page metadata/sitemap know the real translated slugs; generic same-path
+  // Link headers would advertise incorrect product and service alternates.
+  alternateLinks: false,
 });
 
 export function getRootLocaleRedirect(pathname: string) {

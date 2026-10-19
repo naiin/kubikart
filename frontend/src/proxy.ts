@@ -4,39 +4,28 @@ import { getRootLocaleRedirect, routing } from "./i18n/routing";
 import { getClientIp } from "./lib/client-ip";
 import { CAPTCHA_ACTIONS, verifyCaptcha } from "./lib/captcha";
 import { applyRateLimit, getApiRateLimitPolicy, getRateLimitMessage, inferRequestLocale } from "./lib/rate-limit";
+import { resolvePublicRoute } from "./lib/public-route";
+import { getSiteUrl, isIndexableDeployment } from "./lib/seo";
 
 const intlMiddleware = createMiddleware(routing);
 
-async function dynamicResourceExists(pathname: string): Promise<boolean | null> {
-  const productMatch = pathname.match(/^\/(?:de|en)\/shop\/([^/]+)\/?$/);
-  const industryMatch = pathname.match(/^\/(?:de|en)\/businesses\/([^/]+)\/?$/);
-  try {
-    if (productMatch && process.env.WC_API_URL && process.env.WC_CONSUMER_KEY && process.env.WC_CONSUMER_SECRET) {
-      const url = new URL(`${process.env.WC_API_URL}/products`);
-      url.searchParams.set("slug", decodeURIComponent(productMatch[1]));
-      url.searchParams.set("status", "publish");
-      url.searchParams.set("per_page", "1");
-      const authorization = `Basic ${Buffer.from(`${process.env.WC_CONSUMER_KEY}:${process.env.WC_CONSUMER_SECRET}`).toString("base64")}`;
-      const response = await fetch(url, { cache: "no-store", headers: { Authorization: authorization } });
-      if (!response.ok) return null;
-      return ((await response.json()) as unknown[]).length > 0;
-    }
-    if (industryMatch && process.env.WORDPRESS_API_URL) {
-      const url = new URL(`${process.env.WORDPRESS_API_URL}/business-industries`);
-      url.searchParams.set("slug", decodeURIComponent(industryMatch[1]));
-      url.searchParams.set("status", "publish");
-      url.searchParams.set("per_page", "1");
-      const headers = process.env.WP_APP_USER && process.env.WP_APP_PASSWORD
-        ? { Authorization: `Basic ${Buffer.from(`${process.env.WP_APP_USER}:${process.env.WP_APP_PASSWORD}`).toString("base64")}` }
-        : undefined;
-      const response = await fetch(url, { cache: "no-store", headers });
-      if (!response.ok) return null;
-      return ((await response.json()) as unknown[]).length > 0;
-    }
-  } catch (error) {
-    console.error("Dynamic route existence check failed:", error);
+function protectNonCanonicalHost(response: NextResponse, request: NextRequest) {
+  if (!isIndexableDeployment() || request.nextUrl.hostname !== new URL(getSiteUrl()).hostname) {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
   }
-  return null;
+  return response;
+}
+
+function missingPublicPage(pathname: string) {
+  const english = pathname.startsWith("/en/");
+  const locale = english ? "en" : "de";
+  const title = english ? "Page not found" : "Seite nicht gefunden";
+  // A static /_not-found rewrite can replace no-store with a year-long CDN
+  // cache lifetime. Respond here so a future publication cannot inherit it.
+  return new NextResponse(`<!doctype html><html lang="${locale}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>404 – ${title} | Kubikart</title></head><body style="margin:0;background:#F7F4EF;color:#0C2D48;font-family:system-ui,sans-serif"><main style="max-width:760px;margin:10vh auto;padding:24px"><p>404</p><h1>${title}</h1><p><a href="/${locale}/shop" style="color:inherit">${english ? "Back to the shop" : "Zurück zum Shop"}</a></p></main></body></html>`, {
+    status: 404,
+    headers: { "Content-Type": "text/html; charset=utf-8", "X-Robots-Tag": "noindex", "Cache-Control": "no-store" },
+  });
 }
 
 export default async function proxy(request: NextRequest) {
@@ -121,18 +110,28 @@ export default async function proxy(request: NextRequest) {
   if (rootLocaleRedirect) {
     const germanHomepage = request.nextUrl.clone();
     germanHomepage.pathname = rootLocaleRedirect;
-    return NextResponse.redirect(germanHomepage, 308);
+    return protectNonCanonicalHost(NextResponse.redirect(germanHomepage, 308), request);
   }
 
-  const exists = await dynamicResourceExists(pathname);
-  if (exists === false) {
-    return NextResponse.rewrite(new URL("/_not-found", request.url), { status: 404 });
+  const identity = await resolvePublicRoute(pathname);
+  if (identity?.kind === "missing") {
+    return missingPublicPage(pathname);
+  }
+  if (identity?.kind === "unavailable") {
+    return new NextResponse(pathname.startsWith("/en/") ? "Temporarily unavailable. Please try again later." : "Vorübergehend nicht verfügbar. Bitte versuche es später erneut.", {
+      status: 503, headers: { "Retry-After": "60", "Cache-Control": "no-store", "X-Robots-Tag": "noindex" },
+    });
+  }
+  if (identity?.kind === "found" && identity.pathname !== pathname.replace(/\/$/, "")) {
+    const destination = request.nextUrl.clone();
+    destination.pathname = identity.pathname;
+    return protectNonCanonicalHost(NextResponse.redirect(destination, 308), request);
   }
 
   // i18n routing for all non-API routes
-  return intlMiddleware(request);
+  return protectNonCanonicalHost(intlMiddleware(request), request);
 }
 
 export const config = {
-  matcher: ["/((?!_next|_vercel|.*\\..*).*)", "/api/:path*"],
+  matcher: ["/((?!_next|_vercel|_not-found|.*\\..*).*)", "/:locale(de|en)/shop/:path*", "/:locale(de|en)/businesses/:path*", "/api/:path*"],
 };

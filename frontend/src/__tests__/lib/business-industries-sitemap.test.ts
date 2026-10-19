@@ -41,7 +41,7 @@ describe("Business Industry sitemap entries", () => {
     expect(entries[0].alternates?.languages?.en).toContain(
       "/en/businesses/restaurants-and-takeaway",
     );
-    expect(entries[0].lastModified).toBe("2026-07-29T08:00:00");
+    expect(entries[0].lastModified).toBe("2026-07-29T08:00:00.000Z");
   });
 
   it("does not fabricate a missing translation", async () => {

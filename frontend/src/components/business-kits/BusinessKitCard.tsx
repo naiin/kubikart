@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getBusinessKitCommercialState, parseBusinessKitData } from "@/lib/business-kits";
 import { KitIllustrationForProduct } from "@/components/business-kits/KitIllustration";
+import { canOptimizeImage } from "@/lib/image-optimization";
 import type { WCProduct } from "@/lib/woocommerce";
 import type { SiteLocale } from "@/lib/seo";
 
@@ -51,7 +52,7 @@ export async function BusinessKitCard({ product, locale }: { product: WCProduct;
             fill
             sizes="(min-width: 1024px) 400px, (min-width: 640px) 50vw, 100vw"
             className="object-cover transition-transform duration-200 group-hover:scale-[1.025]"
-            unoptimized
+            unoptimized={!canOptimizeImage(image.src)}
           />
         ) : hasIllustration ? (
           <KitIllustrationForProduct product={product} />

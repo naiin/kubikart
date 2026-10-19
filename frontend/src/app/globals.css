@@ -93,6 +93,10 @@
 }
 
 @layer base {
+  body:has(dialog[data-navigation-loading]:modal) {
+    overflow: hidden;
+  }
+
   html {
     background: #ffffff;
   }

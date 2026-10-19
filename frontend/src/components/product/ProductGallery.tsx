@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { canOptimizeImage } from "@/lib/image-optimization";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
@@ -63,7 +64,7 @@ export function ProductGallery({ images, activeIndex, onSelect, note }: ProductG
     <section aria-label={t("galleryLabel")} className="min-w-0 max-w-full">
       <figure>
         <div className="relative aspect-square overflow-hidden rounded-kubikart-lg border border-border bg-surface-white">
-          <Image src={active.src} alt={active.alt} fill priority sizes="(min-width: 1024px) 52vw, 100vw" className="object-contain" unoptimized />
+          <Image src={active.src} alt={active.alt} fill priority sizes="(min-width: 1280px) 640px, (min-width: 1024px) 52vw, 100vw" className="object-contain" unoptimized={!canOptimizeImage(active.src)} />
 
           {images.length > 1 ? (
             <>
@@ -112,7 +113,7 @@ export function ProductGallery({ images, activeIndex, onSelect, note }: ProductG
               aria-label={t("galleryViewImage", { index: index + 1 })}
               aria-pressed={index === activeIndex}
             >
-              <Image src={image.src} alt="" fill sizes="88px" className="object-contain" unoptimized />
+              <Image src={image.src} alt="" fill sizes="88px" className="object-contain" unoptimized={!canOptimizeImage(image.src)} />
             </button>
           ))}
         </div>

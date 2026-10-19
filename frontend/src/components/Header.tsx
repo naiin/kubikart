@@ -109,8 +109,7 @@ function NavDropdown({
         {t(item.labelKey)}
         <ChevronIcon open={isOpen} />
       </button>
-      {isOpen ? (
-        <ul id={menuId} className="absolute top-full left-0 z-50 mt-1 min-w-64 rounded-kubikart-md border border-border bg-surface-white p-2 shadow-kubikart-md">
+        <ul id={menuId} hidden={!isOpen} className="absolute top-full left-0 z-50 mt-1 min-w-64 rounded-kubikart-md border border-border bg-surface-white p-2 shadow-kubikart-md">
           {(item.children ?? []).map((child) => (
             <li key={child.labelKey}>
               <Link
@@ -126,7 +125,6 @@ function NavDropdown({
             </li>
           ))}
         </ul>
-      ) : null}
     </div>
   );
 }

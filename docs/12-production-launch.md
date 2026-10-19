@@ -52,6 +52,27 @@ structure exists; `configure-business-kits.php` dry run then apply; `create-cust
    success and failure, webhook delivery, refund path, enquiry e-mail, revalidation after a product edit, mobile and
    desktop pages.
 10. **Monitoring:** application, PHP/WordPress errors, payment webhooks and availability.
+    Vercel Speed Insights is mounted once in the shared locale layout for both
+    languages. Enable Speed Insights in the Vercel project's dashboard and deploy
+    the frontend, then check for real-visitor performance measurements. This is
+    performance monitoring; no backend credentials are required.
+    Vercel Web Analytics is also integrated through the shared cookie banner,
+    but loads only when `kubikart-cookie-consent` is `all` ("Accept all").
+    No preference or "Essential only" keeps Analytics off. Saved preferences
+    are respected on subsequent visits, and cross-tab preference changes are
+    synchronized. Its `beforeSend` guard also blocks events if consent is no
+    longer `all`, even if the script was previously loaded. Enable Web Analytics
+    separately in the Vercel dashboard and redeploy. Speed Insights remains
+    independent of this Analytics opt-in. The existing privacy page includes a
+    German disclosure and English courtesy translation for both services, plus
+    controls to allow or withdraw Web Analytics immediately in the current browser.
+    The banner links directly to `/legal/datenschutz#vercel-analytics`; the footer's
+    existing privacy link also reaches this page.
+    Before publishing, obtain owner/legal review of the disclosure, particularly
+    Speed Insights' legitimate-interest basis and separate §25 TDDDG assessment.
+    Verify the account's actual retention settings and applicable DPA/transfer
+    safeguards; the disclosure does not claim a signed DPA or that all data is
+    deleted after 24 hours. No hosting, Turnstile or payment legal text was replaced.
 11. **SEO and legal review:** [SEO launch checklist](11-seo.md#4-manual-launch-checklist) and section 5 below.
 
 ## 3. Environment variable contract

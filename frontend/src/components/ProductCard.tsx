@@ -43,7 +43,7 @@ export function ProductCard({ product }: { product: WCProduct }) {
         {image ? (
           <Image
             src={image.src}
-            alt={product.name}
+            alt={image.alt?.trim() || product.name}
             fill
             sizes="(min-width: 1280px) 384px, (min-width: 1024px) 33vw, (min-width: 480px) 50vw, 100vw"
             className="object-cover transition-transform duration-200 group-hover:scale-[1.025]"

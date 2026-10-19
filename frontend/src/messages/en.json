@@ -536,9 +536,66 @@
   },
   "cookie": {
     "title": "🍪 Cookie Notice",
-    "description": "We use cookies to provide you with the best experience on our website. Essential cookies are required for basic functionality. For more information, see our Privacy Policy.",
+    "description": "Essential storage supports this website's operation. “Accept All” additionally allows Vercel Web Analytics to collect page-view statistics. “Essential Only” keeps this analytics service off. Vercel Speed Insights measures technical performance independently of this choice. You can withdraw your analytics consent at any time in the Privacy Policy.",
+    "privacyLink": "Privacy and analytics preferences",
     "acceptAll": "Accept All",
     "essentialOnly": "Essential Only"
+  },
+  "vercelPrivacy": {
+    "heading": "Vercel Web Analytics and Speed Insights — English courtesy translation",
+    "translation": "This translates the Vercel section above. The German text is authoritative.",
+    "provider": {
+      "title": "Provider and purposes",
+      "body": "We use services from Vercel Inc., USA. Vercel Web Analytics helps us understand which pages are used. Vercel Speed Insights helps us improve loading times, responsiveness and layout stability. Our integration controls these two services differently."
+    },
+    "analytics": {
+      "title": "Web Analytics data",
+      "body": "After you consent, page views, including navigation within the website, are reported to Vercel. According to the provider, this may include the timestamp, page URL and route, referring page, filtered URL parameters, approximate geographic information, browser, operating system and device type. Your IP address is technically involved in establishing the connection. Vercel describes the analysis as aggregated statistics without permanent cross-website identification and uses a hash derived from the request to distinguish visitors. We have not configured custom analytics events and do not deliberately pass form contents, uploaded files or payment data to this analytics service."
+    },
+    "consent": {
+      "title": "Consent and withdrawal for Web Analytics",
+      "body": "Web Analytics only loads after you choose “Accept All” in the notice or “Allow Web Analytics” below. It remains off if you make no choice or choose “Essential Only”. The legal basis is your consent under Article 6(1)(a) GDPR; where storing or accessing device information requires consent, §25(1) TDDDG also applies. You can withdraw consent below at any time with effect for the future. Withdrawal does not affect the lawfulness of processing before withdrawal. Using the shop does not depend on analytics consent."
+    },
+    "storage": {
+      "title": "Cookies and saved preference",
+      "body": "According to Vercel, Web Analytics does not use third-party cookies for visitor identification. We store your choice in your browser's local storage under “kubikart-cookie-consent”, with the value “all” or “essential”, so we can respect it on later visits. This storage manages your privacy decision (§25(2) no. 2 TDDDG). It currently has no automatic expiry and remains until you change your choice or clear browser storage. Your choice applies to this browser and website; other browsers and devices must be configured separately. Clearing the choice keeps Web Analytics off until you consent again."
+    },
+    "speed": {
+      "title": "Separate performance measurement with Speed Insights",
+      "body": "Speed Insights is integrated independently of Web Analytics consent, including when you choose “Essential Only”. It uses browser APIs to collect performance measurements such as loading times, responsiveness and layout shifts. Vercel also lists the route and URL, network speed, browser, device type, operating system, country, technical attribution to the affected page element, SDK information and server receipt time. Vercel states that these measurements are not intended to identify individual visitors or reconstruct their browsing across pages. The analytics preferences below do not disable Speed Insights."
+    },
+    "minimization": {
+      "title": "Measurement limits in our integration",
+      "body": "For both services, we remove query parameters and fragment identifiers from the reported page URL. Reports from account, cart, checkout and search pages are discarded. These limits apply to measurement reports; they do not replace your Web Analytics consent or the separate assessment of Speed Insights."
+    },
+    "speedBasis": {
+      "title": "Legal basis and objection for Speed Insights",
+      "body": "Where personal data is processed, we rely on Article 6(1)(f) GDPR for technical performance measurement. Our legitimate interest is identifying technical faults and slow pages and providing a reliable website. You may object on grounds relating to your particular situation under Article 21(1) GDPR by contacting info@kubikart.de. Whether accessing device information is permissible under §25 TDDDG requires a separate assessment. Not using cookies does not replace consent where it is required."
+    },
+    "transfers": {
+      "title": "Recipients and international processing",
+      "body": "Vercel receives the measurement data; processing in the USA and other countries outside the EU/EEA is possible. Vercel's Data Processing Addendum (DPA) describes processor terms and safeguards for international transfers, including EU Standard Contractual Clauses. The applicable terms depend on the contractual relationship and transfer concerned. Further information, including service providers used, is available in the provider documents linked below."
+    },
+    "retention": {
+      "title": "Retention",
+      "body": "For Web Analytics, Vercel states that the session used to distinguish visitors is discarded after 24 hours. This is not a deletion deadline for all collected measurements or aggregated statistics. Their availability and retention depend on the service, plan and provider terms. Withdrawing consent stops future Web Analytics reports in this browser; it does not retroactively delete statistics already created."
+    },
+    "links": {
+      "title": "Further information from Vercel",
+      "analytics": "Web Analytics privacy and collected data",
+      "speed": "Speed Insights privacy and collected data",
+      "privacy": "Vercel Privacy Notice",
+      "dpa": "Data Processing Addendum (DPA)"
+    },
+    "preferences": {
+      "title": "Web Analytics preferences",
+      "description": "This choice only controls Vercel Web Analytics in this browser. Speed Insights and essential website functions remain unchanged.",
+      "loading": "Loading your saved preference.",
+      "enabled": "Web Analytics is allowed.",
+      "disabled": "Web Analytics is off.",
+      "reject": "Reject / withdraw Web Analytics",
+      "allow": "Allow Web Analytics"
+    }
   },
   "contact": {
     "labelName": "Name",

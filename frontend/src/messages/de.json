@@ -536,9 +536,66 @@
   },
   "cookie": {
     "title": "🍪 Cookie-Hinweis",
-    "description": "Wir verwenden Cookies, um Ihnen die beste Erfahrung auf unserer Website zu bieten. Essentielle Cookies sind für die Grundfunktionen erforderlich. Weitere Informationen finden Sie in unserer Datenschutzerklärung.",
+    "description": "Notwendige Speicherfunktionen ermöglichen den Betrieb dieser Website. Mit „Alle akzeptieren“ erlauben Sie zusätzlich Vercel Web Analytics zur statistischen Auswertung der Seitenaufrufe. „Nur essentielle“ lässt diese Analyse ausgeschaltet. Vercel Speed Insights misst die technische Leistung unabhängig von dieser Auswahl. Ihre Analyse-Einwilligung können Sie jederzeit in der Datenschutzerklärung widerrufen.",
+    "privacyLink": "Datenschutz und Analyse-Einstellungen",
     "acceptAll": "Alle akzeptieren",
     "essentialOnly": "Nur essentielle"
+  },
+  "vercelPrivacy": {
+    "heading": "Vercel Web Analytics und Speed Insights",
+    "translation": "",
+    "provider": {
+      "title": "Anbieter und Zwecke",
+      "body": "Wir verwenden Dienste von Vercel Inc., USA. Vercel Web Analytics hilft uns zu verstehen, welche Seiten genutzt werden. Vercel Speed Insights hilft uns, Ladezeiten, Reaktionsgeschwindigkeit und Layout-Stabilität unserer Website zu verbessern. Die beiden Dienste werden in unserer Einbindung unterschiedlich gesteuert."
+    },
+    "analytics": {
+      "title": "Daten bei Web Analytics",
+      "body": "Nach Ihrer Einwilligung werden Seitenaufrufe einschließlich Seitenwechseln innerhalb der Website an Vercel gemeldet. Nach der Anbieterbeschreibung können Zeitpunkt, Seiten-URL und Route, verweisende Seite, gefilterte URL-Parameter, ungefähre geografische Angaben sowie Browser, Betriebssystem und Gerätetyp verarbeitet werden. Die IP-Adresse fällt technisch beim Verbindungsaufbau an. Vercel beschreibt die Auswertung als aggregierte Statistik ohne dauerhafte, websiteübergreifende Identifikation und verwendet einen aus der Anfrage gebildeten Hash zur Besucherunterscheidung. Wir haben keine benutzerdefinierten Analyse-Ereignisse eingerichtet und übergeben nicht gezielt Formularinhalte, hochgeladene Dateien oder Zahlungsdaten an diese Analyse."
+    },
+    "consent": {
+      "title": "Einwilligung und Widerruf für Web Analytics",
+      "body": "Web Analytics wird erst geladen, wenn Sie im Hinweis „Alle akzeptieren“ oder unten „Web Analytics erlauben“ wählen. Ohne Auswahl oder bei „Nur essentielle“ bleibt es ausgeschaltet. Rechtsgrundlage ist Ihre Einwilligung nach Art. 6 Abs. 1 Buchst. a DSGVO; soweit eine Speicherung oder ein Zugriff auf Endgeräteinformationen eine Einwilligung erfordert, gilt außerdem § 25 Abs. 1 TDDDG. Sie können die Einwilligung unten jederzeit für die Zukunft widerrufen. Die Rechtmäßigkeit der Verarbeitung bis zum Widerruf bleibt unberührt. Die Nutzung des Shops ist nicht von der Analyse-Einwilligung abhängig."
+    },
+    "storage": {
+      "title": "Cookies und gespeicherte Auswahl",
+      "body": "Vercel Web Analytics verwendet nach Anbieterangaben keine Drittanbieter-Cookies zur Besucheridentifikation. Wir speichern Ihre Auswahl im lokalen Browserspeicher unter „kubikart-cookie-consent“ mit dem Wert „all“ oder „essential“, damit wir sie bei weiteren Besuchen beachten können. Diese Speicherung dient der Verwaltung Ihrer Datenschutzentscheidung (§ 25 Abs. 2 Nr. 2 TDDDG). Sie hat derzeit kein automatisches Ablaufdatum und bleibt bestehen, bis Sie die Auswahl ändern oder den Browserspeicher löschen. Die Auswahl gilt für diesen Browser und diese Website; andere Geräte und Browser müssen getrennt eingestellt werden. Nach dem Löschen der Auswahl bleibt Web Analytics bis zu einer erneuten Zustimmung aus."
+    },
+    "speed": {
+      "title": "Separate Leistungsmessung durch Speed Insights",
+      "body": "Speed Insights wird unabhängig von der Web-Analytics-Einwilligung eingebunden, also auch bei „Nur essentielle“. Der Dienst erfasst über Browser-Schnittstellen technische Leistungswerte wie Ladezeiten, Reaktionszeiten und Layout-Verschiebungen. Vercel nennt außerdem Route und URL, Netzwerkgeschwindigkeit, Browser, Gerätetyp, Betriebssystem, Land, technische Angaben zum betroffenen Seitenelement, SDK-Informationen und den Empfangszeitpunkt. Nach Vercels Angaben sollen diese Messdaten keine Identifikation einzelner Besucher oder Rekonstruktion ihrer seitenübergreifenden Nutzung ermöglichen. Die unten stehenden Analyse-Einstellungen schalten Speed Insights nicht aus."
+    },
+    "minimization": {
+      "title": "Begrenzung der Messdaten in unserer Einbindung",
+      "body": "Für beide Dienste entfernen wir Abfrageparameter und Fragmentkennungen aus der gemeldeten Seiten-URL. Meldungen von Konto-, Warenkorb-, Checkout- und Suchseiten werden verworfen. Diese Begrenzung betrifft die Messmeldungen; sie ersetzt weder Ihre Web-Analytics-Einwilligung noch die getrennte Beurteilung von Speed Insights."
+    },
+    "speedBasis": {
+      "title": "Rechtsgrundlage und Widerspruch bei Speed Insights",
+      "body": "Soweit personenbezogene Daten verarbeitet werden, stützen wir die technische Leistungsmessung auf Art. 6 Abs. 1 Buchst. f DSGVO. Unser berechtigtes Interesse liegt darin, technische Fehler und langsame Seiten zu erkennen und eine zuverlässige Website bereitzustellen. Sie können aus Gründen Ihrer besonderen Situation nach Art. 21 Abs. 1 DSGVO widersprechen; wenden Sie sich hierzu an info@kubikart.de. Die Zulässigkeit eines Zugriffs auf Endgeräteinformationen nach § 25 TDDDG ist davon getrennt zu beurteilen. Der Verzicht auf Cookies allein ersetzt keine gegebenenfalls erforderliche Einwilligung."
+    },
+    "transfers": {
+      "title": "Empfänger und internationale Verarbeitung",
+      "body": "Empfänger der Messdaten ist Vercel; eine Verarbeitung in den USA und weiteren Ländern außerhalb der EU/des EWR ist möglich. Vercel beschreibt in seinem Data Processing Addendum (DPA) Regelungen zur Auftragsverarbeitung und für internationale Übermittlungen unter anderem EU-Standardvertragsklauseln. Welche Regelungen anwendbar sind, richtet sich nach dem jeweiligen Vertragsverhältnis und der Übermittlung. Informationen dazu und zu eingesetzten Dienstleistern finden Sie in den unten verlinkten Anbieterunterlagen."
+    },
+    "retention": {
+      "title": "Speicherdauer",
+      "body": "Vercel gibt für Web Analytics an, dass die zur Besucherunterscheidung verwendete Sitzung nach 24 Stunden verworfen wird. Dies ist keine Löschfrist für sämtliche erhobenen Messwerte oder aggregierten Statistiken. Deren Verfügbarkeit und Aufbewahrung hängen vom jeweiligen Dienst, Tarif und den Regelungen des Anbieters ab. Ein Widerruf beendet künftige Web-Analytics-Meldungen in diesem Browser; er löscht nicht rückwirkend bereits erstellte Statistiken."
+    },
+    "links": {
+      "title": "Weitere Informationen von Vercel",
+      "analytics": "Web Analytics: Datenschutz und erfasste Daten",
+      "speed": "Speed Insights: Datenschutz und erfasste Daten",
+      "privacy": "Vercel-Datenschutzhinweise",
+      "dpa": "Data Processing Addendum (DPA)"
+    },
+    "preferences": {
+      "title": "Web-Analytics-Einstellungen",
+      "description": "Diese Auswahl steuert nur Vercel Web Analytics in diesem Browser. Speed Insights und notwendige Website-Funktionen bleiben unverändert.",
+      "loading": "Gespeicherte Auswahl wird geladen.",
+      "enabled": "Web Analytics ist erlaubt.",
+      "disabled": "Web Analytics ist ausgeschaltet.",
+      "reject": "Web Analytics ablehnen / widerrufen",
+      "allow": "Web Analytics erlauben"
+    }
   },
   "contact": {
     "labelName": "Name",

@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
       }>
     >("orders", {
       params: { customer: session.user.id, per_page: 20, orderby: "date", order: "desc" },
+      revalidate: 0,
     });
 
     return NextResponse.json({ orders });

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useProtectedFetch } from "@/components/CaptchaProvider";
 
@@ -176,6 +176,7 @@ function SocialLink({ label, href, children }: { label: string; href: string; ch
 
 export function Footer() {
   const t = useTranslations("footer");
+  const english = useLocale() === "en";
 
   const shopLinks: FooterLink[] = [
     { label: t("shop_allProducts"), href: "/shop" },
@@ -187,9 +188,9 @@ export function Footer() {
   const businessLinks: FooterLink[] = [
     { label: t("solutions"), href: "/businesses" },
     { label: t("businessKits"), href: "/services/brand-kit" },
-    { label: t("service_laserEngraving"), href: "/dienstleistungen/lasergravur" },
-    { label: t("service_laserCutting"), href: "/dienstleistungen/laserschnitt" },
-    { label: t("service_3dPrinting"), href: "/dienstleistungen/3d-druck" },
+    { label: t("service_laserEngraving"), href: english ? "/services/laser" : "/dienstleistungen/lasergravur" },
+    { label: t("service_laserCutting"), href: english ? "/services/laser" : "/dienstleistungen/laserschnitt" },
+    { label: t("service_3dPrinting"), href: english ? "/services/3d-printing" : "/dienstleistungen/3d-druck" },
     { label: t("service_customRequests"), href: "/sonderanfertigung" },
   ];
 

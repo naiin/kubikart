@@ -2,6 +2,7 @@ import Image from "next/image";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { normalizeLocale } from "@/lib/seo";
+import { canOptimizeImage } from "@/lib/image-optimization";
 import { getCategories, getProducts, type WCCategory, type WCProduct } from "@/lib/woocommerce";
 
 const BUSINESS_CATEGORY_SLUGS = new Set(["business-produkte", "business-products"]);
@@ -90,7 +91,7 @@ export async function HomePaths() {
                         fill
                         sizes="(min-width: 1024px) 9vw, 28vw"
                         className="object-cover"
-                        unoptimized
+                        unoptimized={!canOptimizeImage(product.images[0].src)}
                       />
                     </Link>
                   </li>

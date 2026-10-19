@@ -1,9 +1,10 @@
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { ProductPageProduct } from "@/lib/product-page";
 
 export function ProductLeadCTA({ product }: { product: ProductPageProduct }) {
   const t = useTranslations("productPage");
+  const locale = useLocale();
 
   return (
     <section id="sonderwunsch" aria-labelledby="sonderwunsch-heading" className="scroll-mt-28">
@@ -24,7 +25,7 @@ export function ProductLeadCTA({ product }: { product: ProductPageProduct }) {
             {t("ctaButton")}
           </a>
           <Link
-            href="/services"
+            href={locale === "en" ? "/services" : "/dienstleistungen"}
             className="inline-flex items-center justify-center rounded-full border border-white/25 px-6 py-3.5 text-sm font-bold text-white transition hover:bg-white/10"
           >
             {t("ctaServicesLink")}

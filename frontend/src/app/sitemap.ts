@@ -2,7 +2,6 @@ import type { MetadataRoute } from "next";
 import { getProducts, type WCProduct } from "@/lib/woocommerce";
 import {
   getBusinessIndustries,
-  WordPressUnavailableError,
   type BusinessIndustry,
 } from "@/lib/wordpress";
 import {
@@ -16,7 +15,16 @@ import {
 
 const SITEMAP_LOCALES: SiteLocale[] = ["de", "en"];
 const PRODUCTS_PER_PAGE = 100;
-const MAX_PRODUCT_PAGES = 10;
+const MAX_PRODUCT_PAGES = 100;
+export const revalidate = 300;
+
+/** WordPress *_gmt timestamps omit their timezone; never imply local time. */
+export function sitemapDate(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const utc = /T\d{2}:\d{2}:\d{2}(?:\.\d+)?$/.test(value) ? `${value}Z` : value;
+  const date = new Date(utc);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
 
 type StaticSitemapRoute = {
   route: LocalizedRouteSegments;
@@ -48,20 +56,14 @@ async function fetchPublishedProducts(locale: SiteLocale) {
   const products: WCProduct[] = [];
 
   for (let page = 1; page <= MAX_PRODUCT_PAGES; page++) {
-    let batch: WCProduct[];
-
-    try {
-      batch = await getProducts(
-        {
-          per_page: PRODUCTS_PER_PAGE,
-          page,
-          status: "publish",
-        },
-        locale,
-      );
-    } catch {
-      break;
-    }
+    const batch = await getProducts(
+      {
+        per_page: PRODUCTS_PER_PAGE,
+        page,
+        status: "publish",
+      },
+      locale,
+    );
 
     if (!batch.length) {
       break;
@@ -72,6 +74,7 @@ async function fetchPublishedProducts(locale: SiteLocale) {
     if (batch.length < PRODUCTS_PER_PAGE) {
       break;
     }
+    if (page === MAX_PRODUCT_PAGES) throw new Error("Sitemap inventory exceeded the pagination safety limit");
   }
 
   return products;
@@ -94,6 +97,9 @@ export function buildIndustrySitemapEntries(
   industryEntries: Record<SiteLocale, BusinessIndustry[]>,
   now: Date,
 ): MetadataRoute.Sitemap {
+  // Retain the public helper's second argument for existing consumers; dates
+  // now come only from source records rather than the generation clock.
+  void now;
   const entries: MetadataRoute.Sitemap = [];
   const industryById = new Map<number, BusinessIndustry>();
   for (const locale of SITEMAP_LOCALES) {
@@ -116,7 +122,7 @@ export function buildIndustrySitemapEntries(
       }
       entries.push({
         url: getAbsoluteUrl(`/${locale}/businesses/${industry.slug}`),
-        lastModified: industry.modified || now,
+        lastModified: sitemapDate(industry.modified),
         changeFrequency: "monthly",
         priority: 0.75,
         alternates: buildAlternates(alternates),
@@ -171,7 +177,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         const localizedSlugs = slugById.get(product.id) || {};
         localizedSlugs[locale] = product.slug;
         slugById.set(product.id, localizedSlugs);
-        modifiedBySlug.set(`${locale}:${product.slug}`, product.date_modified_gmt || product.date_modified);
+        // date_modified is site-local; only the GMT value has an unambiguous timezone.
+        modifiedBySlug.set(`${locale}:${product.slug}`, sitemapDate(product.date_modified_gmt));
       }
     }
 
@@ -195,7 +202,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
         entries.push({
           url: getAbsoluteUrl(`/${locale}/shop/${product.slug}`),
-          lastModified: modifiedBySlug.get(`${locale}:${product.slug}`) || now,
+          lastModified: modifiedBySlug.get(`${locale}:${product.slug}`),
           changeFrequency: "weekly",
           priority: 0.9,
           alternates: buildAlternates(alternates),
@@ -204,17 +211,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  let industryEntries: Record<SiteLocale, BusinessIndustry[]> = { de: [], en: [] };
-  try {
-    const localizedIndustries = await Promise.all(
-      SITEMAP_LOCALES.map(async (locale) => [locale, await getBusinessIndustries(locale)] as const),
-    );
-    industryEntries = Object.fromEntries(localizedIndustries) as Record<SiteLocale, BusinessIndustry[]>;
-  } catch (error) {
-    if (!(error instanceof WordPressUnavailableError)) {
-      throw error;
-    }
-  }
+  // Fail the regeneration as a whole: ISR can retain the previous complete
+  // document instead of replacing it with a successful, partial sitemap.
+  const localizedIndustries = await Promise.all(
+    SITEMAP_LOCALES.map(async (locale) => [locale, await getBusinessIndustries(locale)] as const),
+  );
+  const industryEntries = Object.fromEntries(localizedIndustries) as Record<SiteLocale, BusinessIndustry[]>;
 
   entries.push(...buildIndustrySitemapEntries(industryEntries, now));
 

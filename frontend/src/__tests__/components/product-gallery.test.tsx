@@ -7,6 +7,16 @@ vi.mock("next-intl", () => ({
 }));
 
 describe("ProductGallery", () => {
+  it.each([
+    ["https://kubikart-werbetechnik.de/wp-content/uploads/card.png", true],
+    ["https://kubikart-backend.lndo.site/wp-content/uploads/card.png", false],
+  ])("resizes public galleries and preserves local-host exceptions for %s", async (src, optimized) => {
+    const { ProductGallery } = await import("@/components/product/ProductGallery");
+    const html = renderToStaticMarkup(<ProductGallery images={[{ src, alt: "Business card" }, { src: src.replace("card.png", "back.png"), alt: "Back" }]} activeIndex={0} onSelect={() => undefined} />);
+    expect(html.includes("/_next/image?")).toBe(optimized);
+    expect(html).toContain('alt="Business card"');
+    expect(html).toContain('aria-pressed="true"');
+  });
   it("keeps a large square gallery compact and does not crop its images", async () => {
     const { ProductGallery } = await import("@/components/product/ProductGallery");
     const images = Array.from({ length: 9 }, (_, index) => ({
