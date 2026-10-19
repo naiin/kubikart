@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth";
 import { Link } from "@/i18n/navigation";
 
@@ -17,8 +17,9 @@ interface Order {
 export default function OrdersPage() {
   const t = useTranslations("account");
   const tc = useTranslations("common");
+  const locale = useLocale();
   const { user, loading } = useAuth();
-  const [ordersResult, setOrdersResult] = useState<{ customerId: number; orders: Order[] } | null>(null);
+  const [ordersResult, setOrdersResult] = useState<{ customerId: number; orders: Order[]; error?: boolean } | null>(null);
   const activeCustomerId = user?.id ?? null;
   const orders = ordersResult?.customerId === activeCustomerId ? ordersResult.orders : [];
   const fetching = Boolean(activeCustomerId) && ordersResult?.customerId !== activeCustomerId;
@@ -31,7 +32,7 @@ export default function OrdersPage() {
     let cancelled = false;
 
     fetch("/api/orders", { credentials: "same-origin" })
-      .then((res) => res.json())
+      .then((res) => { if (!res.ok) throw new Error("Orders unavailable"); return res.json(); })
       .then((data) => {
         if (!cancelled) {
           setOrdersResult({
@@ -45,6 +46,7 @@ export default function OrdersPage() {
           setOrdersResult({
             customerId: activeCustomerId,
             orders: [],
+            error: true,
           });
         }
       });
@@ -71,6 +73,15 @@ export default function OrdersPage() {
         </Link>
       </div>
     );
+  }
+
+  if (ordersResult?.customerId === activeCustomerId && ordersResult.error) {
+    return <div className="mx-auto max-w-4xl px-4 py-16">
+      <h1 className="text-2xl font-semibold text-brand">{t("orderHistory")}</h1>
+      <p role="alert" className="my-4 text-danger">{locale === "en" ? "Your orders could not be loaded. Please retry, or sign in again if your session expired." : "Deine Bestellungen konnten nicht geladen werden. Bitte versuche es erneut oder melde dich bei abgelaufener Sitzung wieder an."}</p>
+      <button type="button" onClick={() => setOrdersResult(null)} className="min-h-11 rounded-md border border-brand px-4 text-brand">{locale === "en" ? "Retry" : "Erneut versuchen"}</button>
+      <Link href="/account" className="ml-4 underline">{tc("login")}</Link>
+    </div>;
   }
 
   const statusColors: Record<string, string> = {
@@ -114,7 +125,7 @@ export default function OrdersPage() {
                   </span>
                 </div>
                 <div className="flex items-center gap-4 text-sm text-gray-500">
-                  <span>{new Date(order.date_created).toLocaleDateString("de-DE")}</span>
+                  <span>{new Date(order.date_created).toLocaleDateString(locale === "en" ? "en-GB" : "de-DE")}</span>
                   <span className="font-semibold text-gray-900">€{order.total}</span>
                 </div>
               </div>

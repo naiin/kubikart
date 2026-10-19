@@ -466,7 +466,7 @@ function PersonalizationForm({
           }}
           onSuccess={async (details) => {
             void details;
-            window.location.href = "/checkout/success";
+            window.location.href = `/${locale}/checkout/success`;
           }}
           onError={(msg) => {
             console.error("PayPal express error:", msg);

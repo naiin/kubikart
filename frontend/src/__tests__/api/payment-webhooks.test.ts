@@ -39,6 +39,18 @@ beforeEach(() => {
 });
 
 describe("Stripe webhook payment and email boundaries", () => {
+  it("rejects verified sandbox events on a production deployment", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_live_fixture");
+    vi.stubEnv("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", "pk_live_fixture");
+    try {
+      constructEvent.mockReturnValue({ livemode: false, type: "payment_intent.succeeded", data: { object: {} } });
+      const { POST } = await import("@/app/api/webhooks/stripe/route");
+      expect((await POST(request() as never)).status).toBe(400);
+      expect(markWooOrderPaid).not.toHaveBeenCalled();
+      expect(deliverWooOrderPaidEmail).not.toHaveBeenCalled();
+    } finally { vi.unstubAllEnvs(); }
+  });
   it("delivers the email after a verified matching payment", async () => {
     constructEvent.mockReturnValue({
       type: "payment_intent.succeeded",
@@ -166,6 +178,7 @@ describe("PayPal confirmed capture", () => {
   it("marks a matching capture paid and delivers the durable email", async () => {
     vi.stubGlobal("fetch", vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: "sandbox-token" }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ purchase_units: [{ shipping: { address: { country_code: "DE" } } }] }) })
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -190,6 +203,7 @@ describe("PayPal confirmed capture", () => {
   it("does not send email when capture amount or currency validation fails", async () => {
     vi.stubGlobal("fetch", vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: "sandbox-token" }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ purchase_units: [{ shipping: { address: { country_code: "DE" } } }] }) })
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -207,5 +221,18 @@ describe("PayPal confirmed capture", () => {
     }) as never);
     expect(response.status).toBe(500);
     expect(deliverWooOrderPaidEmail).not.toHaveBeenCalled();
+  });
+
+  it("rejects a non-German approved address before capturing money", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: "sandbox-token" }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ purchase_units: [{ shipping: { address: { country_code: "AT" } } }] }) });
+    vi.stubGlobal("fetch", fetchMock);
+    const { POST } = await import("@/app/api/paypal/capture-order/route");
+    const response = await POST(new Request("http://localhost:3000/api/paypal/capture-order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderID: "QA-ORDER" }) }) as never);
+    expect(response.status).toBe(400);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith("/capture"))).toBe(false);
+    expect(markWooOrderPaid).not.toHaveBeenCalled();
   });
 });

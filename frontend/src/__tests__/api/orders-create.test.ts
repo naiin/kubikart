@@ -39,7 +39,7 @@ describe("POST /api/orders/create", () => {
             quantity: 2,
           },
         ],
-        billing: { first_name: "Max", last_name: "Mustermann", email: "max@test.de" },
+        billing: { first_name: "Max", last_name: "Mustermann", email: "max@test.de", address_1: "Testweg 1", address_2: "Apartment 2", postcode: "10115", city: "Berlin", country: "DE" },
         shippingMethodId: "dhl_kleinpaket",
         payment_method: "stripe",
         payment_method_title: "Kreditkarte",
@@ -64,6 +64,7 @@ describe("POST /api/orders/create", () => {
     expect(body.status).toBe("pending");
     expect(body.lang).toBe("de");
     expect(body.set_paid).toBe(false);
+    expect(body.billing.address_2).toBe("Apartment 2");
     expect(body.transaction_id).toBeUndefined();
     expect(body.line_items).toEqual([
       {
@@ -82,11 +83,23 @@ describe("POST /api/orders/create", () => {
     const res = await POST(
       makeRequest({
         items: [{ productId: 12, quantity: 1 }],
-        billing: { email: "test@example.com" },
+        billing: { first_name: "Test", last_name: "Customer", email: "test@example.com", address_1: "Testweg 1", postcode: "10115", city: "Berlin", country: "DE" },
         payment_method: "paypal",
         payment_method_title: "PayPal",
       }) as never,
     );
     expect(res.status).toBe(500);
+  });
+
+  it.each([
+    { email: "not-an-email", country: "DE", postcode: "10115" },
+    { email: "qa@example.com", country: "AT", postcode: "10115" },
+    { email: "qa@example.com", country: "DE", postcode: "invalid" },
+  ])("rejects invalid checkout details before writing an order: %j", async details => {
+    const fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock);
+    const { POST } = await import("@/app/api/orders/create/route");
+    const response = await POST(makeRequest({ items: [{ productId: 15, quantity: 1 }], billing: { first_name: "QA", last_name: "Test", address_1: "Testweg 1", city: "Berlin", ...details }, payment_method: "pending" }) as never);
+    expect(response.status).toBe(400);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

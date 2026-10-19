@@ -94,8 +94,13 @@ export async function POST(request: Request) {
     if (!Number.isFinite(width) || !Number.isFinite(height) || width < 1 || width > 500 || height < 1 || height > 500) {
       return Response.json({ error: "Invalid custom size" }, { status: 400 });
     }
-    customSizeLine =
-      details.customSize.kind === "film"
+    customSizeLine = requestLocale === "en"
+      ? details.customSize.kind === "film"
+        ? `Custom size request: film width ${width} cm, film height ${height} cm`
+        : details.customSize.kind === "format"
+          ? `Custom format request: finished width ${width} cm, finished height ${height} cm`
+          : `Custom size request: overall width ${width} cm, maximum available height ${height} cm`
+      : details.customSize.kind === "film"
         ? `Wunschmaß-Anfrage: gewünschte Folienbreite ${width} cm, gewünschte Folienhöhe ${height} cm`
         : details.customSize.kind === "format"
           ? `Wunschformat-Anfrage: gewünschte fertige Breite ${width} cm, gewünschte fertige Höhe ${height} cm`
@@ -112,7 +117,7 @@ export async function POST(request: Request) {
       throw error;
     }
   }
-  const enquiryMessage = [customSizeLine, configuration.text, sanitize(message)].filter(Boolean).join("\n\n");
+  const enquiryMessage = [customSizeLine, requestLocale === "en" ? configuration.text.replace(/^Auswahl:/, "Selected options:") : configuration.text, sanitize(message)].filter(Boolean).join("\n\n");
 
   const sanitizedData = {
     name: sanitize(name),
@@ -166,7 +171,7 @@ export async function POST(request: Request) {
           // Send confirmation email to customer
           try {
             const locale = requestLocale;
-            await sendContactConfirmation(sanitizedData.email, sanitizedData, locale);
+            await sendContactConfirmation(sanitizedData.email, record, locale);
           } catch (err) {
             console.error("Failed to send contact confirmation email:", err);
           }
@@ -230,7 +235,7 @@ export async function POST(request: Request) {
   // Send confirmation email to customer
   try {
     const locale = requestLocale;
-    await sendContactConfirmation(sanitizedData.email, sanitizedData, locale);
+    await sendContactConfirmation(sanitizedData.email, record, locale);
   } catch (err) {
     console.error("Failed to send contact confirmation email:", err);
     // Don't fail the request if email fails

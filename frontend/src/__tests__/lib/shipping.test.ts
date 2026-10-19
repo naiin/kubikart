@@ -70,10 +70,11 @@ describe("calculateShippingRates", () => {
       expect(rates[0].price).toBe(0);
     });
 
-    it("returns at least one rate (fallback) for oversized package", () => {
+    it("does not invent a single-parcel rate for an oversized package", () => {
       const hugePkg = { weight: 50, length: 200, width: 100, height: 100 };
       const rates = calculateShippingRates(hugePkg, 10, "DE");
-      expect(rates.length).toBeGreaterThan(0);
+      expect(rates).toEqual([]);
+      expect(calculateShippingRates(hugePkg, 100, "DE", "parcel")).toEqual([]);
     });
 
     it("returns correct DHL product codes", () => {
@@ -86,17 +87,16 @@ describe("calculateShippingRates", () => {
   });
 
   describe("international", () => {
-    it("returns international rate for non-DE destination", () => {
+    it("does not offer shipping outside Germany", () => {
       const rates = calculateShippingRates(smallPkg, 20, "AT");
-      expect(rates).toHaveLength(1);
-      expect(rates[0].id).toBe("dhl_international");
-      expect(rates[0].dhlProduct).toBe("V66WPI");
+      expect(rates).toEqual([]);
     });
 
-    it("international rate does not apply free shipping threshold", () => {
+    it("does not enable international delivery through free shipping", () => {
       const rates = calculateShippingRates(smallPkg, 100, "AT");
       // International shipping always has its base price
-      expect(rates[0].price).toBeGreaterThan(0);
+      expect(rates).toEqual([]);
+      expect(calculateShippingRates(smallPkg, 100, "ZZ")).toEqual([]);
     });
   });
 });

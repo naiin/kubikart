@@ -89,7 +89,33 @@ The header must retain:
 
 ## Section 1 — Hero
 
-### Image delivery
+### Streaming and layout stability
+
+The hero renders outside the Suspense boundary for the remaining homepage
+sections. WooCommerce/WordPress reads below the hero must not hold back the
+heading, introductory copy or hero image. Those sections share a non-commercial
+skeleton while loading; the hero remains usable rather than being covered by a
+modal for below-the-fold recommendations. Route navigation still uses the shared
+loading modal when the page shell is pending.
+
+The global route fallback reserves a full small viewport, preventing the footer
+from appearing inside the initial mobile viewport and moving when content arrives.
+The cookie notice uses concise DE/EN text with the existing consent choices and
+privacy link; it is not delayed to manipulate performance measurements.
+Inter is delivered as a Latin-focused variable-font subset (206,112 instead of
+352,240 bytes), retaining the design axes and all existing translated glyphs.
+See its [source and reproduction notes](../frontend/src/assets/fonts/inter/SOURCE.md).
+
+Validation on 19 October 2026: a controlled Lighthouse 13.5 mobile comparison
+held the streamed page content for two seconds after the shell, preserving
+compression and RSC request headers. It reproduced the production footer shift
+(CLS 0.48238); the layout fix reduced CLS to 0.00054. This is a delayed-stream
+regression test, not a prediction of the production PageSpeed score.
+The final local build measured CLS 0 with no Lighthouse run warnings; LCP was
+still about 6.3 seconds under simulated mobile throttling. Recheck production
+after deployment; no blanket LCP or hosting-performance improvement is claimed.
+
+### Responsive images
 
 Public WordPress images in the gift thumbnails and shared Business Bundle cards
 use Next.js image optimization with responsive `sizes`, matching the existing

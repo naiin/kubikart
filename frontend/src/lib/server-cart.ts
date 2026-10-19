@@ -13,6 +13,8 @@ import { isValidEmailAddress, isValidHttpUrl, resolveVisibleItems } from "@/lib/
 import { toOptionValue, toWooAttributeId } from "@/lib/option-ids";
 import { calculateShippingRates, type ShippingPackage, type ShippingRate } from "@/lib/shipping";
 import { getDomesticShippingCharge } from "@/lib/shipping-policy";
+import { isDomesticCountry } from "@/lib/checkout-validation";
+import { calculateCouponDiscount, CartCouponError } from "@/lib/cart-coupon";
 import { wcApi, type WCProduct, type WCVariation } from "@/lib/woocommerce";
 
 type CustomField = {
@@ -53,6 +55,8 @@ export interface CalculatedCart {
   currency: "EUR";
   lines: CalculatedCartLine[];
   subtotalCents: number;
+  discountCents: number;
+  couponCode?: string;
   shippingCents: number;
   totalCents: number;
   rates: ShippingRate[];
@@ -172,7 +176,8 @@ function positiveDimension(value: string | undefined, fallback: number) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-export async function calculateServerCart(input: { items: ServerCartItemInput[]; country?: string; shippingMethodId?: string }): Promise<CalculatedCart> {
+export async function calculateServerCart(input: { items: ServerCartItemInput[]; country?: string; shippingMethodId?: string; couponCode?: string; billingEmail?: string }): Promise<CalculatedCart> {
+  if (!isDomesticCountry(input.country ?? "DE")) throw new ServerCartError("Delivery is currently available only within Germany", 400, "unsupported_country");
   if (!Array.isArray(input.items) || input.items.length === 0 || input.items.length > 50) throw new ServerCartError("A cart must contain between 1 and 50 items");
   let totalWeight = 0, maxLength = 0, maxWidth = 0, totalHeight = 0;
   const shippingClasses: string[] = [];
@@ -226,12 +231,19 @@ export async function calculateServerCart(input: { items: ServerCartItemInput[];
     return { productId: product.id, ...(variation ? { variationId: variation.id } : {}), name: product.name, quantity: item.quantity, unitPriceCents, lineTotalCents: unitPriceCents * item.quantity, customizations: clean, orderMeta, ...(setSelection && setConfig ? { set: { ...setSelection, unitLabel: setConfig.unitLabel } } : {}) };
   }));
   const subtotalCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
+  let coupon;
+  if (input.couponCode) {
+    try { coupon = await calculateCouponDiscount(String(input.couponCode), input.billingEmail, subtotalCents); }
+    catch (error) { if (error instanceof CartCouponError) throw new ServerCartError(error.message, 400, "invalid_coupon"); throw error; }
+  }
   const pkg = { weight: totalWeight, length: maxLength || 20, width: maxWidth || 15, height: totalHeight || 5 };
   const rates = calculateShippingRates(pkg, subtotalCents / 100, String(input.country || "DE").toUpperCase(), getDomesticShippingCharge(shippingClasses));
+  if (!rates.length) throw new ServerCartError("This cart exceeds standard parcel limits. Please request a shipping quote.", 409, "shipping_quote_required");
   const selectedRate = input.shippingMethodId ? rates.find((rate) => rate.id === input.shippingMethodId) : rates[0];
   if (!selectedRate) throw new ServerCartError("Selected shipping method is unavailable", 409);
   const shippingCents = moneyToCents(selectedRate.price);
-  return { currency: "EUR", lines, subtotalCents, shippingCents, totalCents: subtotalCents + shippingCents, rates, selectedRate, package: pkg };
+  const discountCents = coupon?.discountCents ?? 0;
+  return { currency: "EUR", lines, subtotalCents, discountCents, ...(coupon ? { couponCode: coupon.code } : {}), shippingCents, totalCents: subtotalCents - discountCents + shippingCents, rates, selectedRate, package: pkg };
 }
 
 export function serverCartErrorResponse(error: unknown): { message: string; status: number; code?: string } {

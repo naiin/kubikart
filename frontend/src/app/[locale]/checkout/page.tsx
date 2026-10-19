@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect, useEffectEvent } from "react";
+import { useState, useEffect, useEffectEvent, useRef } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { formatCartCurrency, getCartLineId, readCart, toServerCartItems, useCart, useHasMounted, writeCart } from "@/lib/cart";
 import { useAuth } from "@/lib/auth";
@@ -11,6 +11,7 @@ import { CartAvailabilityNotice } from "@/components/CartAvailabilityNotice";
 import { CartSetSummary } from "@/components/CartSetSummary";
 import { useCartAvailability } from "@/lib/use-cart-availability";
 import { useProtectedFetch } from "@/components/CaptchaProvider";
+import { isValidCheckoutAddress, isValidCheckoutEmail } from "@/lib/checkout-validation";
 
 type Step = "information" | "shipping" | "payment";
 
@@ -27,6 +28,9 @@ export default function CheckoutPage() {
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [pendingOrder, setPendingOrder] = useState<{ id: number; orderKey: string } | null>(null);
   const [creatingOrder, setCreatingOrder] = useState(false);
+  const [couponInput, setCouponInput] = useState("");
+  const [couponCode, setCouponCode] = useState("");
+  const [discount, setDiscount] = useState(0);
 
   // Form state
   const [form, setForm] = useState({
@@ -50,8 +54,10 @@ export default function CheckoutPage() {
   const [shippingLoading, setShippingLoading] = useState(true);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(90);
+  const quoteRequest = useRef(0);
 
   const fetchShippingRates = useEffectEvent(async () => {
+    const requestId = ++quoteRequest.current;
     if (cart.length === 0) {
       setShippingRates([]);
       setShippingLoading(false);
@@ -67,26 +73,31 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           items: toServerCartItems(cart),
           country: form.country,
+          couponCode,
+          billingEmail: form.email,
         }),
       });
       const data = await res.json();
+      if (requestId !== quoteRequest.current) return;
       if (res.ok) {
         setShippingRates(data.rates || []);
         setSubtotal(data.subtotal);
+        setDiscount(data.discount || 0);
         if (data.freeShippingThreshold) setFreeShippingThreshold(data.freeShippingThreshold);
         // Auto-select first rate if current selection is invalid
         if (data.rates?.length && !data.rates.find((r: { id: string }) => r.id === form.shippingMethod)) {
           setForm((f) => ({ ...f, shippingMethod: data.rates[0].id }));
         }
       } else {
-        throw new Error(t("checkoutQuoteFailed"));
+        throw new Error(data.code === "invalid_coupon" ? (locale === "en" ? "Check the coupon and use the email address you subscribed with. It may have expired or already been used." : "Prüfe den Gutschein und verwende deine Newsletter-E-Mail-Adresse. Er kann abgelaufen oder bereits verwendet sein.") : data.code === "shipping_quote_required" ? (locale === "en" ? "This cart exceeds standard parcel limits. Please contact us for a shipping quote." : "Dieser Warenkorb überschreitet die Paketgrenzen. Bitte frage die Versandkosten bei uns an.") : t("checkoutQuoteFailed"));
       }
     } catch (error) {
+      if (requestId !== quoteRequest.current) return;
       setShippingRates([]);
       setSubtotal(null);
       setQuoteError(error instanceof Error ? error.message : t("checkoutQuoteFailed"));
     } finally {
-      setShippingLoading(false);
+      if (requestId === quoteRequest.current) setShippingLoading(false);
     }
   });
 
@@ -94,12 +105,16 @@ export default function CheckoutPage() {
     // Shipping rates depend on client-only cart data and must be fetched after render.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchShippingRates();
-  }, [cart, form.country]);
+  }, [cart, form.country, form.email, couponCode]);
 
   const selectedRate = shippingRates.find((r) => r.id === form.shippingMethod) || shippingRates[0];
   const shippingCost = selectedRate?.price ?? 0;
   const effectiveSubtotal = subtotal ?? displayedSubtotal;
-  const total = effectiveSubtotal + shippingCost;
+  const total = effectiveSubtotal - discount + shippingCost;
+  const informationValid = isValidCheckoutEmail(form.email) && isValidCheckoutAddress({ first_name: form.firstName, last_name: form.lastName, address_1: form.address, address_2: form.apartment, city: form.city, postcode: form.postalCode, country: form.country });
+  const orderInputKey = JSON.stringify({ items: toServerCartItems(cart), form, couponCode });
+  const [pendingInputKey, setPendingInputKey] = useState<string | null>(null);
+  const activePendingOrder = pendingInputKey === orderInputKey ? pendingOrder : null;
 
   if (!hasMounted) return null;
 
@@ -159,23 +174,25 @@ export default function CheckoutPage() {
   }
 
   async function continueToPayment() {
-    if (!selectedRate || subtotal === null) return;
+    if (!informationValid || creatingOrder || shippingLoading || !selectedRate || subtotal === null) return;
+    if (activePendingOrder) { setStep("payment"); return; }
     setCreatingOrder(true);
     setPaymentError(null);
     try {
       const response = await protectedFetch("/api/orders/create", {
         method: "POST",
         credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Accept-Language": locale },
         body: JSON.stringify({
           items: toServerCartItems(cart),
           shippingMethodId: selectedRate.id,
+          couponCode,
           billing: {
             first_name: form.firstName, last_name: form.lastName, email: form.email, phone: form.phone,
-            address_1: form.address, city: form.city, postcode: form.postalCode, country: form.country,
+            address_1: form.address, address_2: form.apartment, city: form.city, postcode: form.postalCode, country: form.country,
           },
           shipping: {
-            first_name: form.firstName, last_name: form.lastName, address_1: form.address,
+            first_name: form.firstName, last_name: form.lastName, address_1: form.address, address_2: form.apartment,
             city: form.city, postcode: form.postalCode, country: form.country,
           },
           payment_method: "pending",
@@ -185,6 +202,7 @@ export default function CheckoutPage() {
       const order = await response.json();
       if (!response.ok || !order.id || !order.orderKey) throw new Error(t("checkoutOrderCreationFailed"));
       setPendingOrder({ id: order.id, orderKey: order.orderKey });
+      setPendingInputKey(orderInputKey);
       setStep("payment");
     } catch (error) {
       setPaymentError(error instanceof Error ? error.message : t("checkoutOrderCreationFailed"));
@@ -223,10 +241,11 @@ export default function CheckoutPage() {
                       </svg>
                     )}
                     <button
+                      type="button"
+                      disabled={creatingOrder || (s.key !== "information" && !informationValid) || (s.key === "payment" && (shippingLoading || subtotal === null || !selectedRate))}
+                      aria-current={step === s.key ? "step" : undefined}
                       onClick={() => {
-                        // Only allow jumping to shipping/payment if info is filled
-                        if (s.key !== "information" && (!form.email || !form.firstName || !form.lastName || !form.address || !form.postalCode || !form.city))
-                          return;
+                        if (s.key === "payment") { void continueToPayment(); return; }
                         setStep(s.key);
                       }}
                       className={`font-medium transition-colors ${step === s.key ? "text-navy-900" : "text-gray-500 hover:text-gray-700"}`}
@@ -276,11 +295,6 @@ export default function CheckoutPage() {
                         className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-navy-900 focus:ring-1 focus:ring-navy-900 outline-none bg-white"
                       >
                         <option value="DE">{t("checkoutCountryDE")}</option>
-                        <option value="AT">{t("checkoutCountryAT")}</option>
-                        <option value="CH">{t("checkoutCountryCH")}</option>
-                        <option value="NL">{t("checkoutCountryNL")}</option>
-                        <option value="FR">{t("checkoutCountryFR")}</option>
-                        <option value="BE">{t("checkoutCountryBE")}</option>
                       </select>
 
                       <div className="grid grid-cols-2 gap-3">
@@ -331,6 +345,9 @@ export default function CheckoutPage() {
                         <input
                           type="text"
                           name="postalCode"
+                          inputMode="numeric"
+                          pattern="[0-9]{5}"
+                          maxLength={5}
                           value={form.postalCode}
                           onChange={handleChange}
                           placeholder={t("postalCode")}
@@ -365,10 +382,10 @@ export default function CheckoutPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      if (!form.email || !form.firstName || !form.lastName || !form.address || !form.postalCode || !form.city) return;
+                      if (!informationValid) return;
                       setStep("shipping");
                     }}
-                    disabled={!form.email || !form.firstName || !form.lastName || !form.address || !form.postalCode || !form.city}
+                    disabled={!informationValid}
                     className="w-full rounded-lg bg-accent-600 py-3.5 text-sm font-semibold text-white hover:bg-accent-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {t("checkoutContinueShipping")} →
@@ -393,7 +410,7 @@ export default function CheckoutPage() {
                       <div>
                         <span className="text-gray-500">{t("checkoutDeliveryTo")}</span>{" "}
                         <span className="text-gray-900">
-                          {form.address}, {form.postalCode} {form.city}
+                          {form.address}{form.apartment ? `, ${form.apartment}` : ""}, {form.postalCode} {form.city}
                         </span>
                       </div>
                       <button type="button" onClick={() => setStep("information")} className="text-navy-900 text-xs hover:underline">
@@ -472,7 +489,7 @@ export default function CheckoutPage() {
                       <div>
                         <span className="text-gray-500">{t("checkoutDeliveryTo")}</span>{" "}
                         <span className="text-gray-900">
-                          {form.address}, {form.postalCode} {form.city}
+                          {form.address}{form.apartment ? `, ${form.apartment}` : ""}, {form.postalCode} {form.city}
                         </span>
                       </div>
                       <button type="button" onClick={() => setStep("information")} className="text-navy-900 text-xs hover:underline">
@@ -496,16 +513,16 @@ export default function CheckoutPage() {
                   <div>
                     <h2 className="text-lg font-semibold text-gray-900 mb-3">{t("checkoutPaymentMethod")}</h2>
                     {paymentError && <div role="alert" aria-live="assertive" className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">{paymentError}</div>}
-                    {subtotal !== null && selectedRate && pendingOrder ? (
+                    {subtotal !== null && selectedRate && activePendingOrder ? (
                       <CheckoutPayment
-                        orderId={pendingOrder.id}
-                        orderKey={pendingOrder.orderKey}
+                        orderId={activePendingOrder.id}
+                        orderKey={activePendingOrder.orderKey}
                         onSuccess={handlePaymentSuccess}
                         onError={(msg) => setPaymentError(msg)}
                       />
                     ) : (
                       <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                        {quoteError || t("checkoutCheckingPrices")}
+                        {quoteError || (locale === "en" ? "Your checkout details changed. Return to shipping and continue to payment again." : "Deine Angaben haben sich geändert. Gehe zum Versand zurück und fahre erneut zur Zahlung fort.")}
                       </p>
                     )}
                   </div>
@@ -524,13 +541,13 @@ export default function CheckoutPage() {
             {/* Footer links */}
             <div className="mt-8 pt-6 border-t border-gray-200 flex flex-wrap gap-4 text-xs text-gray-500">
               <Link href="/legal/agb" className="hover:text-gray-700">
-                AGB
+                {locale === "en" ? "Terms and conditions" : "AGB"}
               </Link>
               <Link href="/legal/datenschutz" className="hover:text-gray-700">
-                Datenschutz
+                {locale === "en" ? "Privacy" : "Datenschutz"}
               </Link>
               <Link href="/legal/widerruf" className="hover:text-gray-700">
-                Widerruf
+                {locale === "en" ? "Withdrawal" : "Widerruf"}
               </Link>
               <Link href="/legal/impressum" className="hover:text-gray-700">
                 Impressum
@@ -593,16 +610,28 @@ export default function CheckoutPage() {
                 ))}
               </div>
 
+              <form className="mt-6 space-y-2" onSubmit={(event) => { event.preventDefault(); setPendingOrder(null); setCouponCode(couponInput.trim()); }}>
+                <label htmlFor="newsletter-coupon" className="block text-sm font-medium text-brand">{locale === "en" ? "Newsletter coupon" : "Newsletter-Gutschein"}</label>
+                <div className="flex flex-wrap gap-2">
+                  <input id="newsletter-coupon" value={couponInput} onChange={event => setCouponInput(event.target.value)} maxLength={32} className="min-h-11 min-w-0 flex-1 rounded-md border border-border bg-surface-white px-3" />
+                  <button type="submit" disabled={shippingLoading || !isValidCheckoutEmail(form.email)} className="min-h-11 rounded-md border border-brand px-3 text-brand disabled:opacity-50">{locale === "en" ? "Apply" : "Anwenden"}</button>
+                  {couponCode && <button type="button" onClick={() => { setCouponInput(""); setCouponCode(""); setPendingOrder(null); }} className="min-h-11 px-3 text-brand underline">{locale === "en" ? "Remove" : "Entfernen"}</button>}
+                </div>
+                <p className="text-xs text-muted">{locale === "en" ? "Use the email address you subscribed with." : "Verwende deine Newsletter-E-Mail-Adresse."}</p>
+                {quoteError && <p role="alert" className="text-sm text-danger">{quoteError}</p>}
+              </form>
+
               {/* Totals */}
               <div className="mt-6 pt-6 border-t border-gray-300 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{t("subtotal")}</span>
                   <span className="text-gray-900">{formatCartCurrency(effectiveSubtotal, locale)}</span>
                 </div>
+                {discount > 0 && !quoteError && <div className="flex justify-between text-sm"><span>{locale === "en" ? "Discount" : "Rabatt"}</span><span>−{formatCartCurrency(discount, locale)}</span></div>}
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{t("shipping")}</span>
                   <span className="text-gray-900">
-                    {shippingLoading ? "Wird berechnet…" : shippingCost === 0 ? t("freeShipping") : `€${shippingCost.toFixed(2)}`}
+                    {shippingLoading ? t("checkoutCalculatingShipping") : shippingCost === 0 ? t("freeShipping") : formatCartCurrency(shippingCost, locale)}
                   </span>
                 </div>
                 <div className="flex justify-between text-lg font-bold pt-4 border-t border-gray-300">

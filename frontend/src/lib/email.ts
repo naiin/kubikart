@@ -322,22 +322,36 @@ export async function sendPasswordReset(email: string, resetUrl: string, locale:
  */
 export async function sendContactConfirmation(
   email: string,
-  contactData: {
-    name: string;
-    message: string;
-    type: string;
-  },
+  contactData: Omit<OwnerEnquiryEmail, "adminUrl">,
   locale: "de" | "en" = "de",
 ): Promise<void> {
-  await sendEmail({
-    to: email,
-    templateUuid: resolveTemplateUuid(process.env.MAILTRAP_TEMPLATE_CONTACT, ""),
-    variables: {
-      customer_name: contactData.name,
-      inquiry_type: contactData.type,
-      message: contactData.message,
-      locale,
-    },
+  const en = locale === "en";
+  const title = en ? "Inquiry received" : "Anfrage erhalten";
+  const intro = en ? `Thanks ${contactData.name}, we have received your inquiry and will reply soon.` : `Danke ${contactData.name}, wir haben deine Anfrage erhalten und melden uns bald.`;
+  const lines: [string, string][] = [
+    [en ? "Reference" : "Referenz", contactData.reference],
+    [en ? "Received" : "Eingegangen", contactData.receivedAt],
+    ["Name", contactData.name],
+    [en ? "Email" : "E-Mail", email],
+  ];
+  if (contactData.phone) lines.push([en ? "Phone" : "Telefon", contactData.phone]);
+  if (contactData.company) lines.push([en ? "Business" : "Unternehmen", contactData.company]);
+  if (contactData.product) {
+    lines.push([en ? "Product / bundle" : "Produkt / Paket", contactData.product.name], [en ? "Product page" : "Produktseite", contactData.product.url]);
+    if (contactData.product.sku) lines.push(["SKU", contactData.product.sku]);
+  }
+  if (contactData.industry) lines.push([en ? "Industry" : "Branche", contactData.industry.name]);
+  // Never expose private file references, even when included in supplied notes.
+  const message = contactData.message?.replace(/kubikart-file:[^\s]+/g, en ? "[private upload]" : "[privater Upload]");
+  if (message) lines.push([en ? "Your request and selected options" : "Deine Anfrage und Auswahl", message]);
+  await client.send({
+    from: sender,
+    to: [{ email }],
+    reply_to: { email: process.env.ENQUIRY_OWNER_EMAIL?.trim() || "info@kubikart.de" },
+    category: "contact_confirmation",
+    subject: `${title} – ${contactData.reference} – Kubikart`,
+    text: [title, intro, ...lines.map(([label, value]) => `${label}: ${value}`)].join("\n\n"),
+    html: `<h1>${title}</h1><p>${escapeHtml(intro)}</p><table>${lines.map(([label, value]) => `<tr><th align="left" valign="top">${escapeHtml(label)}</th><td>${escapeHtml(value).replace(/\n/g, "<br>")}</td></tr>`).join("")}</table>`,
   });
 }
 
@@ -384,12 +398,13 @@ export async function sendWithdrawalConfirmation(
  * Welcome email after newsletter subscription
  * Sent after double opt-in confirmation
  */
-export async function sendNewsletterWelcome(email: string, locale: "de" | "en" = "de", couponCode?: string): Promise<void> {
-  if (couponCode) {
+export async function sendNewsletterWelcome(email: string, locale: "de" | "en" = "de", couponCode?: string, unsubscribeUrl?: string): Promise<void> {
+  if (couponCode || unsubscribeUrl) {
     const english = locale === "en";
     const subject = english ? "Welcome to Kubikart" : "Willkommen bei Kubikart";
-    const text = english ? `Thank you for subscribing. Your personal 10% coupon: ${couponCode}. Valid for 90 days, single use.` : `Danke für deine Anmeldung. Dein persönlicher 10%-Gutschein: ${couponCode}. 90 Tage gültig, einmalig einlösbar.`;
-    await client.send({ from: sender, to: [{ email }], subject, text, html: `<h1>${subject}</h1><p>${escapeHtml(text)}</p>`, category: "newsletter-welcome" });
+    const text = couponCode ? (english ? `Thank you for subscribing. Your personal 10% coupon: ${couponCode}. Valid for 90 days, single use.` : `Danke für deine Anmeldung. Dein persönlicher 10%-Gutschein: ${couponCode}. 90 Tage gültig, einmalig einlösbar.`) : (english ? "Thank you for subscribing." : "Danke für deine Anmeldung.");
+    const unsubscribe = unsubscribeUrl ? `\n\n${english ? "Unsubscribe" : "Abmelden"}: ${unsubscribeUrl}` : "";
+    await client.send({ from: sender, to: [{ email }], subject, text: text + unsubscribe, html: `<h1>${subject}</h1><p>${escapeHtml(text)}</p>${unsubscribeUrl ? `<p><a href="${escapeHtml(unsubscribeUrl)}">${english ? "Unsubscribe" : "Abmelden"}</a></p>` : ""}`, ...(unsubscribeUrl ? { headers: { "List-Unsubscribe": `<${unsubscribeUrl}>` } } : {}), category: "newsletter-welcome" });
     return;
   }
   await sendEmail({

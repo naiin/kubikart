@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Elements, PaymentElement, ExpressCheckoutElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { PayPalScriptProvider, PayPalButtons, FUNDING } from "@paypal/react-paypal-js";
@@ -24,6 +24,8 @@ function StripeForm({ onSuccess, onError, method }: { onSuccess: (id: string) =>
   const elements = useElements();
   const [loading, setLoading] = useState(false);
   const t = useTranslations("common");
+  const locale = useLocale();
+  const [processing, setProcessing] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -33,7 +35,7 @@ function StripeForm({ onSuccess, onError, method }: { onSuccess: (id: string) =>
     const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
       confirmParams: {
-        return_url: `${window.location.origin}/checkout/success`,
+        return_url: `${window.location.origin}/${locale}/checkout/success`,
       },
       redirect: "if_required",
     });
@@ -44,13 +46,14 @@ function StripeForm({ onSuccess, onError, method }: { onSuccess: (id: string) =>
     } else if (paymentIntent && paymentIntent.status === "succeeded") {
       onSuccess(paymentIntent.id);
     } else {
-      // For Klarna, redirect happens automatically
+      setProcessing(paymentIntent?.status === "processing");
       setLoading(false);
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {processing && <p role="status">{locale === "en" ? "Your payment is still processing. Please do not pay again; check your order status shortly." : "Deine Zahlung wird noch verarbeitet. Bitte zahle nicht erneut und prüfe gleich deinen Bestellstatus."}</p>}
       <PaymentElement
         options={{
           layout: "tabs",
@@ -60,7 +63,7 @@ function StripeForm({ onSuccess, onError, method }: { onSuccess: (id: string) =>
       />
       <button
         type="submit"
-        disabled={!stripe || loading}
+        disabled={!stripe || loading || processing}
         className="w-full rounded-lg bg-accent-600 py-3.5 text-sm font-semibold text-white hover:bg-accent-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? (
@@ -86,6 +89,7 @@ function ExpressCheckout({ onSuccess, onError }: { onSuccess: (id: string) => vo
   const stripe = useStripe();
   const elements = useElements();
   const t = useTranslations("common");
+  const locale = useLocale();
 
   return (
     <ExpressCheckoutElement
@@ -96,13 +100,15 @@ function ExpressCheckout({ onSuccess, onError }: { onSuccess: (id: string) => vo
         if (!stripe || !elements) return;
         const { error, paymentIntent } = await stripe.confirmPayment({
           elements,
-          confirmParams: { return_url: `${window.location.origin}/checkout/success` },
+          confirmParams: { return_url: `${window.location.origin}/${locale}/checkout/success` },
           redirect: "if_required",
         });
         if (error) {
           onError(error.message || t("paymentFailed"));
         } else if (paymentIntent?.status === "succeeded") {
           onSuccess(paymentIntent.id);
+        } else if (paymentIntent?.status === "processing") {
+          onError(locale === "en" ? "Payment is processing. Do not pay again; check your order status shortly." : "Die Zahlung wird verarbeitet. Bitte nicht erneut zahlen; prüfe gleich deinen Bestellstatus.");
         }
       }}
     />

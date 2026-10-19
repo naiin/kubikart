@@ -81,6 +81,13 @@ describe("GET /api/newsletter/confirm", () => {
     expect(response.status).toBe(403);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+  it("does not reactivate an unsubscribed reader through an old confirmation link", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ content: { raw: JSON.stringify({ email: "qa@example.com", token: "abc123", status: "unsubscribed" }) } }) });
+    vi.stubGlobal("fetch", fetchMock);
+    const { GET } = await import("@/app/api/newsletter/confirm/route");
+    expect((await GET(makeRequest("?token=abc123&id=55") as never)).status).toBe(409);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 
   it("retains an existing coupon and records a retryable welcome-email failure", async () => {
     const { sendNewsletterWelcome } = await import("@/lib/email");

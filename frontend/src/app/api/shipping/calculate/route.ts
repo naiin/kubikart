@@ -8,6 +8,7 @@ export async function POST(request: NextRequest) {
       rates: cart.rates,
       package: cart.package,
       subtotal: cart.subtotalCents / 100,
+      discount: cart.discountCents / 100,
       total: cart.totalCents / 100,
       currency: cart.currency,
       lines: cart.lines,
